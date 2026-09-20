@@ -1,0 +1,67 @@
+:root {
+  --wood-0:#0d0907; --wood-1:#17100c; --wood-2:#2a1b13;
+  --leather:#493020; --paper:#d8c49a; --paper-deep:#b49a68;
+  --ink:#211811; --gold:#b99a55; --gold-light:#d5bb76;
+  --muted:#9e8c6e; --line:rgba(185,154,85,.24);
+  --shadow:rgba(0,0,0,.55);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--wood-0);color:var(--paper);font-family:"Crimson Text",Georgia,serif;font-size:18px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;background:radial-gradient(circle at 50% 18%,rgba(119,78,35,.18),transparent 35%),linear-gradient(90deg,rgba(0,0,0,.28),transparent 22%,transparent 78%,rgba(0,0,0,.28))}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:20;box-shadow:inset 0 0 140px rgba(0,0,0,.8)}
+.grain{position:fixed;inset:-50%;opacity:.045;pointer-events:none;z-index:19;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");animation:grain .25s steps(2) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,-1%)}}
+.entry{position:fixed;inset:0;z-index:30;display:grid;place-items:center;text-align:center;padding:2rem;background:radial-gradient(circle at center,rgba(66,43,25,.8),rgba(8,6,5,.98) 70%);transition:opacity .8s ease,visibility .8s}
+.entry.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+.entry__seal{font-size:2.3rem;color:var(--gold-light);margin-bottom:1rem;animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08);opacity:.72}}
+.entry h1,.hero h1,.section h2{font-family:Cinzel,Georgia,serif;font-weight:600;letter-spacing:.08em}
+.entry h1{font-size:clamp(3.3rem,10vw,7rem);margin:.1rem 0;color:var(--paper);text-shadow:0 4px 20px #000}
+.entry__text{font-size:1.25rem;color:var(--paper-deep)}
+.entry__hint{font-size:.82rem;color:var(--muted);margin-top:1.2rem}
+.eyebrow{font-family:Cinzel,Georgia,serif;text-transform:uppercase;letter-spacing:.24em;font-size:.7rem;color:var(--gold);margin:0 0 1rem}
+.button{display:inline-flex;align-items:center;gap:.7rem;border:1px solid var(--gold);padding:.8rem 1.35rem;background:none;color:var(--paper);font:600 .85rem Cinzel,serif;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:.25s ease}
+.button:hover{background:var(--gold);color:var(--ink);transform:translateY(-2px)}
+.button--gold{background:var(--gold);color:var(--ink);box-shadow:0 8px 35px rgba(0,0,0,.45)}
+.button--gold:hover{background:var(--gold-light)}
+.button--outline{color:var(--paper)}
+.site-shell{max-width:1180px;margin:auto;padding:0 2rem;opacity:0;transform:translateY(10px);transition:opacity 1s ease,transform 1s ease}
+body.entered .site-shell{opacity:1;transform:none}
+.masthead{height:90px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.7rem;color:var(--paper);font:600 1.1rem Cinzel,serif;text-decoration:none;letter-spacing:.12em}
+.brand__mark{color:var(--gold)}
+.nav{display:flex;gap:1.6rem}
+.nav a{color:var(--muted);text-decoration:none;font-family:Cinzel,serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em}
+.nav a:hover{color:var(--gold-light)}
+.music-toggle{border:1px solid var(--line);background:transparent;color:var(--gold);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:1rem}
+.hero{min-height:calc(100vh - 90px);display:flex;flex-direction:column;justify-content:center;max-width:820px;padding:5rem 0 7rem}
+.hero h1{font-size:clamp(3rem,7vw,6.5rem);line-height:1.03;margin:0 0 1.7rem}
+.hero h1 em{font-style:normal;color:var(--gold-light)}
+.hero__lead{font-size:1.25rem;max-width:620px;color:#c5b18a}
+.scroll-cue{margin-top:3.5rem;color:var(--gold);font-family:Cinzel,serif;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none}
+.scroll-cue span{display:inline-block;margin-left:.7rem;animation:bob 1.8s infinite}
+@keyframes bob{50%{transform:translateY(5px)}}
+.section{padding:7rem 0;border-top:1px solid var(--line)}
+.section__heading{margin-bottom:2.8rem}
+.section h2{font-size:clamp(2.2rem,5vw,4rem);margin:0;color:var(--paper)}
+.lore-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+.card{background:linear-gradient(145deg,rgba(64,43,27,.55),rgba(29,19,13,.8));padding:2.1rem;min-height:300px}
+.card__sigil{color:var(--gold);font-size:1.5rem}
+.card__meta{color:var(--gold);font:600 .67rem Cinzel,serif;text-transform:uppercase;letter-spacing:.15em}
+.card h3,.project h3{font:600 1.45rem Cinzel,serif;color:var(--paper);margin:.55rem 0 .8rem}
+.card p:last-child,.project p:last-child{color:#ad9b7b}
+.section--dark{background:rgba(0,0,0,.16)}
+.project-list{border-top:1px solid var(--line)}
+.project{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:1.5rem;padding:2rem 0;border-bottom:1px solid var(--line)}
+.project__icon{font-size:1.7rem;color:var(--gold);text-align:center}
+.project h3{margin:0}
+.project p{margin:.3rem 0 0}
+.project__status{font:600 .65rem Cinzel,serif;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);border:1px solid var(--line);padding:.35rem .55rem}
+.workshop{padding:8rem 0}
+.workshop__inner{max-width:680px;padding:3.5rem;border:1px solid var(--line);background:linear-gradient(rgba(58,39,24,.42),rgba(31,20,13,.7));box-shadow:0 20px 70px var(--shadow)}
+.workshop h2{margin-bottom:1rem}
+.workshop p:not(.eyebrow){color:#c0ac86;font-size:1.2rem;margin-bottom:2rem}
+.footer{display:flex;justify-content:space-between;gap:1rem;padding:2rem 0;color:#75664f;font-size:.8rem;border-top:1px solid var(--line)}
+@media(max-width:760px){.site-shell{padding:0 1.1rem}.nav{display:none}.hero{min-height:calc(100vh - 90px)}.lore-grid{grid-template-columns:1fr}.project{grid-template-columns:45px 1fr}.project__status{grid-column:2;justify-self:start}.workshop__inner{padding:2rem 1.4rem}.footer{flex-direction:column;gap:.4rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
