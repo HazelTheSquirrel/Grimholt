@@ -75,4 +75,22 @@ class OwnedRegionTest {
         region.execute(value::incrementAndGet);
         assertEquals(1, value.get());
     }
+    @Test
+    void schedulingIsCoalescedAndFailuresAreReported() {
+        var tasks = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
+        var failures = new AtomicInteger();
+        var region = new OwnedRegion(new RegionKey(java.util.UUID.randomUUID(), 0, 0), 8,
+                tasks::add, failure -> failures.incrementAndGet());
+        try {
+            region.execute(() -> { throw new IllegalStateException("boom"); });
+            region.execute(() -> {});
+            assertEquals(1, tasks.size());
+            tasks.remove().run();
+            assertEquals(1, failures.get());
+            assertEquals(0, region.pendingHandoffs());
+        } finally {
+            region.close();
+        }
+    }
+
 }
