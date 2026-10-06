@@ -18,6 +18,15 @@ public final class GrimholtServerImpl implements GrimholtServer {
  public GrimholtPlayer player(UUID id){return players.get(id);} public GrimholtWorld world(UUID id){return worlds.get(id);}
  public EventBus events(){return events;} public Scheduler scheduler(){return scheduler;} public ServiceRegistry services(){return services;}
  public PluginManager plugins(){return Objects.requireNonNull(plugins,"Plugin manager not attached");}
- public void registerCommand(dev.grimholt.api.Command c){Objects.requireNonNull(c);var n=new Command(c.name(),c.aliases().toArray(String[]::new));n.setDefaultExecutor((sender,context)->c.execute(new MinestomCommandSender(sender),new String[0]));MinecraftServer.getCommandManager().register(n);}
+ public void registerCommand(dev.grimholt.api.Command c){
+  Objects.requireNonNull(c); Objects.requireNonNull(c.name());
+  var n=new Command(c.name(),c.aliases()==null?new String[0]:c.aliases().toArray(String[]::new));
+  n.setDefaultExecutor((sender,context)->{
+   String raw=context.getInput().trim(); String[] parts=raw.isEmpty()?new String[0]:raw.split("\\\\s+");
+   String[] args=parts.length<=1?new String[0]:java.util.Arrays.copyOfRange(parts,1,parts.length);
+   c.execute(new MinestomCommandSender(sender),args);
+  });
+  MinecraftServer.getCommandManager().register(n);
+ }
  public void broadcast(String m){players.values().forEach(p->p.sendMessage(m));} public void clear(){players.clear();worlds.clear();events.clear();services.clear();}
 }
