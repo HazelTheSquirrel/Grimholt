@@ -69,9 +69,18 @@ public final class OwnedRegion implements AutoCloseable {
                     task = handoffs.poll();
                 }
                 if (task == null) break;
-                task.run();
+                try {
+                    task.run();
+                } catch (Throwable ignored) {
+                    // One faulty handoff must not strand the remaining region queue.
+                }
             }
         });
+        boolean reschedule;
+        synchronized (handoffs) {
+            reschedule = !handoffs.isEmpty() && !closed.get();
+        }
+        if (reschedule) scheduleDrain();
     }
 
     private void scheduleDrain() {
