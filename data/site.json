@@ -1,16 +1,17 @@
 {
-  "name": "Grimholt",
-  "description": "Eine atmosphärische Fantasy-Website zwischen alten Geschichten, dunklem Holz und Kerzenlicht.",
-  "version": "0.2.0",
-  "stack": {
-    "backend": "PHP 8.1+",
-    "frontend": ["Native CSS", "Vanilla JavaScript ES6+"],
-    "data": "JSON",
-    "server": "Nginx auf Port 80"
+  "title": "Grimholt — The Northern Frontier",
+  "hero": {
+    "headline": "Where the fog remembers.",
+    "lead": "Eine komplette PHP/Nginx-Demo: schnell, responsiv, datengetrieben und mit echtem Datei-Upload."
   },
-  "audio": {
-    "file": "/assets/audio/tavern.mp3",
-    "defaultVolume": 0.28,
-    "startsAfterEntrance": true
-  }
+  "stats": [
+    {"value":"03","label":"Districts"},
+    {"value":"12","label":"Lore entries"},
+    {"value":"64 MB","label":"Upload limit"}
+  ],
+  "districts": [
+    {"tag":"DISTRICT I","name":"The Old Gate","description":"Der erste Blick auf Grimholt. Händler, Reisende und Dinge, die lieber draußen geblieben wären."},
+    {"tag":"DISTRICT II","name":"Ash Quarter","description":"Zwischen Werkstätten und kalten Schornsteinen erzählt jede Mauer eine andere Version der Geschichte."},
+    {"tag":"DISTRICT III","name":"Northwatch","description":"Der höchste Punkt der Stadt. Von hier sieht man den Nebel kommen, lange bevor er die Straßen erreicht."}
+  ]
 }
