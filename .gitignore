@@ -1,7 +1,0 @@
-.env
-*.log
-.DS_Store
-.vscode/
-.idea/
-storage/uploads/*
-!storage/uploads/.gitkeep
