@@ -13,7 +13,7 @@ Grimholt is an independent Minecraft server fork/distribution built on top of Mi
 
 ## Current status
 
-Engineering foundation + vanilla parity audit. The repository is now driven by one target: a vanilla 26.2 server with a first-class Grimholt Plugin API and region-safe multithreading.
+Engineering foundation + active Vanilla parity implementation. The behavioral target is Minecraft Java 26.4 Snapshot 3; the current Minestom substrate remains 26.2 until an upstream compatible runtime is available. Grimholt implements Vanilla behavior in its own code and never modifies Minestom.
 
 This repository is intentionally being built in phases. A phase is not considered complete until its implementation and a separate verification pass agree.
 
