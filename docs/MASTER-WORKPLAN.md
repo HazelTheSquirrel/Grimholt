@@ -64,7 +64,7 @@ This procedure must be followed **before every meaningful implementation session
 - [ ] Read this Master Work Plan.
 - [ ] Read `docs/ARCHITECTURE.md`.
 - [ ] Read `docs/DEPENDENCY-POLICY.md`.
-- [ ] Read the relevant part of `docs/ROADMAP.md`.
+- [ ] Read `docs/COMPATIBILITY.md` and the relevant phase sections in this plan.
 - [ ] Inspect all existing files directly related to the planned change.
 - [ ] Check recent commits for changes that may affect the task.
 
@@ -1104,34 +1104,35 @@ Every phase must be evaluated using this checklist.
 
 
 ---
+# 16. Current audit baseline — 2026-10-07
 
-# 11. Execution status — 2026-10-07
+This section supersedes historical phase-review documents. The repository deliberately keeps this plan as a living control document; completed review snapshots are deleted instead of retained as parallel sources of truth.
 
-The remaining implementation work was executed directly on main and reviewed against the mandatory controls.
+## Proven foundation
 
-## Verified by CI
-- Gradle 9.8.0
-- JDK 25
-- clean test suite
-- assemble
+- CI has executed successfully on main with JDK 25 and Gradle 9.8.0.
+- Minestom 26.2 is an internal implementation dependency only.
+- The public Grimholt API exposes neither Minestom nor SLF4J types.
+- Plugin discovery, dependency ordering, lifecycle and classloader cleanup exist.
+- The server can select online or offline authentication.
+- The server configures Minestom dispatcher thread count instead of accepting its single-thread default.
+- Anvil persistence is wired through the 26.2 dimension-aware loader.
 
-## Implemented foundations
-- independent Grimholt plugin API
-- plugin dependency graph and lifecycle
-- bounded scheduler
-- player/world/command/event/service adapters
-- Minestom 26.2 bootstrap boundary
-- atomic persistence primitive
-- health/security/metrics foundations
-- compatibility, security and performance documentation
-- example public-API plugin
+## Explicitly incomplete
 
-## Explicit release blockers
-These are not silently marked complete:
-- full vanilla 26.2 mechanics parity has not been proven
-- online-mode authentication has not been enabled/proven
-- vanilla world-generation parity has not been proven
-- 500-1000 player benchmark evidence does not yet exist
-- release-candidate gate therefore remains blocked
+- Full vanilla 26.2 world generation.
+- Full vanilla mechanics: physics, fluids, redstone, block ticks, inventories, crafting, combat, entities, AI, villagers, raids, dimensions and portals.
+- Complete vanilla data, command and datapack behavior.
+- End-to-end online authentication/client compatibility testing.
+- 500–1000 player benchmark evidence.
 
-See docs/PHASE-2-8-REVIEW.md and docs/COMPATIBILITY.md for the detailed evidence boundary.
+## Next implementation priority
+
+1. Establish the vanilla behavior/reference test harness.
+2. Build the Grimholt-owned world/chunk and region ownership model around Minestom's partitioned tick execution.
+3. Implement vanilla player movement, block interaction and persistence round-trips.
+4. Implement mechanics in dependency order and test every subsystem against 26.2 behavior.
+5. Expand the plugin API only where real vanilla capabilities require a stable public contract.
+6. Benchmark only after correctness gates pass.
+
+Paper/Folia is allowed only as an implementation-reading reference for concurrency/ownership questions. It is never a dependency, compatibility target or public API.
