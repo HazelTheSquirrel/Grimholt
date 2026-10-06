@@ -44,4 +44,20 @@ class VanillaTickEngineTest {
         assertEquals(state, world.getBlock(pos));
         assertEquals("minecraft:air", world.getBlock(new BlockPos(2, 64, 2)).id());
     }
+    @Test
+    void scheduledBlockTicksRunWhenDue() {
+        VanillaWorldState world = new VanillaWorldState();
+        VanillaTickEngine engine = new VanillaTickEngine(world, 16);
+        List<BlockPos> processed = new ArrayList<>();
+        engine.onScheduledBlockTick(processed::add);
+        BlockPos pos = new BlockPos(3, 70, 4);
+        engine.scheduledBlocks().schedule(2, pos);
+
+        engine.tick();
+        assertTrue(processed.isEmpty());
+        engine.tick();
+        assertEquals(List.of(pos), processed);
+        assertEquals(0, engine.scheduledBlocks().pending());
+    }
+
 }
