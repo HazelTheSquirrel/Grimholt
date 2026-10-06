@@ -51,7 +51,7 @@ public final class VanillaRegionManager implements AutoCloseable {
 
     @Override
     public void close() {
-        runtimes.values().forEach(VanillaRegionRuntime::close);
+        runtimes.values().forEach(VanillaRegionRuntime::forceClose);
         runtimes.clear();
         regions.close();
     }

@@ -13,12 +13,15 @@ import java.util.Objects;
 public final class VanillaRegionRuntime implements AutoCloseable {
     private final OwnedRegion owner;
     private final Map<Long, VanillaChunk> chunks = new HashMap<>();
+    private final VanillaGameRuntime game;
 
     public VanillaRegionRuntime(OwnedRegion owner) {
         this.owner = Objects.requireNonNull(owner, "owner");
+        this.game = new VanillaGameRuntime(owner.key().worldId());
     }
 
     public OwnedRegion owner() { return owner; }
+    public VanillaGameRuntime game() { return game; }
 
     public VanillaChunk chunk(int chunkX, int chunkZ) {
         owner.assertOwner();
@@ -32,6 +35,7 @@ public final class VanillaRegionRuntime implements AutoCloseable {
 
     public void tick() {
         owner.assertOwner();
+        game.tick();
         for (VanillaChunk chunk : chunks.values()) chunk.tick();
     }
 
@@ -44,6 +48,13 @@ public final class VanillaRegionRuntime implements AutoCloseable {
         owner.assertOwner();
         VanillaChunk chunk = chunks.remove(key(chunkX, chunkZ));
         if (chunk != null) chunk.unload();
+    }
+
+    /** Used only after the owning region has been closed; no other owner can mutate the maps. */
+    void forceClose() {
+        owner.close();
+        chunks.values().forEach(VanillaChunk::unload);
+        chunks.clear();
     }
 
     @Override
