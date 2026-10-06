@@ -2,18 +2,17 @@ package dev.grimholt.server.vanilla;
 
 import dev.grimholt.server.concurrency.OwnedRegion;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Region-owned Vanilla runtime. All mutation methods are required to execute
- * inside the associated OwnedRegion ownership scope.
+ * Region-owned Vanilla runtime. All gameplay mutation is serialized by the
+ * associated OwnedRegion.
  */
 public final class VanillaRegionRuntime implements AutoCloseable {
     private final OwnedRegion owner;
-    private final Map<Long, VanillaChunk> chunks = new ConcurrentHashMap<>();
-    private final Map<Long, VanillaTickEngine> tickers = new ConcurrentHashMap<>();
+    private final Map<Long, VanillaChunk> chunks = new HashMap<>();
 
     public VanillaRegionRuntime(OwnedRegion owner) {
         this.owner = Objects.requireNonNull(owner, "owner");
@@ -27,28 +26,24 @@ public final class VanillaRegionRuntime implements AutoCloseable {
         return chunks.computeIfAbsent(key, ignored -> {
             VanillaChunk chunk = new VanillaChunk(chunkX, chunkZ);
             chunk.load();
-            tickers.put(key, new VanillaTickEngine(new VanillaWorldState(), 4096));
             return chunk;
         });
     }
 
     public void tick() {
         owner.assertOwner();
-        for (VanillaTickEngine engine : tickers.values()) engine.tick();
+        for (VanillaChunk chunk : chunks.values()) chunk.tick();
     }
 
     public int loadedChunkCount() {
+        owner.assertOwner();
         return chunks.size();
     }
 
     public void unloadChunk(int chunkX, int chunkZ) {
         owner.assertOwner();
-        long key = key(chunkX, chunkZ);
-        VanillaChunk chunk = chunks.remove(key);
-        if (chunk != null) {
-            chunk.unload();
-            tickers.remove(key);
-        }
+        VanillaChunk chunk = chunks.remove(key(chunkX, chunkZ));
+        if (chunk != null) chunk.unload();
     }
 
     @Override
@@ -56,7 +51,6 @@ public final class VanillaRegionRuntime implements AutoCloseable {
         Runnable cleanup = () -> {
             chunks.values().forEach(VanillaChunk::unload);
             chunks.clear();
-            tickers.clear();
         };
         if (owner.closed()) {
             cleanup.run();
