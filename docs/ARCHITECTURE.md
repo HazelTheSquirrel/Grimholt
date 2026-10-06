@@ -19,7 +19,7 @@ Server internals may use Minestom. Plugins must depend on the Grimholt API and e
 Owns process startup, configuration, logging and shutdown.
 
 ### 2. Server kernel
-Owns lifecycle, tick scheduling, world ownership, player ownership, entity ownership and coordination.
+Owns lifecycle, global coordination, ownership contracts and server-wide state. Tick execution is partitioned; there is no plugin-facing global main-thread contract.
 
 ### 3. Minecraft implementation
 Owns protocol-facing behavior and vanilla gameplay.
@@ -39,9 +39,9 @@ The design must avoid a single giant global lock.
 
 State ownership must be explicit. Where state can be partitioned by world, chunk, player or subsystem, ownership should be partitioned as well.
 
-CPU-heavy work such as world generation, storage I/O and expensive calculations must be separated from latency-sensitive tick execution and must have bounded queues/backpressure.
+CPU-heavy work such as world generation, storage I/O and expensive calculations must be separated from latency-sensitive region execution and must have bounded queues/backpressure. World/chunk/entity state is owned by its current tick partition; cross-partition work must be explicitly handed off.
 
-The API must not force plugins to assume that every operation executes on one global server thread.
+The API must not force plugins to assume that every operation executes on one global server thread. Location-bound work belongs to the owner of that location; entity-bound work follows the entity; global work uses a global coordinator; blocking I/O is asynchronous.
 
 ## Plugin safety
 
