@@ -17,10 +17,13 @@ class WinterDropMechanicsTest {
         FreezingState state = new FreezingState();
         state.apply(3);
         assertTrue(state.active());
-        state.tick();
-        state.tick();
-        assertEquals(1, state.remainingTicks());
-        state.tick();
+        assertFalse(state.tick());
+        for (int i = 1; i < FreezingState.FREEZE_THRESHOLD_TICKS; i++) {
+            assertFalse(state.tick());
+        }
+        assertTrue(state.fullyFrozen());
+        assertTrue(state.tick());
+        state.clear();
         assertFalse(state.active());
     }
 
