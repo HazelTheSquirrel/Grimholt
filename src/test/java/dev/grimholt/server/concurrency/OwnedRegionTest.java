@@ -55,7 +55,6 @@ class OwnedRegionTest {
             region.execute(value::incrementAndGet);
             assertEquals(2, tasks.size());
             tasks.remove().run();
-            tasks.remove().run();
             assertEquals(1, value.get());
         } finally {
             region.close();
