@@ -18,6 +18,7 @@ public final class GrimholtServerImpl implements GrimholtServer {
  public GrimholtPlayer player(UUID id){return players.get(id);} public GrimholtWorld world(UUID id){return worlds.get(id);}
  public EventBus events(){return events;} public Scheduler scheduler(){return scheduler;} public ServiceRegistry services(){return services;}
  public PluginManager plugins(){return Objects.requireNonNull(plugins,"Plugin manager not attached");}
+ public void bindTickScheduler(java.util.function.Consumer<Runnable> executor){scheduler.bindTickExecutor(executor);}
  public void registerCommand(dev.grimholt.api.Command c){
   Objects.requireNonNull(c); Objects.requireNonNull(c.name());
   var n=new Command(c.name(),c.aliases()==null?new String[0]:c.aliases().toArray(String[]::new));
