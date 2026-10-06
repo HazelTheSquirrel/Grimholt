@@ -1,12 +1,15 @@
 package dev.grimholt.server.vanilla;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Sparse logical chunk state. The containing region is the sole gameplay owner;
- * the concurrent maps only protect lifecycle snapshots and do not replace ownership.
+ * Sparse logical chunk state.
+ *
+ * <p>The containing region is the sole gameplay owner. Mutable maps therefore
+ * remain ordinary owner-thread state; snapshots are immutable and safe to hand
+ * to asynchronous readers.</p>
  */
 public final class VanillaChunk {
     public static final int MIN_SECTION_Y = -4;
@@ -14,9 +17,10 @@ public final class VanillaChunk {
 
     private final int chunkX;
     private final int chunkZ;
-    private final Map<BlockPos, BlockState> blocks = new ConcurrentHashMap<>();
-    private final Map<BlockPos, VanillaFluidState> fluids = new ConcurrentHashMap<>();
-    private volatile boolean loaded;
+    private final VanillaWorldState world = new VanillaWorldState();
+    private final Map<BlockPos, VanillaFluidState> fluids = new HashMap<>();
+    private final VanillaTickEngine ticker = new VanillaTickEngine(world, 4096);
+    private boolean loaded;
 
     public VanillaChunk(int chunkX, int chunkZ) {
         this.chunkX = chunkX;
@@ -32,13 +36,13 @@ public final class VanillaChunk {
 
     public BlockState block(BlockPos pos) {
         Objects.requireNonNull(pos, "pos");
-        return blocks.getOrDefault(pos, BlockState.of("minecraft:air"));
+        return world.getBlock(pos);
     }
 
     public void setBlock(BlockPos pos, BlockState state) {
         Objects.requireNonNull(pos, "pos");
         Objects.requireNonNull(state, "state");
-        blocks.put(pos, state);
+        world.setBlock(pos, state);
     }
 
     public VanillaFluidState fluid(BlockPos pos) {
@@ -53,6 +57,14 @@ public final class VanillaChunk {
         else fluids.put(pos, state);
     }
 
-    public Map<BlockPos, BlockState> blockSnapshot() { return Map.copyOf(blocks); }
+    public VanillaWorldState world() { return world; }
+    public VanillaTickEngine ticker() { return ticker; }
+
+    public void tick() {
+        if (!loaded) return;
+        ticker.tick();
+    }
+
+    public Map<BlockPos, BlockState> blockSnapshot() { return world.snapshotBlocks(); }
     public Map<BlockPos, VanillaFluidState> fluidSnapshot() { return Map.copyOf(fluids); }
 }
