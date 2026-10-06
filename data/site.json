@@ -1,1 +1,16 @@
-{"name":"Grimholt","description":"Eine schlichte Fantasy-Chronik im Geist einer alten Taverne.","stack":{"backend":"PHP 8.1+","frontend":["Native CSS","Vanilla JavaScript ES6+"],"data":"JSON","server":"Nginx auf Port 80"}}
+{
+  "name": "Grimholt",
+  "description": "Eine atmosphärische Fantasy-Website zwischen alten Geschichten, dunklem Holz und Kerzenlicht.",
+  "version": "0.2.0",
+  "stack": {
+    "backend": "PHP 8.1+",
+    "frontend": ["Native CSS", "Vanilla JavaScript ES6+"],
+    "data": "JSON",
+    "server": "Nginx auf Port 80"
+  },
+  "audio": {
+    "file": "/assets/audio/tavern.mp3",
+    "defaultVolume": 0.28,
+    "startsAfterEntrance": true
+  }
+}
