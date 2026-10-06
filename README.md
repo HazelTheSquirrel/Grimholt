@@ -13,7 +13,7 @@ Grimholt is an independent Minecraft server fork/distribution built on top of Mi
 
 ## Current status
 
-Phase 0 - architecture and engineering gates.
+Engineering foundation + vanilla parity audit. The repository is now driven by one target: a vanilla 26.2 server with a first-class Grimholt Plugin API and region-safe multithreading.
 
 This repository is intentionally being built in phases. A phase is not considered complete until its implementation and a separate verification pass agree.
 
@@ -29,4 +29,4 @@ Never declare a phase complete merely because the code compiles. Each phase must
 
 Before every implementation change, follow `docs/MASTER-WORKPLAN.md`. It is the mandatory pre-change and post-change engineering checklist.
 
-See `docs/MASTER-WORKPLAN.md`, `docs/ROADMAP.md` and `docs/ARCHITECTURE.md`.
+See `docs/MASTER-WORKPLAN.md`, `docs/COMPATIBILITY.md` and `docs/ARCHITECTURE.md`.
