@@ -31,6 +31,10 @@ public final class RegionManager implements AutoCloseable {
 
     public int regionCount() { return regions.size(); }
 
+    public OwnedRegion find(UUID worldId, int regionX, int regionZ) {
+        return regions.get(new RegionKey(worldId, regionX, regionZ));
+    }
+
     public void execute(UUID worldId, int chunkX, int chunkZ, Runnable action) {
         OwnedRegion region = region(worldId, chunkX, chunkZ);
         try {
