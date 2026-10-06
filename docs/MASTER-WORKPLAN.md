@@ -1130,6 +1130,8 @@ This section supersedes historical phase-review documents. The repository delibe
 
 1. Establish the vanilla behavior/reference test harness.
 2. Build the Grimholt-owned world/chunk and region ownership model around Minestom's partitioned tick execution.
+   - Logical region keys and bounded explicit cross-owner handoffs are now implemented.
+   - Minestom remains unchanged and is still consumed only as the execution substrate.
 3. Implement vanilla player movement, block interaction and persistence round-trips.
 4. Implement mechanics in dependency order and test every subsystem against 26.2 behavior.
 5. Expand the plugin API only where real vanilla capabilities require a stable public contract.
