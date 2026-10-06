@@ -1,0 +1,3 @@
+package dev.grimholt.server.api;
+import dev.grimholt.api.*; import net.kyori.adventure.text.Component; import net.minestom.server.entity.Player;
+public final class MinestomPlayer implements GrimholtPlayer {private final Player player;public MinestomPlayer(Player p){player=p;}public Player internal(){return player;}public java.util.UUID uuid(){return player.getUuid();}public String name(){return player.getUsername();}public Position position(){var p=player.getPosition();return new Position(p.x(),p.y(),p.z(),p.yaw(),p.pitch());}public void sendMessage(String m){player.sendMessage(Component.text(m));}public void kick(String r){player.kick(Component.text(r));}}
