@@ -21,7 +21,7 @@ public record VanillaItemStack(String itemId, int count, int maxStackSize, Map<S
         return new VanillaItemStack("minecraft:air", 0, 64, Map.of());
     }
 
-    public boolean empty() {
+    public boolean isEmpty() {
         return count == 0 || itemId.equals("minecraft:air");
     }
 

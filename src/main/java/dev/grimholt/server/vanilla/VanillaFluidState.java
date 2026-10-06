@@ -12,11 +12,11 @@ public record VanillaFluidState(String id, int level, boolean falling) {
         return new VanillaFluidState("minecraft:empty", 0, false);
     }
 
-    public boolean empty() {
+    public boolean isEmpty() {
         return id.equals("minecraft:empty");
     }
 
     public boolean source() {
-        return !empty() && level == 0;
+        return !isEmpty() && level == 0;
     }
 }

@@ -33,7 +33,7 @@ public final class VanillaInventory {
     }
 
     public int firstEmpty() {
-        for (int i = 0; i < slots.size(); i++) if (slots.get(i).empty()) return i;
+        for (int i = 0; i < slots.size(); i++) if (slots.get(i).isEmpty()) return i;
         return -1;
     }
 
