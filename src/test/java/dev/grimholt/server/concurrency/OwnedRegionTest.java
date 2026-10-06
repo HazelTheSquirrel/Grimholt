@@ -46,6 +46,23 @@ class OwnedRegionTest {
     }
 
     @Test
+    void failedHandoffDoesNotStrandFollowingWork() {
+        var tasks = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
+        var region = new OwnedRegion(new RegionKey(java.util.UUID.randomUUID(), 0, 0), 4, tasks::add);
+        var value = new AtomicInteger();
+        try {
+            region.execute(() -> { throw new AssertionError("boom"); });
+            region.execute(value::incrementAndGet);
+            assertEquals(2, tasks.size());
+            tasks.remove().run();
+            tasks.remove().run();
+            assertEquals(1, value.get());
+        } finally {
+            region.close();
+        }
+    }
+
+    @Test
     void closedRegionRejectsNewWork() {
         var region = new OwnedRegion(new RegionKey(java.util.UUID.randomUUID(), 0, 0), 1, task -> {});
         region.close();
