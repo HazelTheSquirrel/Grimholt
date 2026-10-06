@@ -1101,3 +1101,37 @@ Every phase must be evaluated using this checklist.
 **Before declaring a change finished, attack the change as if it were broken.**
 
 **If the architecture, API boundary, concurrency model, dependency boundary or failure behavior is unclear, do not hide the uncertainty with code. Resolve it first.**
+
+
+---
+
+# 11. Execution status — 2026-10-07
+
+The remaining implementation work was executed directly on main and reviewed against the mandatory controls.
+
+## Verified by CI
+- Gradle 9.8.0
+- JDK 25
+- clean test suite
+- assemble
+
+## Implemented foundations
+- independent Grimholt plugin API
+- plugin dependency graph and lifecycle
+- bounded scheduler
+- player/world/command/event/service adapters
+- Minestom 26.2 bootstrap boundary
+- atomic persistence primitive
+- health/security/metrics foundations
+- compatibility, security and performance documentation
+- example public-API plugin
+
+## Explicit release blockers
+These are not silently marked complete:
+- full vanilla 26.2 mechanics parity has not been proven
+- online-mode authentication has not been enabled/proven
+- vanilla world-generation parity has not been proven
+- 500-1000 player benchmark evidence does not yet exist
+- release-candidate gate therefore remains blocked
+
+See docs/PHASE-2-8-REVIEW.md and docs/COMPATIBILITY.md for the detailed evidence boundary.
