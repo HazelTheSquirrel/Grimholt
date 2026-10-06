@@ -1,6 +1,6 @@
 [versions]
 java = "25"
-gradle = "9.7"
+gradle = "9.8.0"
 minestom = "2026.10.05-26.2"
 slf4j = "2.0.20"
 slf4jSimple = "2.0.20"
