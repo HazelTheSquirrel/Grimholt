@@ -30,3 +30,4 @@ Never declare a phase complete merely because the code compiles. Each phase must
 Before every implementation change, follow `docs/MASTER-WORKPLAN.md`. It is the mandatory pre-change and post-change engineering checklist.
 
 See `docs/MASTER-WORKPLAN.md`, `docs/COMPATIBILITY.md` and `docs/ARCHITECTURE.md`.
+
