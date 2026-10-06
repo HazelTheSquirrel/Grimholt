@@ -10,6 +10,7 @@ public final class VanillaTickEngine {
     private final BlockTickScheduler<BlockPos> scheduledBlocks;
     private long tickCount;
     private Consumer<Phase> phaseObserver = phase -> {};
+    private Consumer<BlockPos> scheduledBlockTickHandler = pos -> {};
 
     public VanillaTickEngine(VanillaWorldState world, int maxScheduledBlockTicks) {
         this.world = Objects.requireNonNull(world, "world");
@@ -18,6 +19,10 @@ public final class VanillaTickEngine {
 
     public void onPhase(Consumer<Phase> observer) {
         phaseObserver = Objects.requireNonNull(observer, "observer");
+    }
+
+    public void onScheduledBlockTick(Consumer<BlockPos> handler) {
+        scheduledBlockTickHandler = Objects.requireNonNull(handler, "handler");
     }
 
     public long tickCount() { return tickCount; }
@@ -30,7 +35,7 @@ public final class VanillaTickEngine {
         tickCount++;
 
         phaseObserver.accept(Phase.SCHEDULED_BLOCKS);
-        scheduledBlocks.runDue(tickCount, pos -> { /* block behavior is supplied by the owning subsystem */ });
+        scheduledBlocks.runDue(tickCount, scheduledBlockTickHandler);
 
         phaseObserver.accept(Phase.RANDOM_TICKS);
         phaseObserver.accept(Phase.ENTITIES);
