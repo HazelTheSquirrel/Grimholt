@@ -2,6 +2,7 @@ package dev.grimholt.server.minestom;
 import dev.grimholt.server.api.GrimholtServerImpl;
 import dev.grimholt.server.api.MinestomPlayer;
 import dev.grimholt.server.event.*;
+import dev.grimholt.server.metrics.MetricsRegistry;
 import dev.grimholt.server.config.GrimholtConfig;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
@@ -21,12 +22,13 @@ public final class MinestomAdapter {
   if(server!=null)throw new IllegalStateException("Minestom adapter already initialized");
   MinecraftServer initialized=MinecraftServer.init(new Auth.Offline()); server=initialized;
   try{
+   var metrics=api.services().require(MetricsRegistry.class);
    overworld=MinecraftServer.getInstanceManager().createInstanceContainer(DimensionType.OVERWORLD);
    overworld.enableAutoChunkLoad(true); api.addWorld(overworld);
    var events=MinecraftServer.getGlobalEventHandler();
    events.addListener(AsyncPlayerConfigurationEvent.class,e->{e.setSpawningInstance(overworld);e.getPlayer().setRespawnPoint(new Pos(0,64,0));});
-   events.addListener(PlayerSpawnEvent.class,e->{if(e.isFirstSpawn()){var p=new MinestomPlayer(e.getPlayer());api.addPlayer(e.getPlayer());api.events().post(new PlayerJoinEvent(p));}});
-   events.addListener(PlayerDisconnectEvent.class,e->{var p=new MinestomPlayer(e.getPlayer());api.events().post(new PlayerQuitEvent(p));api.removePlayer(e.getPlayer().getUuid());});
+   events.addListener(PlayerSpawnEvent.class,e->{if(e.isFirstSpawn()){var p=new MinestomPlayer(e.getPlayer());api.addPlayer(e.getPlayer());metrics.joined();api.events().post(new PlayerJoinEvent(p));}});
+   events.addListener(PlayerDisconnectEvent.class,e->{var p=new MinestomPlayer(e.getPlayer());metrics.quit();api.events().post(new PlayerQuitEvent(p));api.removePlayer(e.getPlayer().getUuid());});
    initialized.start(config.socketAddress());
   }catch(RuntimeException|Error failure){overworld=null;server=null;try{MinecraftServer.stopCleanly();}catch(RuntimeException|Error cleanup){failure.addSuppressed(cleanup);}throw failure;}
  }
