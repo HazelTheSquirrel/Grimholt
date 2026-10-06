@@ -11,7 +11,6 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.player.*;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.anvil.AnvilLoader;
-import net.minestom.server.property.ServerProperties;
 import net.minestom.server.world.DimensionType;
 
 import java.nio.file.Path;
@@ -73,7 +72,7 @@ public final class MinestomAdapter {
         System.setProperty("minestom.dispatcher-threads", Integer.toString(config.dispatcherThreads()));
         System.setProperty("minestom.chunk-view-distance", Integer.toString(config.viewDistance()));
         System.setProperty("minestom.entity-view-distance", Integer.toString(config.viewDistance()));
-        System.setProperty("minestom.player-packet-queue-size", "1000");
+        System.setProperty("minestom.packet-queue-size", "1000");
     }
 
     private boolean reserve(UUID uuid, int limit) {
