@@ -61,6 +61,7 @@ public final class MinestomAdapter {
                 });
             }
             initialized.start(config.socketAddress());
+            if (api != null) api.bindTickScheduler(task -> MinecraftServer.getSchedulerManager().scheduleNextTick(task));
         } catch (RuntimeException | Error failure) {
             overworld = null; server = null; admitted.clear(); admittedPlayers.set(0);
             try { MinecraftServer.stopCleanly(); } catch (RuntimeException | Error cleanup) { failure.addSuppressed(cleanup); }
