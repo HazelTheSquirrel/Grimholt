@@ -1,80 +1,59 @@
-const entrance = document.querySelector('#entrance');
-const shell = document.querySelector('#site-shell');
-const enterButton = document.querySelector('#enter-tavern');
 const audio = document.querySelector('#tavern-audio');
-const audioToggle = document.querySelector('#audio-toggle');
-const audioStatus = document.querySelector('#audio-status');
+const toggle = document.querySelector('#audio-toggle');
+const playerToggle = document.querySelector('#player-toggle');
+const status = document.querySelector('#audio-status');
+const playerLabel = document.querySelector('#player-label');
 const volume = document.querySelector('#audio-volume');
 
-const storageKey = 'grimholt-audio-volume';
+const storageKey = 'grimholt-volume';
 
-const updateAudioButton = (playing) => {
-    audioStatus.textContent = playing ? 'Musik an' : 'Musik aus';
-    audioToggle.setAttribute('aria-pressed', String(playing));
+const setState = (on) => {
+    status.textContent = on ? 'Klang an' : 'Klang aus';
+    playerLabel.textContent = on ? 'Klang ausschalten' : 'Klang einschalten';
+    toggle.classList.toggle('is-on', on);
+    toggle.setAttribute('aria-pressed', String(on));
+    playerToggle.setAttribute('aria-pressed', String(on));
 };
 
 const setVolume = (value) => {
     audio.volume = Number(value);
     volume.value = String(value);
-
-    try {
-        localStorage.setItem(storageKey, String(value));
-    } catch {
-        // Local storage can be disabled; the player still works normally.
-    }
+    try { localStorage.setItem(storageKey, String(value)); } catch {}
 };
 
 const restoreVolume = () => {
     try {
-        const saved = localStorage.getItem(storageKey);
-        if (saved !== null && Number.isFinite(Number(saved))) {
-            return Math.min(1, Math.max(0, Number(saved)));
-        }
+        const value = Number(localStorage.getItem(storageKey));
+        return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.28;
     } catch {
-        // Ignore storage errors.
+        return 0.28;
     }
-
-    return 0.28;
 };
 
-const playAudio = async () => {
-    try {
-        await audio.play();
-        updateAudioButton(true);
-    } catch {
-        updateAudioButton(false);
+const toggleAudio = async () => {
+    if (audio.paused) {
+        try {
+            await audio.play();
+            setState(true);
+        } catch {
+            setState(false);
+        }
+        return;
     }
+    audio.pause();
+    setState(false);
 };
 
 setVolume(restoreVolume());
+setState(false);
 
-enterButton.addEventListener('click', async () => {
-    entrance.classList.add('is-hidden');
-    shell.classList.add('is-visible');
-    shell.setAttribute('aria-hidden', 'false');
-    await playAudio();
-});
-
-audioToggle.addEventListener('click', async () => {
-    if (audio.paused) {
-        await playAudio();
-        return;
-    }
-
-    audio.pause();
-    updateAudioButton(false);
-});
-
+toggle.addEventListener('click', toggleAudio);
+playerToggle.addEventListener('click', toggleAudio);
 volume.addEventListener('input', (event) => {
     setVolume(event.target.value);
-
-    if (Number(event.target.value) === 0) {
-        updateAudioButton(false);
-    } else if (!audio.paused) {
-        updateAudioButton(true);
-    }
+    if (Number(event.target.value) === 0 && !audio.paused) setState(false);
 });
 
-audio.addEventListener('play', () => updateAudioButton(true));
-audio.addEventListener('pause', () => updateAudioButton(false));
-audio.addEventListener('error', () => updateAudioButton(false));
+audio.addEventListener('play', () => setState(true));
+audio.addEventListener('pause', () => setState(false));
+audio.addEventListener('error', () => setState(false));
