@@ -1,53 +1,40 @@
 # Grimholt
 
-Eine atmosphärische Webpräsenz für Rollenspiel, LARP und Minecraft-Projekte.
+Atmosphärische Webanwendung für Rollenspiel, LARP und Minecraft.
 
 ## Stack
-
 - Nginx auf Port 80
 - PHP 8.1+
 - Native CSS
 - Vanilla JavaScript (ES6+)
 - JSON statt Datenbank
 
-## Struktur
+## Funktionen
+- Taverne-Betreten-Overlay als sauberer Autoplay-Gate für Hintergrundmusik
+- Responsive Chronik, Abenteuer und Werkstatt
+- Minecraft-Serverbereich mit JSON-Konfiguration
+- API-Endpunkt `/api/server-status.php` für die spätere Serveranbindung
+- Kein Framework und keine Datenbank
 
-- `index.php` – Startseite
-- `assets/css/style.css` – Gestaltung
-- `assets/js/tavern.js` – Eintritt & Musiksteuerung
-- `assets/audio/tavern.mp3` – lokale Hintergrundmusik (nicht enthalten)
-- `data/lore.json` – Chronik
-- `data/projects.json` – Projekte
+## Minecraft-Anbindung
+
+Die Konfiguration liegt in `data/server.json`. Mit `enabled: true` prüft der Status-Endpunkt zunächst, ob der konfigurierte TCP-Port erreichbar ist.
+
+Wichtig: Das ist bewusst nur ein Connectivity-Check. Für echten Minecraft-Status (MOTD, Version, Spielerzahl) kann später das Java-Server-Status-Protokoll oder eine eigene Bridge ergänzt werden. So wird heute nichts vorgetäuscht, was der Server noch nicht liefert.
+
+## Musik
+
+Lege eine rechtlich passende Datei als `assets/audio/tavern.mp3` ab. Die Wiedergabe beginnt erst nach „Taverne betreten“.
 
 ## Lokaler Betrieb
 
-Nginx sollte den Projektordner als Document Root verwenden und PHP über PHP-FPM ausführen.
-
-Die Audiodatei muss aus Lizenzgründen separat unter `assets/audio/tavern.mp3` abgelegt werden.
-
-## Nginx
+Nginx-Root auf `/var/www/grimholt` setzen und `nginx/grimholt.conf` als Serverblock verwenden. Danach PHP-FPM 8.1 aktivieren und Nginx neu laden.
 
 Beispiel:
-
-```nginx
-server {
-    listen 80;
-    server_name grimholt.local;
-
-    root /var/www/grimholt;
-    index index.php;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/run/php/php8.1-fpm.sock;
-    }
-
-    location ~ /\. {
-        deny all;
-    }
-}
+```bash
+sudo ln -s /var/www/grimholt/nginx/grimholt.conf /etc/nginx/sites-enabled/grimholt
+sudo nginx -t
+sudo systemctl reload nginx
 ```
+
+Für den lokalen Namen kann `grimholt.local` in `/etc/hosts` auf `127.0.0.1` zeigen.
