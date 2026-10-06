@@ -18,7 +18,7 @@ dependencies {
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)
     testImplementation(libs.junit)
-    testRuntimeOnly(libs.junitPlatformLauncher)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
 }
 
 tasks.withType<JavaCompile>().configureEach {
