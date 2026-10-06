@@ -1,28 +1,44 @@
 package dev.grimholt.server.vanilla;
 
+/**
+ * State machine for the 26.4 Freezing effect.
+ *
+ * <p>The state deliberately exposes damage timing without performing entity
+ * mutation. The owning entity system decides how damage and leather protection
+ * are applied.</p>
+ */
 public final class FreezingState {
-    public static final int MAX_TICKS = 140;
-    private int ticks;
-    private boolean active;
+    public static final int FREEZE_THRESHOLD_TICKS = 140;
+    public static final int DAMAGE_INTERVAL_TICKS = 40;
+
+    private int remainingTicks;
+    private int frozenTicks;
 
     public void apply(int durationTicks) {
         if (durationTicks < 0) throw new IllegalArgumentException("durationTicks must be non-negative");
-        active = true;
-        ticks = Math.max(ticks, durationTicks);
+        remainingTicks = Math.max(remainingTicks, durationTicks);
     }
 
-    public void tick() {
-        if (ticks > 0) ticks--;
-        if (ticks == 0) active = false;
-    }
+    public boolean active() { return remainingTicks > 0; }
+    public int remainingTicks() { return remainingTicks; }
+    public int frozenTicks() { return frozenTicks; }
+    public boolean fullyFrozen() { return frozenTicks >= FREEZE_THRESHOLD_TICKS; }
 
-    public boolean active() { return active; }
-    public int remainingTicks() { return ticks; }
-    public boolean shouldShake() { return active; }
-    public boolean shouldDamage() { return active && ticks <= 0; }
+    /**
+     * Advances one game tick and returns whether a freezing damage pulse is due.
+     */
+    public boolean tick() {
+        if (!active()) {
+            frozenTicks = 0;
+            return false;
+        }
+        remainingTicks--;
+        frozenTicks++;
+        return fullyFrozen() && (frozenTicks - FREEZE_THRESHOLD_TICKS) % DAMAGE_INTERVAL_TICKS == 0;
+    }
 
     public void clear() {
-        ticks = 0;
-        active = false;
+        remainingTicks = 0;
+        frozenTicks = 0;
     }
 }
