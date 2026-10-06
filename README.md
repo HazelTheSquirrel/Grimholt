@@ -27,4 +27,6 @@ Never declare a phase complete merely because the code compiles. Each phase must
 5. dependency audit,
 6. a second adversarial review focused on failure modes.
 
-See `docs/ROADMAP.md` and `docs/ARCHITECTURE.md`.
+Before every implementation change, follow `docs/MASTER-WORKPLAN.md`. It is the mandatory pre-change and post-change engineering checklist.
+
+See `docs/MASTER-WORKPLAN.md`, `docs/ROADMAP.md` and `docs/ARCHITECTURE.md`.
