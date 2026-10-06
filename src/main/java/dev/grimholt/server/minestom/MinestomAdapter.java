@@ -11,6 +11,12 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.world.DimensionType;
 public final class MinestomAdapter {
  private MinecraftServer server; private InstanceContainer overworld;
+ public void start(GrimholtConfig config){
+  if(server!=null)throw new IllegalStateException("Minestom adapter already initialized");
+  MinecraftServer initialized=MinecraftServer.init(new Auth.Offline()); server=initialized;
+  try{initialized.start(config.socketAddress());}catch(RuntimeException|Error failure){server=null;try{MinecraftServer.stopCleanly();}catch(RuntimeException|Error cleanup){failure.addSuppressed(cleanup);}throw failure;}
+ }
+
  public void start(GrimholtConfig config,GrimholtServerImpl api){
   if(server!=null)throw new IllegalStateException("Minestom adapter already initialized");
   MinecraftServer initialized=MinecraftServer.init(new Auth.Offline()); server=initialized;
