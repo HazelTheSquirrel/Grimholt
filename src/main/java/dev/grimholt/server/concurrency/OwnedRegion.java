@@ -43,6 +43,9 @@ public final class OwnedRegion implements AutoCloseable {
     public RegionKey key() { return key; }
     public boolean closed() { return closed.get(); }
     public boolean ownedByCurrentThread() { return ownership.isOwnedByCurrentThread(); }
+
+    /** Fails fast when the current thread does not own this region. */
+    public void assertOwner() { ownership.assertOwner(); }
     public int pendingHandoffs() { synchronized (handoffs) { return handoffs.size(); } }
     public int failureCount() { return failureCount.get(); }
 
