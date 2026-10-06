@@ -22,7 +22,7 @@ public final class GrimholtServerImpl implements GrimholtServer {
   Objects.requireNonNull(c); Objects.requireNonNull(c.name());
   var n=new Command(c.name(),c.aliases()==null?new String[0]:c.aliases().toArray(String[]::new));
   n.setDefaultExecutor((sender,context)->{
-   String raw=context.getInput().trim(); String[] parts=raw.isEmpty()?new String[0]:raw.split("\\\\s+");
+   String raw=context.getInput().trim(); String[] parts=raw.isEmpty()?new String[0]:raw.split("\\s+");
    String[] args=parts.length<=1?new String[0]:java.util.Arrays.copyOfRange(parts,1,parts.length);
    c.execute(new MinestomCommandSender(sender),args);
   });
