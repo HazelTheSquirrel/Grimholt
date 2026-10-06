@@ -1,21 +1,34 @@
-# Compatibility and parity policy
+# Vanilla compatibility and parity
 
-Grimholt targets Minecraft 26.2 and uses Minestom internally for protocol, registry and low-level server facilities. This does not mean Bukkit/Paper/Folia compatibility, and no public Grimholt API exposes Minestom classes.
+Grimholt targets the released Minecraft Java Edition 26.2. The official 26.2 release is the behavioral target; Minestom protocol support is not treated as proof of vanilla behavior.
 
-## What is currently proven
-- Minecraft 26.2 protocol bootstrap through Minestom.
-- Offline authentication bootstrap for development/integration tests.
-- Player configuration, spawn and disconnect lifecycle.
-- A default overworld instance.
-- Independent plugin descriptors, dependency ordering, classloader isolation and lifecycle.
-- Independent Grimholt API interfaces for players, worlds, commands, events, services and scheduling.
-- Atomic persistence primitive and bounded asynchronous scheduler.
+## Current evidence
 
-## Explicitly not claimed yet
-- Full vanilla gameplay/mechanics parity with the official 26.2 server.
-- Online-mode authentication parity.
-- Vanilla world generation parity.
-- Complete redstone/fluid/AI/raid/villager/combat edge-case parity.
-- 500-1000 player benchmark results on representative production hardware.
+| Area | Status | Evidence |
+|---|---|---|
+| 26.2 protocol transport | Implemented | Minestom 26.2 integration |
+| Online/offline authentication selection | Implemented in bootstrap | Grimholt config selects online or offline authentication |
+| Configurable parallel entity/chunk dispatcher | Implemented | Grimholt configures Minestom dispatcher threads before initialization |
+| Anvil world persistence | Wired | 26.2 AnvilLoader with explicit dimension |
+| Independent Grimholt plugin API | Implemented foundation | Public API contains no Minestom or SLF4J types |
+| Plugin discovery/dependency/lifecycle | Implemented foundation | Descriptor validation, ordering, classloader cleanup |
+| Vanilla world generation | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned vanilla world generation |
+| Vanilla physics/fluids/redstone | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
+| Vanilla entities/AI/villagers/raids | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
+| Vanilla containers/crafting/combat | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
+| Datapacks/loot/advancements/scoreboards parity | NOT IMPLEMENTED/PROVEN | Requires targeted 26.2 data and behavior coverage |
+| 500-1000 player capacity | NOT PROVEN | Benchmark evidence does not exist yet |
 
-A feature is only marked compatible after an executable test or benchmark demonstrates it. Minestom delegation is implementation detail, not evidence of vanilla parity.
+## Non-negotiable rule
+
+A feature is only marked Implemented after executable tests demonstrate it. Minestom delegation is an implementation mechanism, never parity evidence.
+
+## Threading audit references
+
+Minestom already partitions tickable entities across a configurable number of tick threads. Its dispatcher thread setting defaults to one, so Grimholt must configure it explicitly for the multithreaded target.
+
+Paper/Folia region ownership was consulted only as an architectural reference: region-owned state, explicit cross-region scheduling, and no assumption of a single global plugin thread. Grimholt does not depend on Paper/Folia and does not expose their APIs.
+
+## Vanilla reference
+
+Minecraft Java Edition 26.2 is the behavioral source of truth. Mechanics that cannot be established from protocol tests alone require a vanilla/reference-server comparison suite and focused regression tests. Paper may be used temporarily as an implementation-reading aid, never as a runtime dependency or API target.
