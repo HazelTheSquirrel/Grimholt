@@ -87,12 +87,20 @@ public final class OwnedRegion implements AutoCloseable {
                 }
             }
         });
-        drainScheduled.set(false);
         boolean reschedule;
         synchronized (handoffs) {
             reschedule = !handoffs.isEmpty() && !closed.get();
+            if (!reschedule) drainScheduled.set(false);
         }
-        if (reschedule) scheduleDrain();
+        if (reschedule) {
+            try {
+                nextTickExecutor.accept(this::tick);
+            } catch (RuntimeException | Error failure) {
+                drainScheduled.set(false);
+                synchronized (handoffs) { handoffs.clear(); }
+                throw failure;
+            }
+        }
     }
 
     private void scheduleDrain() {
