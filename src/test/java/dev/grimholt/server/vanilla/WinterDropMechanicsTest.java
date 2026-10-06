@@ -15,7 +15,7 @@ class WinterDropMechanicsTest {
     @Test
     void freezingStateTracksDuration() {
         FreezingState state = new FreezingState();
-        state.apply(3);
+        state.apply(200);
         assertTrue(state.active());
         assertFalse(state.tick());
         for (int i = 1; i < FreezingState.FREEZE_THRESHOLD_TICKS; i++) {
