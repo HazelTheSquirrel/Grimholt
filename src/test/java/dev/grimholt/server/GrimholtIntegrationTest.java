@@ -11,15 +11,15 @@ class GrimholtIntegrationTest {
         Grimholt server=new Grimholt();
         Path config=tempDir.resolve("grimholt.properties");
         java.nio.file.Files.writeString(config,
-                "config-version=2\\n"+
-                "bind-address=127.0.0.1\\n"+
-                "port=0\\n"+
-                "online-mode=false\\n"+
-                "max-players=1000\\n"+
-                "dispatcher-threads=2\\n"+
-                "view-distance=10\\n"+
-                "simulation-distance=10\\n"+
-                "world-directory="+tempDir.resolve("world").toString().replace("\\\\","/")+"\\n");
+                "config-version=2\n"+
+                "bind-address=127.0.0.1\n"+
+                "port=0\n"+
+                "online-mode=false\n"+
+                "max-players=1000\n"+
+                "dispatcher-threads=2\n"+
+                "view-distance=10\n"+
+                "simulation-distance=10\n"+
+                "world-directory="+tempDir.resolve("world").toString().replace("\\","/")+"\n");
         try { server.start(config); assertEquals(dev.grimholt.server.lifecycle.LifecycleState.RUNNING,server.state()); }
         finally { server.stop(); }
         assertEquals(dev.grimholt.server.lifecycle.LifecycleState.STOPPED,server.state());
