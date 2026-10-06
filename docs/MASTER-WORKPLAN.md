@@ -1136,3 +1136,37 @@ This section supersedes historical phase-review documents. The repository delibe
 6. Benchmark only after correctness gates pass.
 
 Paper/Folia is allowed only as an implementation-reading reference for concurrency/ownership questions. It is never a dependency, compatibility target or public API.
+
+
+## 17. Snapshot-first execution rule — 2026-10-07
+
+The behavioral source of truth is now **Minecraft Java Edition 26.4 Snapshot 3**.
+
+The project intentionally separates:
+- **behavior/data reference:** latest official vanilla snapshot;
+- **runtime/protocol substrate:** the newest Minestom version that Grimholt can actually consume.
+
+This prevents Minestom's current version ceiling from forcing Grimholt to implement older gameplay semantics.
+
+### Required implementation order from this point
+
+1. Build a deterministic vanilla-reference harness and snapshot data baseline.
+2. Audit Minestom facilities that can be consumed without modifying Minestom.
+3. Establish Grimholt-owned tick ownership and cross-owner handoff primitives.
+4. Implement world/chunk state ownership on top of Minestom's dispatcher/instance facilities.
+5. Implement vanilla behavior in dependency order: player movement -> blocks/ticks/fluids -> items/containers -> entities/AI -> combat -> villagers/raids -> dimensions/portals -> world generation -> data packs/commands/registries.
+6. For every subsystem, compare observable behavior against the current vanilla snapshot reference.
+7. Expand the Grimholt Plugin API only after the corresponding server capability has a stable ownership contract.
+8. Run adversarial concurrency tests after every subsystem.
+9. Run CI after every logical change; a failed run blocks further phase advancement until repaired.
+10. Only after correctness gates pass, run the 50/100/250/500/750/1000-player benchmark matrix.
+
+### Minestom rule
+
+Minestom source is never modified by Grimholt. If Minestom already provides the required transport, registry, chunk, instance, entity, scheduling or persistence facility, Grimholt consumes it behind its own boundary. Missing vanilla behavior is implemented in Grimholt.
+
+### Snapshot rule
+
+The latest official snapshot is allowed to move the behavioral target forward. Runtime support is only advanced when the Minestom substrate actually supports the corresponding protocol/runtime safely.
+
+Paper/Folia remains permitted only as a temporary implementation-reading reference for concurrency ownership questions, never as a dependency or API target.
