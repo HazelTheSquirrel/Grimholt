@@ -9,7 +9,7 @@ import java.nio.file.Path;
 public final class Grimholt {
  private final Lifecycle lifecycle=new Lifecycle(); private final ConfigLoader configLoader=new ConfigLoader(); private final MinestomAdapter minestom=new MinestomAdapter();
  private final DefaultEventBus events=new DefaultEventBus(); private final DefaultServiceRegistry services=new DefaultServiceRegistry(); private final BoundedScheduler scheduler=new BoundedScheduler(4,1024);
- private final GrimholtServerImpl api=new GrimholtServerImpl(lifecycle,events,scheduler,services,null); private final PluginBoundary plugins=new PluginBoundary(api,scheduler,events,services); private GrimholtConfig config;
+ private final GrimholtServerImpl api=new GrimholtServerImpl(lifecycle,events,scheduler,services); private final PluginBoundary plugins=new PluginBoundary(api,scheduler,events,services); private GrimholtConfig config;
  public Grimholt(){api.attachPluginManager(plugins);}
  public static void main(String[] args){Path configPath=args.length==0?Path.of("grimholt.properties"):Path.of(args[0]);Grimholt server=new Grimholt();Runtime.getRuntime().addShutdownHook(new Thread(server::stop,"Grimholt-Shutdown"));server.start(configPath);}
  public synchronized void start(Path configPath){
