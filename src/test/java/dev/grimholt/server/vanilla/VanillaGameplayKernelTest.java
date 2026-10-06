@@ -14,9 +14,9 @@ class VanillaGameplayKernelTest {
     @Test void fluidsSpreadOnlyIntoEmptyCells() {
         VanillaChunk c=new VanillaChunk(0,0); c.load(); BlockPos p=new BlockPos(0,64,0);
         c.setFluid(p,new VanillaFluidState("minecraft:water",0,false));
+        c.setBlock(new BlockPos(-1,64,0),BlockState.of("minecraft:stone"));
         new VanillaFluidEngine().tick(c,p);
         assertFalse(c.fluid(new BlockPos(1,64,0)).isEmpty());
-        c.setBlock(new BlockPos(-1,64,0),BlockState.of("minecraft:stone"));
         assertTrue(c.fluid(new BlockPos(-1,64,0)).isEmpty());
     }
     @Test void gameRuntimeAdvancesWorldSystems() {
