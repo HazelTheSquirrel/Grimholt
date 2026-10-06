@@ -39,7 +39,7 @@ public final class Grimholt {
             try { plugins.stop(); } catch (Throwable cleanupFailure) { failure.addSuppressed(cleanupFailure); }
             try { minestom.stop(); } catch (Throwable cleanupFailure) { failure.addSuppressed(cleanupFailure); }
             Logging.failure(failure);
-            throw failure;
+            throwUnchecked(failure);
         }
     }
 
@@ -63,7 +63,16 @@ public final class Grimholt {
         }
         lifecycle.stopped();
         Logging.stopped();
-        if (failure != null) { Logging.failure(failure); throw failure; }
+        if (failure != null) {
+            Logging.failure(failure);
+            throwUnchecked(failure);
+        }
+    }
+
+    private static void throwUnchecked(Throwable failure) {
+        if (failure instanceof RuntimeException exception) throw exception;
+        if (failure instanceof Error error) throw error;
+        throw new IllegalStateException("Grimholt lifecycle operation failed", failure);
     }
 
     public LifecycleState state() { return lifecycle.state(); }
