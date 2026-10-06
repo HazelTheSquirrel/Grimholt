@@ -53,7 +53,7 @@ class OwnedRegionTest {
         try {
             region.execute(() -> { throw new AssertionError("boom"); });
             region.execute(value::incrementAndGet);
-            assertEquals(2, tasks.size());
+            assertEquals(1, tasks.size());
             tasks.remove().run();
             assertEquals(1, value.get());
         } finally {
