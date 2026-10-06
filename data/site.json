@@ -1,0 +1,1 @@
+{"name":"Grimholt","description":"Eine schlichte Fantasy-Chronik im Geist einer alten Taverne.","stack":{"backend":"PHP 8.1+","frontend":["Native CSS","Vanilla JavaScript ES6+"],"data":"JSON","server":"Nginx auf Port 80"}}

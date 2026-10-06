@@ -1,3 +1,5 @@
-Lege hier die gewünschte, rechtlich passende MP3-Datei als tavern.mp3 ab.
+# Musik
 
-Die Website startet die Musik bewusst erst nach dem Klick auf „Taverne betreten“, damit die Browser-Autoplay-Sperre sauber umgangen wird.
+Lege die Taverne-Musik als `tavern.mp3` in diesen Ordner.
+
+Die Wiedergabe startet erst nach **„Taverne betreten“**, damit moderne Browser-Autoplay-Regeln eingehalten werden.
