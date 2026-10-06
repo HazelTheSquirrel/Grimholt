@@ -24,6 +24,8 @@ class VanillaRegionManagerTest {
             runtime.tick();
             assertEquals(1, chunk.ticker().tickCount());
         });
+        assertEquals(1, queue.size());
+        queue.remove().run();
 
         assertEquals(1, manager.regionCount());
         assertNull(failure.get());
