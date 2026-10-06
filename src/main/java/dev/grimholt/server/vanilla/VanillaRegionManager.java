@@ -42,8 +42,8 @@ public final class VanillaRegionManager implements AutoCloseable {
     }
 
     public void closeRegion(UUID worldId, int regionX, int regionZ) {
-        OwnedRegion owner = regions.region(worldId, regionX * RegionManager.CHUNKS_PER_REGION,
-                regionZ * RegionManager.CHUNKS_PER_REGION);
+        OwnedRegion owner = regions.find(worldId, regionX, regionZ);
+        if (owner == null) return;
         VanillaRegionRuntime runtime = runtimes.remove(owner);
         if (runtime != null) runtime.close();
         regions.closeRegion(worldId, regionX, regionZ);
