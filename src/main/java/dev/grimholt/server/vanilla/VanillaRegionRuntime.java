@@ -53,11 +53,18 @@ public final class VanillaRegionRuntime implements AutoCloseable {
 
     @Override
     public void close() {
-        owner.run(() -> {
+        Runnable cleanup = () -> {
             chunks.values().forEach(VanillaChunk::unload);
             chunks.clear();
             tickers.clear();
-        });
+        };
+        if (owner.closed()) {
+            cleanup.run();
+        } else if (owner.ownedByCurrentThread()) {
+            cleanup.run();
+        } else {
+            owner.execute(cleanup);
+        }
     }
 
     private static long key(int x, int z) {
