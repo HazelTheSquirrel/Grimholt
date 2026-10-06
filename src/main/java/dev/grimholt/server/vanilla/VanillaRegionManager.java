@@ -41,6 +41,17 @@ public final class VanillaRegionManager implements AutoCloseable {
         return regions.regionCount();
     }
 
+    /** Schedules one deterministic gameplay tick for every currently live region. */
+    public void tickAll() {
+        for (VanillaRegionRuntime runtime : runtimes.values()) {
+            try {
+                runtime.owner().execute(runtime::tick);
+            } catch (java.util.concurrent.RejectedExecutionException ignored) {
+                // Region shutdown races are intentionally harmless.
+            }
+        }
+    }
+
     public void closeRegion(UUID worldId, int regionX, int regionZ) {
         OwnedRegion owner = regions.find(worldId, regionX, regionZ);
         if (owner == null) return;

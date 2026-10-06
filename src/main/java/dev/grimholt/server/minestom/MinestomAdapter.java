@@ -17,12 +17,14 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import dev.grimholt.server.vanilla.VanillaRegionManager;
 
 public final class MinestomAdapter {
     private MinecraftServer server;
     private InstanceContainer overworld;
     private final AtomicInteger admittedPlayers = new AtomicInteger();
     private final java.util.Set<UUID> admitted = ConcurrentHashMap.newKeySet();
+    private VanillaRegionManager vanillaRegions;
 
     public void start(GrimholtConfig config) { start(config, null); }
 
@@ -40,6 +42,9 @@ public final class MinestomAdapter {
                         new AnvilLoader(worldPath, DimensionType.OVERWORLD.key()));
                 overworld.enableAutoChunkLoad(true);
                 api.addWorld(overworld);
+                vanillaRegions = new VanillaRegionManager(4096,
+                        task -> MinecraftServer.getSchedulerManager().scheduleNextTick(task),
+                        failure -> api.logger().error("Vanilla region task failed", failure));
                 var events = MinecraftServer.getGlobalEventHandler();
                 events.addListener(AsyncPlayerConfigurationEvent.class, e -> {
                     if (!reserve(e.getPlayer().getUuid(), config.maxPlayers())) {
@@ -61,9 +66,13 @@ public final class MinestomAdapter {
                 });
             }
             initialized.start(config.socketAddress());
-            if (api != null) api.bindTickScheduler(task -> MinecraftServer.getSchedulerManager().scheduleNextTick(task));
+            if (api != null) {
+                api.bindTickScheduler(task -> MinecraftServer.getSchedulerManager().scheduleNextTick(task));
+                scheduleVanillaTick();
+            }
         } catch (RuntimeException | Error failure) {
-            overworld = null; server = null; admitted.clear(); admittedPlayers.set(0);
+            if (vanillaRegions != null) vanillaRegions.close();
+            vanillaRegions = null; overworld = null; server = null; admitted.clear(); admittedPlayers.set(0);
             try { MinecraftServer.stopCleanly(); } catch (RuntimeException | Error cleanup) { failure.addSuppressed(cleanup); }
             throw failure;
         }
@@ -93,7 +102,18 @@ public final class MinestomAdapter {
         try {
             if (overworld != null) { overworld.saveInstance().join(); overworld.saveChunksToStorage().join(); }
             MinecraftServer.stopCleanly();
-        } finally { overworld = null; server = null; admitted.clear(); admittedPlayers.set(0); }
+        } finally {
+            if (vanillaRegions != null) vanillaRegions.close();
+            vanillaRegions = null; overworld = null; server = null; admitted.clear(); admittedPlayers.set(0);
+        }
     }
+    private void scheduleVanillaTick() {
+        MinecraftServer.getSchedulerManager().scheduleNextTick(() -> {
+            VanillaRegionManager regions = vanillaRegions;
+            if (regions != null) regions.tickAll();
+            if (server != null && MinecraftServer.isStarted()) scheduleVanillaTick();
+        });
+    }
+
     public boolean isStarted() { return server != null && MinecraftServer.isStarted(); }
 }
