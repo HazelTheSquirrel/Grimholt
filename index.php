@@ -2,8 +2,8 @@
 declare(strict_types=1);
 
 $siteTitle = 'Grimholt';
-$intro = 'Eine Stadt, die man nicht findet. Man landet darin.';
-$yearMark = 'MMXXVI';
+$intro = 'Eine Stadt zwischen dem, was erzählt wird, und dem, was wirklich dort geschieht.';
+$year = '2026';
 
 function loadJson(string $path): array
 {
@@ -19,8 +19,8 @@ function loadJson(string $path): array
 $lore = loadJson(__DIR__ . '/data/lore.json');
 $entries = $lore['entries'] ?? [];
 $firstEntry = $entries[0] ?? [
-    'title' => 'Die erste Seite',
-    'text' => 'Noch ist die Seite leer. Manche Geschichten beginnen erst, wenn jemand die Tür hinter sich schließt.'
+    'title' => 'Grimholt',
+    'text' => 'Die Stadt beginnt dort, wo der Weg aufhört.'
 ];
 ?>
 <!doctype html>
@@ -28,159 +28,130 @@ $firstEntry = $entries[0] ?? [
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#11120f">
-    <meta name="description" content="Grimholt — eine eigenwillige Fantasy-Welt zwischen alten Mauern, Gerüchten und nächtlichen Straßen.">
+    <meta name="theme-color" content="#d9ddd5">
+    <meta name="description" content="Grimholt — eine Stadt zwischen dem, was erzählt wird, und dem, was wirklich dort geschieht.">
     <title><?= htmlspecialchars($siteTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Libre+Baskerville:wght@400;700&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
-<div class="grain" aria-hidden="true"></div>
+<div class="page">
 
-<div class="entrance" id="entrance">
-    <div class="entrance__door" aria-hidden="true">
-        <span class="entrance__light"></span>
-        <span class="entrance__handle"></span>
-    </div>
-    <div class="entrance__content">
-        <p class="micro">ARCHIVE / <?= $yearMark ?></p>
-        <div class="entrance__sigil">G</div>
-        <p class="entrance__statement">Du hast Grimholt gefunden.<br>Oder Grimholt dich.</p>
-        <button class="enter-link" id="enter-tavern" type="button">
-            <span>eintreten</span>
-            <span>↳</span>
-        </button>
-        <p class="entrance__hint">Ton wird nach dem Eintreten aktiviert</p>
-    </div>
-</div>
-
-<div class="site-shell" id="site-shell" aria-hidden="true">
-    <header class="site-header">
-        <a class="brand" href="#anfang" aria-label="Grimholt">
-            <span class="brand__mark">G</span>
-            <span>GRIMHOLT</span>
-        </a>
-
-        <div class="header-status">
-            <span class="status-dot"></span>
-            <span>nachts geöffnet</span>
-        </div>
-
-        <nav class="main-nav" aria-label="Hauptnavigation">
-            <a href="#anfang">01</a>
-            <a href="#chronik">02</a>
-            <a href="#taverne">03</a>
+    <header class="topbar">
+        <a class="logo" href="#top" aria-label="Grimholt Startseite">G.</a>
+        <span class="topbar__place">GRIMHOLT / NACHTSTADT</span>
+        <nav aria-label="Hauptnavigation">
+            <a href="#stadt">Stadt</a>
+            <a href="#nacht">Nacht</a>
+            <a href="#klang">Klang</a>
         </nav>
+        <button class="sound-button" id="audio-toggle" type="button" aria-pressed="false">
+            <span class="sound-button__dot"></span>
+            <span id="audio-status">Klang aus</span>
+        </button>
     </header>
 
-    <main>
-        <section class="hero" id="anfang">
-            <div class="hero__rail">
-                <span>G</span>
-                <span>R</span>
-                <span>I</span>
-                <span>M</span>
-                <span>H</span>
-                <span>O</span>
-                <span>L</span>
-                <span>T</span>
-            </div>
-
-            <div class="hero__copy">
-                <p class="micro">Feldnotiz 01 / kein verlässlicher Weg</p>
+    <main id="top">
+        <section class="hero">
+            <div class="hero__intro">
+                <p class="eyebrow">01 — Eingang</p>
                 <h1>Grim<span>holt</span></h1>
-                <p class="hero__lead"><?= htmlspecialchars($intro, ENT_QUOTES, 'UTF-8') ?></p>
-                <a class="hero__link" href="#chronik">
-                    <span>öffne die aufzeichnung</span>
-                    <span class="hero__link-line"></span>
-                    <span>↓</span>
-                </a>
+                <p class="hero__claim"><?= htmlspecialchars($intro, ENT_QUOTES, 'UTF-8') ?></p>
+                <a class="arrow-link" href="#stadt">Entdecken <span>↘</span></a>
             </div>
 
-            <div class="hero__coordinates" aria-hidden="true">
-                <span>51° N</span>
-                <span>17° O</span>
-                <span>?</span>
+            <div class="hero-art" aria-hidden="true">
+                <div class="hero-art__moon"></div>
+                <div class="hero-art__glow"></div>
+                <div class="hero-art__hill hero-art__hill--back"></div>
+                <div class="hero-art__hill hero-art__hill--front"></div>
+                <div class="tower tower--one"><i></i><b></b></div>
+                <div class="tower tower--two"><i></i><b></b></div>
+                <div class="tower tower--three"><i></i><b></b></div>
+                <div class="hero-art__windows"></div>
+                <div class="hero-art__mist"></div>
             </div>
 
-            <div class="hero__shape hero__shape--one" aria-hidden="true"></div>
-            <div class="hero__shape hero__shape--two" aria-hidden="true"></div>
+            <div class="hero__meta">
+                <span>52° 12' N</span>
+                <span>10° 33' O</span>
+                <span><?= $year ?></span>
+            </div>
         </section>
 
-        <section class="chronicle" id="chronik">
-            <div class="chronicle__index">
-                <span>02</span>
-                <span>aufzeichnung</span>
+        <section class="intro-band" id="stadt">
+            <p class="eyebrow">02 — Die Stadt</p>
+            <div class="intro-band__copy">
+                <h2>Man kommt nicht<br><em>hierher.</em> Man bleibt.</h2>
+                <p><?= htmlspecialchars((string) ($firstEntry['text'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
-
-            <div class="chronicle__main">
-                <div class="chronicle__heading">
-                    <p class="micro">Was überliefert wurde</p>
-                    <h2><?= htmlspecialchars((string) ($firstEntry['title'] ?? 'Die erste Seite'), ENT_QUOTES, 'UTF-8') ?></h2>
-                </div>
-
-                <div class="chronicle__body">
-                    <p class="chronicle__dropcap"><?= htmlspecialchars(mb_substr((string) ($firstEntry['text'] ?? ''), 0, 1), ENT_QUOTES, 'UTF-8') ?></p>
-                    <p><?= htmlspecialchars((string) ($firstEntry['text'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-                    <p class="chronicle__aside">Man erzählt sich Dinge, wenn es draußen dunkel wird. Die meisten werden am Morgen anders erzählt.</p>
-                </div>
-            </div>
-
-            <aside class="chronicle__stamp">
-                <span>UNGEPRÜFT</span>
-                <strong>NOCH NICHT<br>VERGESSEN</strong>
-                <small>ARCHIV 001</small>
-            </aside>
         </section>
 
-        <section class="night" aria-labelledby="night-title">
-            <div class="night__sky" aria-hidden="true">
-                <span class="star star--a"></span>
-                <span class="star star--b"></span>
-                <span class="star star--c"></span>
-                <span class="moon"></span>
-                <span class="horizon"></span>
-            </div>
+        <section class="city-grid" aria-label="Impressionen aus Grimholt">
+            <div class="city-grid__label">ORTE / MOMENTE</div>
+            <article class="scene scene--street">
+                <div class="scene__image" aria-hidden="true">
+                    <span class="lamp lamp--one"></span>
+                    <span class="lamp lamp--two"></span>
+                    <span class="street__building street__building--one"></span>
+                    <span class="street__building street__building--two"></span>
+                </div>
+                <div class="scene__caption"><strong>Die schmale Straße</strong><span>Wenn es regnet, glänzt sie wie schwarzes Glas.</span></div>
+            </article>
+            <article class="scene scene--tower">
+                <div class="scene__image" aria-hidden="true"><span class="tower-card__moon"></span><span class="tower-card__spire"></span><span class="tower-card__wall"></span></div>
+                <div class="scene__caption"><strong>Über den Dächern</strong><span>Kein Fenster ist zu hoch für ein Gerücht.</span></div>
+            </article>
+            <article class="scene scene--fire">
+                <div class="scene__image" aria-hidden="true"><span class="fire"></span><span class="fire__smoke"></span></div>
+                <div class="scene__caption"><strong>Licht im Süden</strong><span>Manchmal ist noch jemand wach.</span></div>
+            </article>
+        </section>
+
+        <section class="night" id="nacht">
+            <div class="night__number">03</div>
             <div class="night__copy">
-                <p class="micro">03 / nach mitternacht</p>
-                <h2 id="night-title">Hier endet<br>die Karte.</h2>
-                <p>Was dahinter liegt, gehört nicht auf eine Startseite.</p>
+                <p class="eyebrow">Nach Sonnenuntergang</p>
+                <h2>Die Nacht<br><em>gehört dir.</em></h2>
+                <p>Keine Karte. Keine Führung. Nur die Straßen, die Geräusche hinter den Fenstern und die Frage, warum du noch immer weitergehst.</p>
             </div>
+            <div class="night__moon" aria-hidden="true"></div>
+            <div class="night__line" aria-hidden="true"></div>
         </section>
 
-        <section class="tavern" id="taverne">
-            <div class="tavern__index">03</div>
-            <div class="tavern__copy">
-                <p class="micro">soundtrack</p>
-                <h2>Bleib noch.</h2>
-                <p>Ein Feuer irgendwo hinter der Wand. Schritte im Flur. Der Rest ist deine Angelegenheit.</p>
+        <section class="sound-section" id="klang">
+            <div>
+                <p class="eyebrow">04 — Atmosphäre</p>
+                <h2>Mach es<br><em>laut.</em></h2>
             </div>
-
-            <div class="audio-dock">
-                <button class="audio-dock__toggle" id="audio-toggle" type="button" aria-pressed="true">
-                    <span class="audio-dock__glyph">◉</span>
-                    <span id="audio-status">ton an</span>
-                </button>
-                <label class="audio-dock__volume" for="audio-volume">
-                    <span>volume</span>
-                    <input id="audio-volume" type="range" min="0" max="1" step="0.01" value="0.28" aria-label="Musiklautstärke">
-                </label>
+            <div class="sound-section__copy">
+                <p>Ein wenig Regen. Holz, das arbeitet. Stimmen, die durch eine Wand kommen. Der Klang von Grimholt ist nicht Hintergrundmusik.</p>
+                <div class="player">
+                    <button class="player__button" id="player-toggle" type="button" aria-pressed="false">
+                        <span id="player-label">Klang einschalten</span>
+                        <span>→</span>
+                    </button>
+                    <label>
+                        <span>Lautstärke</span>
+                        <input id="audio-volume" type="range" min="0" max="1" step="0.01" value="0.28" aria-label="Lautstärke">
+                    </label>
+                </div>
             </div>
         </section>
     </main>
 
-    <footer class="site-footer">
-        <span>GRIMHOLT / <?= $yearMark ?></span>
-        <span>keine legende. nur spuren.</span>
+    <footer class="footer">
+        <span>GRIMHOLT</span>
+        <span>Eine Stadt. Mehr nicht.</span>
+        <span><?= $year ?></span>
     </footer>
 </div>
 
 <audio id="tavern-audio" loop preload="metadata">
     <source src="/assets/audio/tavern.mp3" type="audio/mpeg">
 </audio>
-
 <script src="/assets/js/app.js" defer></script>
 </body>
 </html>
