@@ -1,6 +1,8 @@
 package dev.grimholt.server.network;
 
 import dev.grimholt.server.command.GrimholtCommandDispatcher;
+import dev.grimholt.server.vanilla.VanillaProtocol26_2;
+import dev.grimholt.server.vanilla.VanillaProtocolCodec;
 import java.io.*;
 import java.util.*;
 
