@@ -16,7 +16,7 @@ public final class VanillaWorldModel {
     private long seed;
     private VanillaGameplaySystems.Dimension dimension=VanillaGameplaySystems.Dimension.OVERWORLD;
 
-    public VanillaWorldModel(UUID worldId){this.worldId=Objects.requireNonNull(worldId);}
+    public VanillaWorldModel(UUID worldId){this.worldId=Objects.requireNonNull(worldId);blockStates.registerCoreSchemas();}
     public UUID worldId(){return worldId;}
     public VanillaWorldState blocks(){return legacyBlocks;}
     public VanillaBlockRegistry blockRegistry(){return blockRegistry;}
