@@ -11,7 +11,7 @@ public final class VanillaProtocolCodec {
     private VanillaProtocolCodec() {}
 
     public static String readString(InputStream in, int maxBytes) throws IOException {
-        int length = VanillaProtocol26_4S3.readVarInt(in);
+        int length = VanillaProtocol26_2.readVarInt(in);
         if (length < 0 || length > maxBytes) throw new IOException("Invalid string length: " + length);
         byte[] bytes = in.readNBytes(length);
         if (bytes.length != length) throw new EOFException("Truncated string");
@@ -23,7 +23,7 @@ public final class VanillaProtocolCodec {
     public static void writeString(OutputStream out, String value, int maxBytes) throws IOException {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         if (bytes.length > maxBytes) throw new IOException("String exceeds byte limit");
-        VanillaProtocol26_4S3.writeVarInt(out, bytes.length);
+        VanillaProtocol26_2.writeVarInt(out, bytes.length);
         out.write(bytes);
     }
 
@@ -41,7 +41,7 @@ public final class VanillaProtocolCodec {
     }
 
     public static byte[] readByteArray(InputStream in, int maxBytes) throws IOException {
-        int length = VanillaProtocol26_4S3.readVarInt(in);
+        int length = VanillaProtocol26_2.readVarInt(in);
         if (length < 0 || length > maxBytes) throw new IOException("Invalid byte array length: " + length);
         byte[] data = in.readNBytes(length);
         if (data.length != length) throw new EOFException("Truncated byte array");
@@ -50,7 +50,7 @@ public final class VanillaProtocolCodec {
 
     public static void writeByteArray(OutputStream out, byte[] data, int maxBytes) throws IOException {
         if (data.length > maxBytes) throw new IOException("Byte array exceeds limit");
-        VanillaProtocol26_4S3.writeVarInt(out, data.length);
+        VanillaProtocol26_2.writeVarInt(out, data.length);
         out.write(data);
     }
 }
