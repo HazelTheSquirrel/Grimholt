@@ -60,7 +60,7 @@ public final class VanillaServerKernel implements AutoCloseable {
         if (!worlds.containsKey(worldId)) {
             throw new IllegalArgumentException("Unknown world: " + worldId);
         }
-        return regions.region(worldId, chunkX, chunkZ);
+        return regions.region(worldId, worlds.get(worldId), chunkX, chunkZ);
     }
 
     public void execute(UUID worldId, int chunkX, int chunkZ, Runnable action) {
