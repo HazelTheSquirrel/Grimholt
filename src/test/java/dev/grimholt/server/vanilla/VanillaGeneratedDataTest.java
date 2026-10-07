@@ -23,11 +23,11 @@ final class VanillaGeneratedDataTest {
         int names = VanillaGeneratedRegistryLoader.loadEntityAndItemNames(data, items, entities, itemIds, entityIds);
         assertTrue(names > 1000, "Expected the full item/entity registry reports");
 
-        assertTrue(blocks.contains("minecraft:ice"));
-        assertTrue(blocks.contains("minecraft:packed_ice"));
-        assertTrue(items.contains("minecraft:ice_ball"));
-        assertTrue(items.contains("minecraft:ice_crystal"));
-        assertTrue(entities.contains("minecraft:frostbite"));
+        assertTrue(blocks.contains("minecraft:sulfur"));
+        assertTrue(blocks.contains("minecraft:cinnabar"));
+        assertTrue(items.contains("minecraft:sulfur"));
+        assertTrue(items.contains("minecraft:sulfur_cube_bucket"));
+        assertTrue(entities.contains("minecraft:sulfur_cube"));
 
         VanillaPacketCatalog packets = VanillaPacketCatalog.load(data);
         assertTrue(packets.size() > 100, "Expected the complete 26.2 packet catalog");
