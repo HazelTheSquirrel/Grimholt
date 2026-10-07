@@ -1,4 +1,10 @@
+import java.net.URI
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 
 plugins {
     java
@@ -128,11 +134,11 @@ val generateVanilla26_4S3 by tasks.registering {
 
     doLast {
         val version = "26.4-snapshot-3"
-        val manifest = java.net.URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").toURL().readText()
-        val versionPattern = """\{"id"\s*:\s*"${java.util.regex.Pattern.quote(version)}"[^{}]*"url"\s*:\s*"([^"]+)"[^{}]*\}"""
+        val manifest = URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").toURL().readText()
+        val versionPattern = """\{"id"\s*:\s*"${Pattern.quote(version)}"[^{}]*"url"\s*:\s*"([^"]+)"[^{}]*\}"""
         val versionUrl = Regex(versionPattern).find(manifest)?.groupValues?.get(1)
             ?: error("Mojang version manifest does not contain " + version)
-        val versionJson = java.net.URI(versionUrl).toURL().readText()
+        val versionJson = URI(versionUrl).toURL().readText()
         val server = Regex("""\"server\"\s*:\s*\{[^{}]*\"sha1\"\s*:\s*\"([0-9a-f]{40})\"[^{}]*\"url\"\s*:\s*\"([^\"]+)\"""")
             .find(versionJson) ?: error("Mojang version metadata does not contain a server download for " + version)
         val expectedSha1 = server.groupValues[1]
@@ -141,11 +147,11 @@ val generateVanilla26_4S3 by tasks.registering {
         val downloadPath = downloadDir.get().asFile.toPath().resolve("server-" + version + ".jar")
         Files.createDirectories(downloadPath.parent)
         if (!Files.isRegularFile(downloadPath)) {
-            java.net.URI(jarUrl).toURL().openStream().use { input ->
-                Files.copy(input, downloadPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            URI(jarUrl).toURL().openStream().use { input ->
+                Files.copy(input, downloadPath, StandardCopyOption.REPLACE_EXISTING)
             }
         }
-        val actualSha1 = java.security.MessageDigest.getInstance("SHA-1")
+        val actualSha1 = MessageDigest.getInstance("SHA-1")
             .digest(Files.readAllBytes(downloadPath))
             .joinToString("") { "%02x".format(it) }
         check(actualSha1 == expectedSha1) {
@@ -154,14 +160,14 @@ val generateVanilla26_4S3 by tasks.registering {
 
         val workDir = downloadDir.get().asFile.toPath().resolve("reports-work")
         Files.createDirectories(workDir)
-        val javaExecutable = java.nio.file.Path.of(
+        val javaExecutable = Path.of(
             System.getProperty("java.home"), "bin",
             if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
         )
         val process = ProcessBuilder(
             javaExecutable.toString(), "-DbundlerMainClass=net.minecraft.data.Main", "-jar", downloadPath.toAbsolutePath().toString(), "--all", "--output", workDir.resolve("generated").toString()
         ).directory(workDir.toFile()).redirectErrorStream(true).start()
-        check(process.waitFor(180, java.util.concurrent.TimeUnit.SECONDS)) {
+        check(process.waitFor(180, TimeUnit.SECONDS)) {
             "Mojang " + version + " report generation timed out"
         }
         check(process.exitValue() == 0) {
