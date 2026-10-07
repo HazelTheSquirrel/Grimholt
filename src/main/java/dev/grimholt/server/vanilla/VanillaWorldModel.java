@@ -7,6 +7,7 @@ public final class VanillaWorldModel {
     private final UUID worldId;
     private final VanillaWorldState legacyBlocks = new VanillaWorldState();
     private final VanillaBlockRegistry blockRegistry = new VanillaBlockRegistry();
+    private final VanillaBlockStateRegistry blockStates = new VanillaBlockStateRegistry(blockRegistry);
     private final VanillaItemRegistry itemRegistry = new VanillaItemRegistry();
     private final VanillaEntityRegistry entityRegistry = new VanillaEntityRegistry();
     private final Map<Long,VanillaChunk> chunks = new HashMap<>();
@@ -19,6 +20,7 @@ public final class VanillaWorldModel {
     public UUID worldId(){return worldId;}
     public VanillaWorldState blocks(){return legacyBlocks;}
     public VanillaBlockRegistry blockRegistry(){return blockRegistry;}
+    public VanillaBlockStateRegistry blockStates(){return blockStates;}
     public VanillaItemRegistry itemRegistry(){return itemRegistry;}
     public VanillaEntityRegistry entityRegistry(){return entityRegistry;}
     public long seed(){return seed;}
