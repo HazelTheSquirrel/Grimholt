@@ -233,7 +233,7 @@ val vanillaReferenceSmoke26_4S3 by tasks.registering {
         ).directory(work.toFile()).redirectErrorStream(true).start()
         val output = StringBuilder()
         val reader = Thread {
-            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\\n') } }
+            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\n') } }
         }
         reader.start()
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90)
