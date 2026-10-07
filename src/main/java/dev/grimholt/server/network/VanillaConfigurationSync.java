@@ -5,7 +5,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Owns the 26.2 configuration bootstrap. It deliberately consumes Grimholt's
+ * Owns the 26.4-snapshot-3 configuration bootstrap. It deliberately consumes Grimholt's
  * generated reports rather than importing another server's packet classes.
  */
 public final class VanillaConfigurationSync {
