@@ -29,9 +29,9 @@ This is similar in spirit to established Minecraft server fork ecosystems: Grimh
 
 Grimholt is currently in the **transition from Minestom-based implementation to source-fork architecture**.
 
-The repository already contains a Grimholt-owned server kernel, world model, vanilla systems, plugin API, version-pinned Minecraft 26.2 reference tooling and a growing parity implementation. The current build still consumes `net.minestom:minestom` as an implementation dependency. That dependency is explicitly transitional and is being removed through the fork migration on `test`.
+The repository contains a Grimholt-owned server kernel, world model, vanilla systems, plugin API, version-pinned Minecraft 26.2 reference tooling, native command/network/connection layers and a growing parity implementation. The build no longer consumes `net.minestom:minestom`.
 
-The target is to progressively bring the required Minestom source into Grimholt, establish Grimholt ownership of the runtime, replace the remaining Minestom-owned server boundaries, and ultimately remove the external Minestom dependency.
+The fork migration has now crossed the runtime boundary: Grimholt owns command dispatch, network connections, packet framing, player lifecycle, world/chunk transport, entity lifecycle and region ticking. The external Minestom runtime dependency has been removed from Gradle and the old Minestom adapter/package has been deleted.
 
 **Minecraft parity is not complete yet.** The current behavioral target is Minecraft Java 26.2 (protocol `776`, world data version `4903`, Java 25).
 
@@ -55,7 +55,7 @@ See `docs/MASTER-WORKPLAN.md`, `docs/COMPATIBILITY.md`, `docs/ARCHITECTURE.md` a
 
 ## Versioning rule
 
-Minecraft and the Grimholt/Minestom fork baseline are intentionally managed as controlled, explicit updates. A Minecraft update changes the pinned `VanillaSnapshot` and regenerated reference data. Minestom-derived source changes are integrated deliberately into Grimholt rather than being silently inherited from a Maven version. Grimholt may develop against Minecraft releases and snapshots independently of Minestom's release cadence.
+Minecraft and the Grimholt/Minestom fork baseline are intentionally managed as controlled, explicit updates. A Minecraft update changes the pinned `VanillaSnapshot` and regenerated reference data. Grimholt-owned implementation changes are integrated deliberately rather than being silently inherited from a Maven version. Grimholt may develop against Minecraft releases and snapshots independently of Minestom's release cadence.
 
 The exact Minecraft target currently pinned is **26.2** (protocol `776`, world data version `4903`, Java 25). The generated Mojang reports are treated as reference input, not as a replacement for Grimholt-owned behavior.
 
