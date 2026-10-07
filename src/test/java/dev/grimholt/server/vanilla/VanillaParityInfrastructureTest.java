@@ -59,7 +59,7 @@ class VanillaParityInfrastructureTest {
     }
 
     @Test void differentialHarnessRequiresRealReference(){
-        assertThrows(IllegalStateException.class,()->VanillaDifferentialHarness.requireReference("GRIMHOLT_MC_26_4_S3_JAR"));
+        assertThrows(IllegalStateException.class,()->VanillaDifferentialHarness.requireReference("GRIMHOLT_MC_26_2_JAR"));
     }
 
     static final class IntValues {
