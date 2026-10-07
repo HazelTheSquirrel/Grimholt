@@ -16,10 +16,27 @@ public final class VanillaReferenceRunner26_4S3 {
 
     public VanillaReferenceRunner26_4S3(Path jar, Path workingDirectory) {
         this.jar = VanillaSnapshot26_4S3.requireReference(jar).jar();
+        verifySha1(this.jar);
         this.workingDirectory = Objects.requireNonNull(workingDirectory);
     }
 
     public Path jar() { return jar; }
+
+    private static void verifySha1(Path path) {
+        try (InputStream in = Files.newInputStream(path)) {
+            var digest = java.security.MessageDigest.getInstance("SHA-1");
+            byte[] buffer = new byte[8192];
+            for (int n; (n = in.read(buffer)) >= 0;) digest.update(buffer, 0, n);
+            String actual = java.util.HexFormat.of().formatHex(digest.digest());
+            if (!VanillaSnapshot26_4S3.SERVER_SHA1.equals(actual)) {
+                throw new IllegalArgumentException(
+                    "Reference jar SHA-1 mismatch: expected " +
+                    VanillaSnapshot26_4S3.SERVER_SHA1 + ", got " + actual);
+            }
+        } catch (IOException | java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Cannot verify 26.4-S3 reference jar", e);
+        }
+    }
 
     public Process start(String... arguments) throws IOException {
         Files.createDirectories(workingDirectory);
