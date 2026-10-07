@@ -47,8 +47,34 @@ public final class VanillaGeneratedRegistryLoader {
                                               VanillaEntityRegistry entities,
                                               VanillaRegistryIds itemIds,
                                               VanillaRegistryIds entityIds) {
-        Map<String,Object> report = VanillaJson.object(VanillaJson.parse(data.require("reports/registries.json")));
         int count = 0;
+
+        // items.json is generated from the same Mojang server.jar and contains
+        // authoritative stack limits, durability and default item components.
+        Optional<String> itemReport = data.read("reports/items.json");
+        if (itemReport.isPresent()) {
+            Map<String,Object> itemsReport = VanillaJson.object(VanillaJson.parse(itemReport.get()));
+            for (var entry : itemsReport.entrySet()) {
+                if (!(entry.getKey() instanceof String id) || !id.startsWith("minecraft:")) continue;
+                if (!(entry.getValue() instanceof Map<?,?> raw)) continue;
+                int stackSize = number(raw.get("max_stack_size"), number(raw.get("stack_size"), 64));
+                int maxDamage = number(raw.get("max_damage"), 0);
+                boolean edible = raw.containsKey("components") && String.valueOf(raw.get("components")).contains("minecraft:food");
+                Map<String,String> components = new LinkedHashMap<>();
+                if (raw.get("components") instanceof Map<?,?> componentMap) {
+                    for (var component : componentMap.entrySet()) {
+                        if (component.getKey() instanceof String key) {
+                            components.put(key, jsonString(component.getValue()));
+                        }
+                    }
+                }
+                items.registerAuthoritative(new VanillaItemDefinition(id, Math.max(1, Math.min(64, stackSize)),
+                        Math.max(0, maxDamage), edible, components));
+                count++;
+            }
+        }
+
+        Map<String,Object> report = VanillaJson.object(VanillaJson.parse(data.require("reports/registries.json")));
         for (var entry : report.entrySet()) {
             String registryId = entry.getKey();
             if (!(entry.getValue() instanceof Map<?,?> raw)) continue;
@@ -73,6 +99,23 @@ public final class VanillaGeneratedRegistryLoader {
         return count;
     }
 
+
+    private static int number(Object value, int fallback) {
+        return value instanceof Number n ? n.intValue() : fallback;
+    }
+
+    private static String jsonString(Object value) {
+        if (value == null) return "null";
+        if (value instanceof String s) return "\""+s.replace("\\\\","\\\\\\\\").replace("\"","\\\\\"")+" \"".trim();
+        if (value instanceof Boolean || value instanceof Number) return String.valueOf(value);
+        if (value instanceof List<?> list) return list.stream().map(VanillaGeneratedRegistryLoader::jsonString).collect(java.util.stream.Collectors.joining(",", "[", "]"));
+        if (value instanceof Map<?,?> map) {
+            return map.entrySet().stream().filter(e -> e.getKey() instanceof String)
+                    .map(e -> "\""+e.getKey()+"\":"+jsonString(e.getValue()))
+                    .collect(java.util.stream.Collectors.joining(",", "{", "}"));
+        }
+        return String.valueOf(value);
+    }
     private static Map<String,String> stringMap(Object value) {
         if (!(value instanceof Map<?,?> map)) return Map.of();
         Map<String,String> result = new LinkedHashMap<>();
