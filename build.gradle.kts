@@ -118,6 +118,10 @@ tasks.named("check") {
     dependsOn("dependencyAudit")
 }
 
+tasks.named("assemble") {
+    dependsOn(standaloneJar)
+}
+
 tasks.jar {
     manifest { attributes["Main-Class"] = application.mainClass.get() }
 }
