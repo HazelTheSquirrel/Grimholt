@@ -16,8 +16,12 @@ public final class VanillaRegionRuntime implements AutoCloseable {
     private final VanillaGameRuntime game;
 
     public VanillaRegionRuntime(OwnedRegion owner) {
+        this(owner, new VanillaWorldModel(owner.key().worldId()));
+    }
+
+    public VanillaRegionRuntime(OwnedRegion owner, VanillaWorldModel worldModel) {
         this.owner = Objects.requireNonNull(owner, "owner");
-        this.game = new VanillaGameRuntime(owner.key().worldId());
+        this.game = new VanillaGameRuntime(Objects.requireNonNull(worldModel, "worldModel"));
     }
 
     public OwnedRegion owner() { return owner; }
