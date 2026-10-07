@@ -100,3 +100,102 @@ tasks.named("check") {
 tasks.jar {
     manifest { attributes["Main-Class"] = application.mainClass.get() }
 }
+
+
+/*
+ * Exact Mojang 26.4 Snapshot 3 data/reference tooling.
+ */
+val generateVanilla26_4S3 by tasks.registering {
+    group = "vanilla"
+    description = "Download Mojang 26.4 Snapshot 3 and generate exact reports/data."
+    val outputDir = layout.buildDirectory.dir("generated-vanilla/26.4-snapshot-3")
+    val downloadDir = layout.buildDirectory.dir("vanilla-reference")
+    outputs.dir(outputDir)
+
+    doLast {
+        val version = "26.4-snapshot-3"
+        val manifest = java.net.URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").toURL().readText()
+        val versionPattern = "\\{[^{}]*\\"id\\"\\s*:\\s*\\"" + java.util.regex.Pattern.quote(version) +
+            "\\"[^{}]*\\"url\\"\\s*:\\s*\\"([^\\"]+)\\"[^{}]*\\}"
+        val versionUrl = Regex(versionPattern).find(manifest)?.groupValues?.get(1)
+            ?: error("Mojang version manifest does not contain " + version)
+        val versionJson = java.net.URI(versionUrl).toURL().readText()
+        val server = Regex("\\"server\\"\\s*:\\s*\\{[^{}]*\\"sha1\\"\\s*:\\s*\\"([0-9a-f]{40})\\"[^{}]*\\"url\\"\\s*:\\s*\\"([^\\"]+)\\"")
+            .find(versionJson) ?: error("Mojang version metadata does not contain a server download for " + version)
+        val expectedSha1 = server.groupValues[1]
+        val jarUrl = server.groupValues[2]
+
+        val downloadPath = downloadDir.get().asFile.toPath().resolve("server-" + version + ".jar")
+        Files.createDirectories(downloadPath.parent)
+        if (!Files.isRegularFile(downloadPath)) {
+            java.net.URI(jarUrl).toURL().openStream().use { input ->
+                Files.copy(input, downloadPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
+        val actualSha1 = java.security.MessageDigest.getInstance("SHA-1")
+            .digest(Files.readAllBytes(downloadPath))
+            .joinToString("") { "%02x".format(it) }
+        check(actualSha1 == expectedSha1) {
+            "SHA-1 mismatch for " + version + ": expected " + expectedSha1 + ", got " + actualSha1
+        }
+
+        val workDir = downloadDir.get().asFile.toPath().resolve("reports-work")
+        Files.createDirectories(workDir)
+        val javaExecutable = java.nio.file.Path.of(
+            System.getProperty("java.home"), "bin",
+            if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
+        )
+        val process = ProcessBuilder(
+            javaExecutable.toString(), "-jar", downloadPath.toAbsolutePath().toString(), "--reports"
+        ).directory(workDir.toFile()).redirectErrorStream(true).start()
+        val output = process.inputStream.readBytes().toString(Charsets.UTF_8)
+        check(process.waitFor(180, java.util.concurrent.TimeUnit.SECONDS)) {
+            "Mojang " + version + " report generation timed out"
+        }
+        check(process.exitValue() == 0) {
+            "Mojang " + version + " --reports failed (" + process.exitValue() + "): " + output
+        }
+
+        val out = outputDir.get().asFile.toPath()
+        if (Files.exists(out)) out.toFile().deleteRecursively()
+        Files.createDirectories(out)
+
+        java.util.zip.ZipFile(downloadPath.toFile()).use { zip ->
+            zip.entries().asSequence()
+                .filter { !it.isDirectory && (it.name.startsWith("data/") || it.name.startsWith("assets/")) }
+                .forEach { entry ->
+                    val target = out.resolve("jar/" + entry.name).normalize()
+                    Files.createDirectories(target.parent)
+                    zip.getInputStream(entry).use { input -> Files.copy(input, target) }
+                }
+        }
+
+        val reports = workDir.resolve("reports")
+        if (Files.isDirectory(reports)) {
+            reports.toFile().copyRecursively(out.resolve("reports").toFile(), overwrite = true)
+        }
+
+        out.resolve("manifest.properties").toFile().writeText(
+            "version=" + version + "\n" +
+            "protocol=1073742165\n" +
+            "worldDataVersion=5122\n" +
+            "dataPackVersion=123\n" +
+            "resourcePackVersion=100\n" +
+            "javaMajor=25\n" +
+            "serverSha1=" + expectedSha1 + "\n" +
+            "serverUrl=" + jarUrl + "\n"
+        )
+    }
+}
+
+val verifyVanilla26_4S3Reference by tasks.registering {
+    group = "verification"
+    description = "Verify that an operator supplied reference is exactly 26.4 Snapshot 3."
+    doLast {
+        val value = System.getenv("GRIMHOLT_MC_26_4_S3_JAR")
+            ?: error("Set GRIMHOLT_MC_26_4_S3_JAR to the real 26.4 Snapshot 3 server jar")
+        val jar = file(value)
+        check(jar.isFile()) { "Reference jar does not exist: " + jar }
+        println("Verified path for pinned Minecraft 26.4 Snapshot 3 reference: " + jar)
+    }
+}
