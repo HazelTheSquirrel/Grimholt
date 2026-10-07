@@ -125,11 +125,14 @@ tasks.jar {
 /*
  * Exact Mojang 26.4 Snapshot 3 data/reference tooling.
  */
+val vanillaGeneratedDir = layout.buildDirectory.dir("generated-vanilla/26.4-snapshot-3")
+val vanillaDownloadDir = layout.buildDirectory.dir("vanilla-reference")
+
 val generateVanilla26_4S3 by tasks.registering {
     group = "vanilla"
     description = "Download Mojang 26.4 Snapshot 3 and generate exact reports/data."
-    val outputDir = layout.buildDirectory.dir("generated-vanilla/26.4-snapshot-3")
-    val downloadDir = layout.buildDirectory.dir("vanilla-reference")
+    val outputDir = vanillaGeneratedDir
+    val downloadDir = vanillaDownloadDir
     outputs.dir(outputDir)
 
     doLast {
@@ -192,6 +195,70 @@ val generateVanilla26_4S3 by tasks.registering {
             "serverSha1=" + expectedSha1 + "\n" +
             "serverUrl=" + jarUrl + "\n"
         )
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    dependsOn(generateVanilla26_4S3)
+    from(vanillaGeneratedDir) {
+        into("vanilla/26.4-snapshot-3")
+    }
+}
+
+val vanillaReferenceSmoke26_4S3 by tasks.registering {
+    group = "verification"
+    description = "Boot the exact Mojang 26.4 Snapshot 3 server jar and verify a clean startup/shutdown."
+    dependsOn(generateVanilla26_4S3)
+    doLast {
+        val jar = vanillaDownloadDir.get().asFile.toPath().resolve("server-26.4-snapshot-3.jar")
+        check(Files.isRegularFile(jar)) { "Generated reference jar missing: " + jar }
+        val work = layout.buildDirectory.dir("vanilla-reference-smoke").get().asFile.toPath()
+        if (Files.exists(work)) work.toFile().deleteRecursively()
+        Files.createDirectories(work)
+        Files.writeString(work.resolve("eula.txt"), "eula=true\n")
+        Files.writeString(work.resolve("server.properties"),
+            "online-mode=false\n" +
+            "server-port=0\n" +
+            "server-ip=127.0.0.1\n" +
+            "enable-query=false\n" +
+            "enable-rcon=false\n" +
+            "spawn-protection=0\n")
+        val javaExecutable = Path.of(
+            System.getProperty("java.home"), "bin",
+            if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
+        )
+        val process = ProcessBuilder(
+            javaExecutable.toString(), "-Xms512M", "-Xmx2G",
+            "-jar", jar.toAbsolutePath().toString(), "--nogui"
+        ).directory(work.toFile()).redirectErrorStream(true).start()
+        val output = StringBuilder()
+        val reader = Thread {
+            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\\n') } }
+        }
+        reader.start()
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90)
+        var ready = false
+        while (System.nanoTime() < deadline && process.isAlive) {
+            val text = output.toString()
+            if (text.contains("Done (") || text.contains("For help, type \"help\"")) {
+                ready = true
+                break
+            }
+            Thread.sleep(250)
+        }
+        if (process.isAlive) {
+            process.outputStream.bufferedWriter().use { it.write("stop\\n"); it.flush() }
+            process.waitFor(15, TimeUnit.SECONDS)
+        }
+        if (!ready) {
+            process.destroyForcibly()
+            reader.join(2000)
+            error("26.4 Snapshot 3 reference server did not reach ready state. Output:\\n" + output)
+        }
+        reader.join(5000)
+        check(process.exitValue() == 0) {
+            "26.4 Snapshot 3 reference server exited with " + process.exitValue() + ":\\n" + output
+        }
     }
 }
 
