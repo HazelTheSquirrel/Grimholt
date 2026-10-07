@@ -121,6 +121,7 @@ public final class VanillaChunkWireCodec {
     private void writeSinglePalette(DataOutputStream out, int value) throws IOException {
         out.writeByte(0);
         VanillaProtocol26_2.writeVarInt(out, value);
+        VanillaProtocol26_2.writeVarInt(out, 0); // zero packed-data longs for a single-value palette
     }
 
     private void writeLightData(DataOutputStream out) throws IOException {
