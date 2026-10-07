@@ -28,7 +28,7 @@ class VanillaServerKernelTest {
             assertEquals(1, kernel.regionCount());
 
             kernel.execute(world, 0, 0, () -> region.chunk(0, 0).setBlock(
-                    new BlockPos(0, 64, 0), new BlockState("minecraft:stone")));
+                    new BlockPos(0, 64, 0), BlockState.of("minecraft:stone")));
 
             assertEquals("minecraft:stone",
                     kernel.region(world, 0, 0).chunk(0, 0)
