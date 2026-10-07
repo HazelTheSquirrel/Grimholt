@@ -25,5 +25,15 @@ jobs:
           gradle-version: "9.8.0"
       - name: Test
         run: gradle --no-daemon clean test
+      - name: Vanilla 26.4-S3 reference smoke test
+        run: gradle --no-daemon vanillaReferenceSmoke26_4S3
+
       - name: Assemble
         run: gradle --no-daemon assemble
+
+      - name: Upload standalone server JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: grimholt-server-standalone
+          path: build/libs/*-standalone.jar
+          if-no-files-found: error
