@@ -11,9 +11,8 @@ import java.util.function.Consumer;
 /**
  * Bounded, single-owner execution boundary for mutable region state.
  *
- * <p>Minestom remains the execution substrate. Grimholt owns the logical
- * ownership contract and uses this boundary to make cross-owner handoffs
- * explicit instead of allowing arbitrary threads to mutate region state.</p>
+ * <p>Grimholt owns the execution boundary. Cross-region handoffs are queued
+ * and executed only by the region owner; no external server runtime owns this state.</p>
  */
 public final class OwnedRegion implements AutoCloseable {
     private final RegionKey key;
