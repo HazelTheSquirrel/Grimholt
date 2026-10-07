@@ -10,11 +10,11 @@ final class VanillaGeneratedDataTest {
     @Test
     void exactSnapshotReportsArePresentAndAuthoritative() {
         VanillaGeneratedData data = new VanillaGeneratedData();
-        assertTrue(data.available(), "26.2 generated data must be part of the test/runtime artifact");
+        assertTrue(data.available(), "26.4-snapshot-3 generated data must be part of the test/runtime artifact");
 
         VanillaBlockRegistry blocks = new VanillaBlockRegistry();
         int states = VanillaGeneratedRegistryLoader.loadBlocks(data, blocks);
-        assertTrue(states > 1000, "Expected the full 26.2 block-state report");
+        assertTrue(states > 1000, "Expected the full 26.4-snapshot-3 block-state report");
 
         VanillaItemRegistry items = new VanillaItemRegistry();
         VanillaEntityRegistry entities = new VanillaEntityRegistry();
@@ -30,7 +30,7 @@ final class VanillaGeneratedDataTest {
         assertTrue(entities.contains("minecraft:sulfur_cube"));
 
         VanillaPacketCatalog packets = VanillaPacketCatalog.load(data);
-        assertTrue(packets.size() > 100, "Expected the complete 26.2 packet catalog");
+        assertTrue(packets.size() > 100, "Expected the complete 26.4-snapshot-3 packet catalog");
         assertTrue(packets.id(VanillaProtocol26_2.State.LOGIN,
                 VanillaProtocol26_2.Direction.SERVERBOUND, "minecraft:hello").isPresent());
         assertTrue(packets.id(VanillaProtocol26_2.State.PLAY,
