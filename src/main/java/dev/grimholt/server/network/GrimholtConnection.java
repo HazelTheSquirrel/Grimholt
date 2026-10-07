@@ -24,6 +24,9 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private final GrimholtPlayProtocol playProtocol = new GrimholtPlayProtocol();
     private final VanillaChunkWireCodec chunkCodec = new VanillaChunkWireCodec();
     private final Consumer<GrimholtConnection> closed;
+    private final boolean onlineMode;
+    private final GrimholtOnlineAuthentication authentication;
+    private volatile boolean authenticated;
     private final AtomicBoolean closing = new AtomicBoolean();
     private final int entityId = NEXT_ENTITY_ID.getAndIncrement();
     private final AtomicInteger nextTeleportId = new AtomicInteger(1);
@@ -35,13 +38,16 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     public GrimholtConnection(Socket socket, GrimholtServerImpl server, GrimholtCommandDispatcher commands,
                               VanillaPacketCatalog catalog, VanillaGeneratedData generated,
-                              VanillaServerKernel kernel, Consumer<GrimholtConnection> closed) throws IOException {
+                              VanillaServerKernel kernel, boolean onlineMode,
+                              Consumer<GrimholtConnection> closed) throws IOException {
         this.socket = Objects.requireNonNull(socket);
         this.server = Objects.requireNonNull(server);
         this.commands = Objects.requireNonNull(commands);
         this.catalog = Objects.requireNonNull(catalog);
         this.generated = Objects.requireNonNull(generated);
         this.kernel = Objects.requireNonNull(kernel);
+        this.onlineMode = onlineMode;
+        this.authentication = onlineMode ? new GrimholtOnlineAuthentication() : null;
         this.closed = Objects.requireNonNull(closed);
         this.transport = new GrimholtPacketTransport(socket, 2 * 1024 * 1024);
         this.configuration = new VanillaConfigurationSync(generated);
@@ -102,24 +108,66 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             ByteArrayInputStream in = new ByteArrayInputStream(frame.payload());
             username = VanillaProtocolCodec.readString(in, 16);
             if (username.isBlank()) throw new IOException("Empty username");
-            uuid = in.available() >= 16 ? VanillaProtocolCodec.readUuid(in)
-                    : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
             if (server.players().size() >= server.maxPlayers()) {
                 closeWithLoginDisconnect("Server is full.");
                 return;
             }
-            sendLoginSuccess();
+            if (onlineMode) {
+                sendEncryptionRequest();
+            } else {
+                uuid = in.available() >= 16 ? VanillaProtocolCodec.readUuid(in)
+                        : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+                authenticated = true;
+                sendLoginSuccess();
+            }
             return;
         }
 
         String name = packetName(VanillaProtocol26_2.State.LOGIN,
                 VanillaProtocol26_2.Direction.SERVERBOUND, frame.packetId()).orElse("");
+        if (name.contains("encryption_response")) {
+            if (!onlineMode || authenticated) throw new IOException("Unexpected encryption response");
+            handleEncryptionResponse(frame.payload());
+            return;
+        }
         if (name.contains("login_acknowledged")) {
+            if (!authenticated) throw new IOException("Login acknowledgement before authentication");
             state = ConnectionState.CONFIGURATION;
             sendConfigurationStart();
             return;
         }
         throw new IOException("Unsupported login packet: " + frame.packetId());
+    }
+
+    private void sendEncryptionRequest() throws IOException {
+        send(VanillaProtocol26_2.State.LOGIN, "minecraft:hello", out -> {
+            VanillaProtocolCodec.writeString(out, "", 20);
+            VanillaProtocolCodec.writeByteArray(out, authentication.publicKey(), 1024);
+            VanillaProtocolCodec.writeByteArray(out, authentication.verifyToken(), 16);
+            VanillaProtocolCodec.writeBoolean(out, true);
+        });
+    }
+
+    private void handleEncryptionResponse(byte[] payload) throws IOException {
+        try {
+            ByteArrayInputStream in = new ByteArrayInputStream(payload);
+            byte[] encryptedSecret = VanillaProtocolCodec.readByteArray(in, 512);
+            byte[] encryptedToken = VanillaProtocolCodec.readByteArray(in, 512);
+            byte[] secret = authentication.decryptRsa(encryptedSecret);
+            byte[] token = authentication.decryptRsa(encryptedToken);
+            if (!java.util.Arrays.equals(token, authentication.verifyToken()))
+                throw new IOException("Invalid Minecraft encryption verify token");
+            String serverId = authentication.serverIdDigest(secret);
+            GrimholtOnlineAuthentication.AuthenticatedProfile profile =
+                    authentication.verifyJoined(username, serverId);
+            uuid = profile.uuid();
+            username = profile.username();
+            transport.enableEncryption(secret);
+            authenticated = true;
+            sendLoginSuccess();
+        } catch (java.security.GeneralSecurityException e) {
+            throw new IOException("Invalid Minecraft encryption response", e);
+        }
     }
 
     private void sendLoginSuccess() throws IOException {
