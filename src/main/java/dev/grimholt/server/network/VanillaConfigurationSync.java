@@ -115,14 +115,18 @@ public final class VanillaConfigurationSync {
                 String registry = registryEntry.getKey();
                 Map<String,Integer> ids = registryIds(registry);
                 Map<String,List<String>> tags = registryEntry.getValue();
+                Map<String,List<String>> expanded = new LinkedHashMap<>();
+                for (String tagId : tags.keySet()) {
+                    expanded.put(tagId, resolveTag(tagId, tags, new LinkedHashSet<>()));
+                }
+
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 VanillaProtocolCodec.writeIdentifier(out, registry);
-                VanillaProtocol26_2.writeVarInt(out, tags.size());
-                for (var tag : tags.entrySet()) {
+                VanillaProtocol26_2.writeVarInt(out, expanded.size());
+                for (var tag : expanded.entrySet()) {
                     VanillaProtocolCodec.writeIdentifier(out, tag.getKey());
-                    List<Integer> resolved = new ArrayList<>();
+                    LinkedHashSet<Integer> resolved = new LinkedHashSet<>();
                     for (String id : tag.getValue()) {
-                        if (id.startsWith("#")) continue; // nested references are handled by vanilla fallback below
                         Integer numeric = ids.get(id);
                         if (numeric != null) resolved.add(numeric);
                     }
@@ -135,6 +139,26 @@ public final class VanillaConfigurationSync {
             throw new UncheckedIOException("Cannot encode 26.4 Update Tags", e);
         }
         return List.copyOf(packets);
+    }
+
+    private static List<String> resolveTag(String tagId,
+                                            Map<String,List<String>> tags,
+                                            Set<String> visiting) {
+        if (!visiting.add(tagId)) {
+            throw new IllegalStateException("Cyclic vanilla tag reference: " + visiting + " -> " + tagId);
+        }
+        LinkedHashSet<String> result = new LinkedHashSet<>();
+        for (String value : tags.getOrDefault(tagId, List.of())) {
+            if (value.startsWith("#")) {
+                String nested = value.substring(1);
+                if (!nested.contains(":")) nested = "minecraft:" + nested;
+                result.addAll(resolveTag(nested, tags, visiting));
+            } else {
+                result.add(value);
+            }
+        }
+        visiting.remove(tagId);
+        return List.copyOf(result);
     }
 
     private Map<String,Integer> registryIds(String registry) {
