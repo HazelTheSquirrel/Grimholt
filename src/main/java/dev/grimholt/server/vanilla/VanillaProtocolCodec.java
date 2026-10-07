@@ -92,6 +92,16 @@ public final class VanillaProtocolCodec {
     }
 
     /** Writes the network-NBT form: unnamed compound root, unlike disk NBT. */
+    public static byte[] writeNetworkNbtCompoundBytes(VanillaNbt.Tag compound) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            writeNetworkNbtCompound(out, compound);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public static void writeNetworkNbtCompound(OutputStream out, VanillaNbt.Tag compound) throws IOException {
         if (compound == null) { out.write(VanillaNbt.END); return; }
         if (compound.type() != VanillaNbt.COMPOUND) throw new IllegalArgumentException("Expected compound NBT");
