@@ -1142,6 +1142,35 @@ This section supersedes historical phase-review documents. The repository delibe
 Paper/Folia is allowed only as an implementation-reading reference for concurrency/ownership questions. It is never a dependency, compatibility target or public API.
 
 
+## Native 26.2 transport milestone — 2026-10-07
+
+The fork migration has now advanced from transport architecture into actual 26.2 wire implementation on `test`.
+
+Completed in this milestone:
+- Login acknowledgement gate before Configuration.
+- 26.2 Login Success with the new session UUID field.
+- Known Packs exchange.
+- Native Registry Data packet generation from Grimholt's checked-in vanilla reports.
+- Configuration finish/acknowledgement transition.
+- 26.2 Play Login payload including the 26.2 online-mode field.
+- Player Info Update bootstrap.
+- Initial player-position synchronization and teleport acknowledgement handling.
+- Serverbound movement/rotation handling.
+- Initial Level Chunk With Light serialization for all 24 sections and 26 lighting sections.
+- Native entity add/remove wire codecs.
+- Native protocol/chunk codec tests.
+- Initial region-owned chunk streaming through the Grimholt kernel.
+
+Still explicitly open:
+- Mojang online authentication/encryption.
+- Full registry inline-data/custom-data handling.
+- Complete world generation and non-empty chunk light propagation.
+- Full entity tracking/metadata/movement.
+- Inventory/item/component protocol.
+- Command tree synchronization.
+- Complete play packet parity.
+- Region-level adaptive scheduling/telemetry and later controller work.
+
 ## 17. Snapshot/update execution rule — 2026-10-07
 
 The active validated baseline is **Minecraft Java Edition 26.2**. Future official releases and snapshots may become Grimholt development targets as soon as their required protocol/runtime support can be implemented or integrated by Grimholt itself.
