@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -23,24 +23,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: "9.8.0"
-      - name: Materialize Mojang 26.4 snapshot 3 reference
+      - name: Verify Mojang 26.4 snapshot 3 reference
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p reference/minecraft/26.4
-          if [ ! -f reference/minecraft/26.4/server.jar ]; then
-            git fetch origin test
-            git checkout -B test origin/test
-            curl --fail --location --retry 3 \
-              -o reference/minecraft/26.4/server.jar \
-              https://piston-data.mojang.com/v1/objects/2d89c95c030e635387448f332961074ce1adbb4b/server.jar
-            echo "2d89c95c030e635387448f332961074ce1adbb4b  reference/minecraft/26.4/server.jar" | sha1sum --check -
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add reference/minecraft/26.4/server.jar
-            git commit -m "chore(reference): add Minecraft 26.4 snapshot 3 server jar"
-            git push origin HEAD:test
-          fi
+          test -f reference/minecraft/26.4/server.jar
+          echo "2d89c95c030e635387448f332961074ce1adbb4b  reference/minecraft/26.4/server.jar" | sha1sum --check -
+
       - name: Test
         run: gradle --no-daemon clean test
       - name: Vanilla 26.4 snapshot 3 reference smoke test
