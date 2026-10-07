@@ -1215,3 +1215,24 @@ The following concrete correctness gates are now implemented on top of the prior
 - [x] CI run 181 completed successfully on commit `3f10a8ce59fd30d828a816ab769fd72ad90fbbf7`.
 
 This checkpoint does **not** change the definition of full vanilla parity. The remaining mechanics and data systems listed above are still implementation work, not documentation placeholders.
+
+
+### Native fork continuation — 2026-10-07
+Implemented in the current `test` line:
+- native AES/CFB8 transport upgrade after login key exchange;
+- native 1024-bit RSA key exchange, verify-token validation and Mojang `hasJoined` session verification for online mode;
+- configured online/offline mode is propagated into network connections;
+- authoritative chunk-state serialization now consumes Grimholt block sections and emits heightmaps/paletted containers instead of an all-air placeholder;
+- deterministic Brigadier-compatible command tree synchronization;
+- protocol regression tests for NBT framing, AES transport and authentication primitives.
+
+Remaining parity gates before calling Grimholt a complete Minecraft fork:
+- full configuration registry NBT values/custom data packs;
+- exact vanilla terrain/noise/biome/structure generation and lighting;
+- complete player/entity tracking, metadata, attributes, interactions and combat;
+- complete inventory/item/component/container protocol and server-side transaction validation;
+- complete play/configuration/login packet surface including cookies, resource packs, transfer, compression and secure-chat semantics;
+- complete vanilla persistence/state migration compatibility;
+- exact redstone/fluids/block/entity behavior parity and exhaustive differential testing;
+- region scheduler ownership/telemetry hardening and adaptive controller integration;
+- release profiles for every supported 26.x version without external runtime dependencies.
