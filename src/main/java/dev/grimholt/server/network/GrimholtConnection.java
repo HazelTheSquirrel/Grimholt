@@ -23,6 +23,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private final VanillaConfigurationSync configuration;
     private final GrimholtPlayProtocol playProtocol = new GrimholtPlayProtocol();
     private final VanillaChunkWireCodec chunkCodec = new VanillaChunkWireCodec();
+    private final GrimholtCommandTreeWire commandTreeWire = new GrimholtCommandTreeWire();
     private final Consumer<GrimholtConnection> closed;
     private final boolean onlineMode;
     private final GrimholtOnlineAuthentication authentication;
@@ -219,6 +220,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                         0L, position, false))));
         send(VanillaProtocol26_2.State.PLAY, "minecraft:player_info_update",
                 out -> out.write(playProtocol.playerInfoAdd(uuid, username)));
+        send(VanillaProtocol26_2.State.PLAY, "minecraft:commands",
+                out -> out.write(commandTreeWire.encode(commands)));
         send(VanillaProtocol26_2.State.PLAY, "minecraft:game_event",
                 out -> out.write(playProtocol.startWaitingForChunks()));
         send(VanillaProtocol26_2.State.PLAY, "minecraft:set_default_spawn_position",
