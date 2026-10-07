@@ -14,8 +14,8 @@ public final class VanillaSnapshot26_2 {
     public static final String VERSION = "26.2";
     public static final int PROTOCOL = 776;
     public static final int WORLD_DATA_VERSION = 4_903;
-    public static final int DATA_PACK_VERSION = 107;
-    public static final int RESOURCE_PACK_VERSION = 88;
+    public static final String DATA_PACK_VERSION = "107.1";
+    public static final String RESOURCE_PACK_VERSION = "88";
     public static final int JAVA_MAJOR = 25;
     public static final String SERVER_SHA1 = "823e2250d24b3ddac457a60c92a6a941943fcd6a";
 
