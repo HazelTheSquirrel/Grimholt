@@ -146,34 +146,22 @@ val generateVanilla26_4S3 by tasks.registering {
             if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
         )
         val process = ProcessBuilder(
-            javaExecutable.toString(), "-jar", downloadPath.toAbsolutePath().toString(), "--reports"
+            javaExecutable.toString(), "-DbundlerMainClass=net.minecraft.data.Main", "-jar", downloadPath.toAbsolutePath().toString(), "--all", "--output", workDir.resolve("generated").toString()
         ).directory(workDir.toFile()).redirectErrorStream(true).start()
-        val output = process.inputStream.readBytes().toString(Charsets.UTF_8)
         check(process.waitFor(180, java.util.concurrent.TimeUnit.SECONDS)) {
             "Mojang " + version + " report generation timed out"
         }
         check(process.exitValue() == 0) {
-            "Mojang " + version + " --reports failed (" + process.exitValue() + "): " + output
+            "Mojang " + version + " --all failed (" + process.exitValue() + "): " + process.inputStream.readBytes().toString(Charsets.UTF_8)
         }
 
         val out = outputDir.get().asFile.toPath()
         if (Files.exists(out)) out.toFile().deleteRecursively()
         Files.createDirectories(out)
 
-        java.util.zip.ZipFile(downloadPath.toFile()).use { zip ->
-            zip.entries().asSequence()
-                .filter { !it.isDirectory && (it.name.startsWith("data/") || it.name.startsWith("assets/")) }
-                .forEach { entry ->
-                    val target = out.resolve("jar/" + entry.name).normalize()
-                    Files.createDirectories(target.parent)
-                    zip.getInputStream(entry).use { input -> Files.copy(input, target) }
-                }
-        }
-
-        val reports = workDir.resolve("reports")
-        if (Files.isDirectory(reports)) {
-            reports.toFile().copyRecursively(out.resolve("reports").toFile(), overwrite = true)
-        }
+        val generated = workDir.resolve("generated")
+        check(Files.isDirectory(generated)) { "Mojang data generator produced no generated directory" }
+        generated.toFile().copyRecursively(out.toFile(), overwrite = true)
 
         out.resolve("manifest.properties").toFile().writeText(
             "version=" + version + "\n" +
