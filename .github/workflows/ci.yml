@@ -29,15 +29,12 @@ jobs:
           set -euo pipefail
           test -f reference/minecraft/26.4/server.jar
           echo "2d89c95c030e635387448f332961074ce1adbb4b  reference/minecraft/26.4/server.jar" | sha1sum --check -
-
       - name: Test
-        run: gradle --no-daemon clean test
+        run: gradle --no-daemon --no-configuration-cache clean test
       - name: Vanilla 26.4 snapshot 3 reference smoke test
         run: gradle --no-daemon --no-configuration-cache vanillaReferenceSmoke26_4
-
       - name: Assemble
-        run: gradle --no-daemon assemble
-
+        run: gradle --no-daemon --no-configuration-cache assemble
       - name: Upload standalone server JAR
         uses: actions/upload-artifact@v4
         with:
