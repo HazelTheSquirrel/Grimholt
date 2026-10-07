@@ -63,7 +63,7 @@ public final class VanillaPacketCatalog {
                          VanillaProtocol26_2.Direction direction,
                          String name) {
         return id(state, direction, name).orElseThrow(() ->
-                new IllegalArgumentException("Unknown 26.2 packet: " + state + "/" + direction + "/" + name));
+                new IllegalArgumentException("Unknown 26.4 packet: " + state + "/" + direction + "/" + name));
     }
 
     public Set<String> names(VanillaProtocol26_2.State state,
