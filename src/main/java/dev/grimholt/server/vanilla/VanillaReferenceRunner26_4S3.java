@@ -19,6 +19,8 @@ public final class VanillaReferenceRunner26_4S3 {
         this.workingDirectory = Objects.requireNonNull(workingDirectory);
     }
 
+    public Path jar() { return jar; }
+
     public Process start(String... arguments) throws IOException {
         Files.createDirectories(workingDirectory);
         List<String> command = new ArrayList<>();
