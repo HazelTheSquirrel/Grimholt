@@ -2,14 +2,14 @@ package dev.grimholt.server.vanilla;
 
 import java.io.*;
 import java.util.*;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 /**
- * Minecraft Java 26.2 transport primitives.
+ * Grimholt-owned Minecraft 26.4-snapshot-3 transport primitives.
  *
- * <p>Minestom's packet classes are deliberately not treated as the protocol
- * contract. This codec owns the wire framing rules used by Grimholt and pins
- * the negotiated protocol version to 1073742165. Packet IDs/codecs are loaded
- * from the exact generated reference catalog when available.</p>
+ * <p>Packet IDs/codecs remain data-driven from Mojang's generated packet report.
+ * This class owns framing, VarInts and the optional zlib packet-compression layer.</p>
  */
 public final class VanillaProtocol26_2 {
     public static final int PROTOCOL_VERSION = VanillaSnapshot26_2.PROTOCOL;
@@ -19,7 +19,7 @@ public final class VanillaProtocol26_2 {
 
     public record Frame(int packetId, byte[] payload) {
         @Override public boolean equals(Object other) {
-            return other instanceof Frame frame && packetId == frame.packetId && Arrays.equals(payload, frame.payload);
+            return other instanceof Frame frame && packetId == frame.packetId() && Arrays.equals(payload, frame.payload());
         }
         @Override public int hashCode() { return 31 * Integer.hashCode(packetId) + Arrays.hashCode(payload); }
         @Override public String toString() { return "Frame[" + packetId + ", payload=" + Arrays.toString(payload) + "]"; }
@@ -56,32 +56,129 @@ public final class VanillaProtocol26_2 {
     }
 
     public static byte[] encodeFrame(Frame frame) throws IOException {
+        return encodeFrame(frame, -1, Integer.MAX_VALUE);
+    }
+
+    public static byte[] encodeFrame(Frame frame, int compressionThreshold, int maxFrameBytes) throws IOException {
         ByteArrayOutputStream body = new ByteArrayOutputStream();
         writeVarInt(body, frame.packetId());
         body.write(frame.payload());
+        byte[] uncompressed = body.toByteArray();
+
+        ByteArrayOutputStream framedBody = new ByteArrayOutputStream();
+        if (compressionThreshold >= 0) {
+            if (uncompressed.length >= compressionThreshold) {
+                byte[] compressed = zlibCompress(uncompressed);
+                writeVarInt(framedBody, uncompressed.length);
+                framedBody.write(compressed);
+            } else {
+                writeVarInt(framedBody, 0);
+                framedBody.write(uncompressed);
+            }
+        } else {
+            framedBody.write(uncompressed);
+        }
+
+        if (framedBody.size() > maxFrameBytes) {
+            throw new IOException("Encoded packet frame exceeds " + maxFrameBytes + " bytes");
+        }
         ByteArrayOutputStream result = new ByteArrayOutputStream();
-        writeVarInt(result, body.size());
-        body.writeTo(result);
+        writeVarInt(result, framedBody.size());
+        framedBody.writeTo(result);
         return result.toByteArray();
     }
 
     public static Frame decodeFrame(InputStream in, int maxFrameBytes) throws IOException {
+        return decodeFrame(in, maxFrameBytes, -1);
+    }
+
+    public static Frame decodeFrame(InputStream in, int maxFrameBytes, int compressionThreshold) throws IOException {
         int length = readVarInt(in);
         if (length < 1 || length > maxFrameBytes) {
             throw new IOException("Invalid packet frame length: " + length);
         }
         byte[] body = in.readNBytes(length);
         if (body.length != length) throw new EOFException("Truncated packet frame");
-        ByteArrayInputStream packet = new ByteArrayInputStream(body);
+
+        byte[] packetBytes;
+        if (compressionThreshold >= 0) {
+            ByteArrayInputStream compressedFrame = new ByteArrayInputStream(body);
+            int uncompressedLength = readVarInt(compressedFrame);
+            if (uncompressedLength == 0) {
+                packetBytes = compressedFrame.readAllBytes();
+                if (packetBytes.length >= compressionThreshold) {
+                    throw new IOException("Uncompressed packet violates compression threshold");
+                }
+            } else {
+                if (uncompressedLength < compressionThreshold || uncompressedLength > maxFrameBytes) {
+                    throw new IOException("Invalid uncompressed packet length: " + uncompressedLength);
+                }
+                packetBytes = zlibDecompress(compressedFrame.readAllBytes(), uncompressedLength, maxFrameBytes);
+            }
+        } else {
+            packetBytes = body;
+        }
+
+        ByteArrayInputStream packet = new ByteArrayInputStream(packetBytes);
         int id = readVarInt(packet);
         return new Frame(id, packet.readAllBytes());
+    }
+
+    private static byte[] zlibCompress(byte[] input) throws IOException {
+        Deflater deflater = new Deflater();
+        try {
+            deflater.setInput(input);
+            deflater.finish();
+            ByteArrayOutputStream out = new ByteArrayOutputStream(input.length);
+            byte[] buffer = new byte[Math.min(8192, Math.max(256, input.length))];
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buffer);
+                if (count <= 0) throw new IOException("Zlib compressor made no progress");
+                out.write(buffer, 0, count);
+            }
+            return out.toByteArray();
+        } finally {
+            deflater.end();
+        }
+    }
+
+    private static byte[] zlibDecompress(byte[] input, int expectedLength, int maxFrameBytes) throws IOException {
+        Inflater inflater = new Inflater();
+        try {
+            inflater.setInput(input);
+            ByteArrayOutputStream out = new ByteArrayOutputStream(expectedLength);
+            byte[] buffer = new byte[Math.min(8192, Math.max(256, expectedLength))];
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buffer);
+                if (count > 0) {
+                    if (out.size() + count > expectedLength || out.size() + count > maxFrameBytes) {
+                        throw new IOException("Inflated packet exceeds declared size");
+                    }
+                    out.write(buffer, 0, count);
+                } else if (inflater.needsDictionary()) {
+                    throw new IOException("Zlib packet requires a dictionary");
+                } else if (inflater.needsInput()) {
+                    throw new IOException("Truncated zlib packet");
+                } else {
+                    throw new IOException("Zlib decompressor made no progress");
+                }
+            }
+            if (out.size() != expectedLength) {
+                throw new IOException("Zlib packet length mismatch");
+            }
+            return out.toByteArray();
+        } catch (java.util.zip.DataFormatException e) {
+            throw new IOException("Invalid zlib packet", e);
+        } finally {
+            inflater.end();
+        }
     }
 
     public static void requireProtocol(int protocol) {
         if (protocol != PROTOCOL_VERSION) {
             throw new IllegalStateException(
-                "Client protocol " + protocol + " is not Minecraft 26.2 (" +
-                PROTOCOL_VERSION + ")");
+                    "Client protocol " + protocol + " is not Minecraft " + VanillaSnapshot26_2.VERSION +
+                    " (" + PROTOCOL_VERSION + ")");
         }
     }
 
