@@ -215,6 +215,13 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                 send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:registry_data",
                         out -> out.write(registry));
             }
+            if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
+                    VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:update_enabled_features").isPresent()) {
+                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:update_enabled_features", out -> {
+                    VanillaProtocol26_2.writeVarInt(out, 1);
+                    VanillaProtocolCodec.writeIdentifier(out, "minecraft:vanilla");
+                });
+            }
             for (byte[] tags : configuration.updateTagsPackets()) {
                 if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
                         VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:update_tags").isPresent()) {
