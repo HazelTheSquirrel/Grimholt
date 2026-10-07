@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 plugins {
     java
     application
@@ -127,12 +129,11 @@ val generateVanilla26_4S3 by tasks.registering {
     doLast {
         val version = "26.4-snapshot-3"
         val manifest = java.net.URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").toURL().readText()
-        val versionPattern = "\\{[^{}]*\\"id\\"\\s*:\\s*\\"" + java.util.regex.Pattern.quote(version) +
-            "\\"[^{}]*\\"url\\"\\s*:\\s*\\"([^\\"]+)\\"[^{}]*\\}"
+        val versionPattern = """\{"id"\s*:\s*"${java.util.regex.Pattern.quote(version)}"[^{}]*"url"\s*:\s*"([^"]+)"[^{}]*\}"""
         val versionUrl = Regex(versionPattern).find(manifest)?.groupValues?.get(1)
             ?: error("Mojang version manifest does not contain " + version)
         val versionJson = java.net.URI(versionUrl).toURL().readText()
-        val server = Regex("\\"server\\"\\s*:\\s*\\{[^{}]*\\"sha1\\"\\s*:\\s*\\"([0-9a-f]{40})\\"[^{}]*\\"url\\"\\s*:\\s*\\"([^\\"]+)\\"")
+        val server = Regex("""\"server\"\s*:\s*\{[^{}]*\"sha1\"\s*:\s*\"([0-9a-f]{40})\"[^{}]*\"url\"\s*:\s*\"([^\"]+)\"""")
             .find(versionJson) ?: error("Mojang version metadata does not contain a server download for " + version)
         val expectedSha1 = server.groupValues[1]
         val jarUrl = server.groupValues[2]
