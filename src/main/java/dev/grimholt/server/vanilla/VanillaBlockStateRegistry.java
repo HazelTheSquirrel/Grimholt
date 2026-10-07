@@ -26,6 +26,42 @@ public final class VanillaBlockStateRegistry {
         this.blocks = Objects.requireNonNull(blocks);
     }
 
+    /** Installs the high-value vanilla schemas used by simulation systems. */
+    public void registerCoreSchemas() {
+        schema("minecraft:redstone_wire",
+            new Property("power", range(0, 15)),
+            new Property("north", List.of("up","side","none")),
+            new Property("south", List.of("up","side","none")),
+            new Property("east", List.of("up","side","none")),
+            new Property("west", List.of("up","side","none")));
+        schema("minecraft:repeater",
+            new Property("delay", range(1, 4)),
+            new Property("facing", List.of("north","east","south","west")),
+            new Property("locked", List.of("true","false")),
+            new Property("powered", List.of("true","false")));
+        schema("minecraft:comparator",
+            new Property("facing", List.of("north","east","south","west")),
+            new Property("mode", List.of("compare","subtract")),
+            new Property("powered", List.of("true","false")));
+        schema("minecraft:piston",
+            new Property("extended", List.of("true","false")),
+            new Property("facing", List.of("down","up","north","south","west","east")));
+        schema("minecraft:sticky_piston",
+            new Property("extended", List.of("true","false")),
+            new Property("facing", List.of("down","up","north","south","west","east")));
+        schema("minecraft:observer",
+            new Property("facing", List.of("down","up","north","south","west","east")),
+            new Property("powered", List.of("true","false")));
+        schema("minecraft:water", new Property("level", range(0, 15)));
+        schema("minecraft:lava", new Property("level", range(0, 15)));
+    }
+
+    private static List<String> range(int from, int to) {
+        List<String> values = new ArrayList<>();
+        for (int i = from; i <= to; i++) values.add(Integer.toString(i));
+        return values;
+    }
+
     public void schema(String blockId, Property... properties) {
         List<Property> copy = List.of(properties);
         schemas.put(blockId, copy);
