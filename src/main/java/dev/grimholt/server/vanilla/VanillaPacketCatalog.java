@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
  * Exact packet ID catalog loaded from Mojang's generated reports/packets.json.
  */
 public final class VanillaPacketCatalog {
-    public record PacketKey(VanillaProtocol26_4S3.State state,
-                             VanillaProtocol26_4S3.Direction direction,
+    public record PacketKey(VanillaProtocol26_2.State state,
+                             VanillaProtocol26_2.Direction direction,
                              String name) {}
 
     private final Map<PacketKey, Integer> ids;
@@ -23,17 +23,17 @@ public final class VanillaPacketCatalog {
         Map<PacketKey,Integer> result = new LinkedHashMap<>();
 
         for (var stateEntry : root.entrySet()) {
-            VanillaProtocol26_4S3.State state;
+            VanillaProtocol26_2.State state;
             try {
-                state = VanillaProtocol26_4S3.State.valueOf(stateEntry.getKey().toUpperCase(Locale.ROOT));
+                state = VanillaProtocol26_2.State.valueOf(stateEntry.getKey().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ignored) {
                 continue;
             }
             Map<String,Object> stateObject = VanillaJson.object(stateEntry.getValue());
             for (var directionEntry : stateObject.entrySet()) {
-                VanillaProtocol26_4S3.Direction direction;
+                VanillaProtocol26_2.Direction direction;
                 try {
-                    direction = VanillaProtocol26_4S3.Direction.valueOf(directionEntry.getKey().toUpperCase(Locale.ROOT));
+                    direction = VanillaProtocol26_2.Direction.valueOf(directionEntry.getKey().toUpperCase(Locale.ROOT));
                 } catch (IllegalArgumentException ignored) {
                     continue;
                 }
@@ -52,22 +52,22 @@ public final class VanillaPacketCatalog {
 
     public int size() { return ids.size(); }
 
-    public OptionalInt id(VanillaProtocol26_4S3.State state,
-                          VanillaProtocol26_4S3.Direction direction,
+    public OptionalInt id(VanillaProtocol26_2.State state,
+                          VanillaProtocol26_2.Direction direction,
                           String name) {
         Integer id = ids.get(new PacketKey(state, direction, name));
         return id == null ? OptionalInt.empty() : OptionalInt.of(id);
     }
 
-    public int requireId(VanillaProtocol26_4S3.State state,
-                         VanillaProtocol26_4S3.Direction direction,
+    public int requireId(VanillaProtocol26_2.State state,
+                         VanillaProtocol26_2.Direction direction,
                          String name) {
         return id(state, direction, name).orElseThrow(() ->
-                new IllegalArgumentException("Unknown 26.4-S3 packet: " + state + "/" + direction + "/" + name));
+                new IllegalArgumentException("Unknown 26.2 packet: " + state + "/" + direction + "/" + name));
     }
 
-    public Set<String> names(VanillaProtocol26_4S3.State state,
-                             VanillaProtocol26_4S3.Direction direction) {
+    public Set<String> names(VanillaProtocol26_2.State state,
+                             VanillaProtocol26_2.Direction direction) {
         return ids.keySet().stream()
                 .filter(key -> key.state() == state && key.direction() == direction)
                 .map(PacketKey::name)
