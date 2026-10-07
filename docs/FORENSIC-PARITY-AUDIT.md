@@ -459,3 +459,80 @@ Grimholt must not be declared complete until:
 The largest current blocker is protocol/runtime version skew: the repository consumes Minestom 26.2 while the behavioral target is 26.4 Snapshot 3. Grimholt must not fake protocol compatibility or modify Minestom. The correct resolution is to consume a compatible Minestom release when available and keep the Vanilla implementation in Grimholt.
 
 This audit is a living checklist. New official snapshot behavior must be added before it can be considered complete.
+
+
+---
+
+## 2026-10-07 forensic repository pass
+
+### Repository integrity
+
+- The repository is a standalone Git repository owned by HazelTheSquirrel; it is not marked as a GitHub fork.
+- No Bukkit, Spigot, Paper or Folia runtime API dependency is declared.
+- Minestom is currently the only Minecraft runtime foundation dependency.
+- The public API is Grimholt-owned rather than Minestom API based.
+- The current release artifact bundles runtime dependencies, so operators do not install a separate Minestom server.
+
+### Critical architectural finding
+
+**Grimholt is not yet an independent Minecraft server implementation in the same sense as a Paper/Folia-style fork.**
+
+The current process is:
+
+`Minecraft client -> Minestom networking/runtime -> Minestom InstanceContainer/AnvilLoader -> Grimholt API + Vanilla kernel`
+
+The Grimholt vanilla kernel owns a separate gameplay model and region ownership abstraction, but the live player/world transport is still created and started by `MinestomAdapter`. Player movement is received from Minestom's `PlayerMoveEvent`, and the overworld is a Minestom `InstanceContainer`.
+
+Therefore the current architecture is best described as:
+
+**"Grimholt server implementation on top of Minestom"**, not **"Grimholt fork of Minestom"** and not yet **"fully independent Minecraft server runtime"**.
+
+This is intentional at the present stage, but it is the main architectural boundary that must eventually be closed if Grimholt is to own the complete Minecraft runtime.
+
+### Duplicate/legacy cleanup performed
+
+The following unused legacy helpers were verified to have no source references in the current repository and were removed:
+
+- `VanillaPhysics.java` -> superseded by `VanillaPhysicsEngine.java`
+- `VanillaRedstone.java` -> superseded by `VanillaRedstoneEngine.java`
+- `VanillaWorldgen.java` -> placeholder random worldgen, not valid vanilla implementation
+- `VanillaTickEngine.java` -> not connected to the active region runtime
+
+No behavior was removed from the active `VanillaGameRuntime` by these deletions.
+
+### CI finding
+
+The red CI was caused by **Gradle Kotlin DSL syntax errors in the newly added Mojang data-generation regular expressions**, not by Java compilation or a gameplay test failure.
+
+The failure occurred in `build.gradle.kts` around lines 118-124 because JSON quotes were escaped for the wrong string-literal context.
+
+The build script was corrected to use Kotlin raw strings and an explicit `java.nio.file.Files` import.
+
+### Generated-data safety finding
+
+Filesystem-based generated data previously counted as available merely because the directory existed. Availability now requires both:
+
+- `manifest.properties`
+- `reports/blocks.json`
+
+This prevents a partially generated directory from silently activating incomplete vanilla data.
+
+### Benchmark status
+
+A repeatable microbenchmark entrypoint and Gradle task now exist:
+
+`gradle benchmark`
+
+Default workload:
+
+- 1,000 logical players
+- 50 logical regions
+- 20 measured iterations
+- region-local block read/write operations
+
+This is a **world-model/concurrency regression benchmark**, not yet a real networked 500-1000-player Minecraft server benchmark. A real client/network benchmark remains a later milestone after protocol, chunk, entity and world systems are fully wired.
+
+### Current conclusion
+
+The repository has a sound direction for a multithreaded Grimholt-owned gameplay kernel, but it is **not yet independent from Minestom at runtime**. The next architectural milestone is to turn Minestom into a replaceable transport/runtime adapter rather than the owner of the live Minecraft world/player simulation.
+
