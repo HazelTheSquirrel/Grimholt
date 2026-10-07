@@ -168,7 +168,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                         entityId, "minecraft:overworld", server.maxPlayers(),
                         GrimholtPlayProtocol.DEFAULT_VIEW_DISTANCE,
                         GrimholtPlayProtocol.DEFAULT_SIMULATION_DISTANCE,
-                        0L, position))));
+                        0L, position, false))));
         send(VanillaProtocol26_2.State.PLAY, "minecraft:player_info_update",
                 out -> out.write(playProtocol.playerInfoAdd(uuid, username)));
         send(VanillaProtocol26_2.State.PLAY, "minecraft:game_event",
