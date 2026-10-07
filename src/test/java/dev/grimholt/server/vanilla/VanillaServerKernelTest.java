@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class VanillaServerKernelTest {
@@ -30,9 +31,10 @@ class VanillaServerKernelTest {
             kernel.execute(world, 0, 0, () -> region.chunk(0, 0).setBlock(
                     new BlockPos(0, 64, 0), BlockState.of("minecraft:stone")));
 
-            assertEquals("minecraft:stone",
-                    kernel.region(world, 0, 0).chunk(0, 0)
-                            .block(new BlockPos(0, 64, 0)).id());
+            AtomicReference<String> blockId = new AtomicReference<>();
+            kernel.execute(world, 0, 0, () -> blockId.set(
+                    region.chunk(0, 0).block(new BlockPos(0, 64, 0)).id()));
+            assertEquals("minecraft:stone", blockId.get());
             assertEquals(0, failures.get());
         }
     }
