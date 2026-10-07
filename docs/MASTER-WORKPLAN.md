@@ -31,7 +31,7 @@ These rules apply to every phase.
 - [ ] Never create a feature branch for implementation unless the user explicitly changes this rule.
 - [ ] Do not silently rewrite unrelated files.
 - [ ] Every logical change has a clear commit message.
-- [ ] Before writing, verify the current `main` state.
+- [ ] Before writing, verify the current `test` state and compare against `main`.
 - [ ] After writing, re-fetch the changed files and verify their actual repository contents.
 
 ### 0.3 Engineering rules
@@ -58,7 +58,7 @@ This procedure must be followed **before every meaningful implementation session
 ## 1.1 Repository preflight
 
 - [ ] Confirm repository is `HazelTheSquirrel/Grimholt`.
-- [ ] Confirm current branch/ref is `main`.
+- [ ] Confirm current branch/ref is `test`.
 - [ ] Inspect current repository tree.
 - [ ] Read the current phase status.
 - [ ] Read this Master Work Plan.
@@ -201,7 +201,7 @@ Establish the rules that prevent the project from drifting into a Bukkit/Paper-s
 
 ## Goal
 
-Create a reproducible Grimholt executable foundation that can start, expose lifecycle state, load configuration and shut down cleanly.
+The existing bootstrap/build/plugin foundations remain useful, but new work must prioritize fork ownership. Do not expand Minestom coupling merely to complete the old application-centric roadmap.
 
 ## 4.1 Build foundation
 
@@ -297,7 +297,7 @@ and deterministic failure behavior.
 
 ## Goal
 
-Create a real independent plugin platform rather than exposing Minestom's internal/plugin system as the public API.
+Continue only where required by the fork migration. Plugin API work must not take priority over runtime ownership migration.
 
 ## 5.1 Plugin identity
 
