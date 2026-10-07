@@ -39,6 +39,14 @@ public final class VanillaGeneratedRegistryLoader {
     public static int loadEntityAndItemNames(VanillaGeneratedData data,
                                               VanillaItemRegistry items,
                                               VanillaEntityRegistry entities) {
+        return loadEntityAndItemNames(data, items, entities, new VanillaRegistryIds(), new VanillaRegistryIds());
+    }
+
+    public static int loadEntityAndItemNames(VanillaGeneratedData data,
+                                              VanillaItemRegistry items,
+                                              VanillaEntityRegistry entities,
+                                              VanillaRegistryIds itemIds,
+                                              VanillaRegistryIds entityIds) {
         Map<String,Object> report = VanillaJson.object(VanillaJson.parse(data.require("reports/registries.json")));
         int count = 0;
         for (var entry : report.entrySet()) {
@@ -48,11 +56,16 @@ public final class VanillaGeneratedRegistryLoader {
             if (!(entries instanceof Map<?,?> map)) continue;
             for (Object key : map.keySet()) {
                 if (!(key instanceof String id) || !id.startsWith("minecraft:")) continue;
+                Object entryValue = map.get(key);
+                int protocolId = entryValue instanceof Map<?,?> entryMap && entryMap.get("protocol_id") instanceof Number n
+                        ? n.intValue() : -1;
                 if (registryId.endsWith(":item") || registryId.equals("minecraft:item")) {
                     items.register(new VanillaItemDefinition(id, 64, 0, false, Map.of()));
+                    if (protocolId >= 0) itemIds.register(id, protocolId);
                     count++;
                 } else if (registryId.endsWith(":entity_type") || registryId.equals("minecraft:entity_type")) {
                     entities.register(id);
+                    if (protocolId >= 0) entityIds.register(id, protocolId);
                     count++;
                 }
             }
