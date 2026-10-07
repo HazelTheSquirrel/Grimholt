@@ -23,7 +23,7 @@ public final class VanillaGeneratedRegistryLoader {
             for (Object stateValue : stateList) {
                 Map<String,Object> state = VanillaJson.object(stateValue);
                 Map<String,String> properties = stringMap(state.get("properties"));
-                BlockState blockState = BlockState.of(blockId, properties);
+                BlockState blockState = new BlockState(blockId, properties);
                 int id = ((Number) state.get("id")).intValue();
                 registry.registerAuthoritative(blockState, id, Boolean.TRUE.equals(state.get("default")));
                 states++;
