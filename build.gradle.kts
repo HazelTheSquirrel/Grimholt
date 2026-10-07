@@ -22,7 +22,6 @@ java {
 }
 
 dependencies {
-    implementation(libs.minestom)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)
     testImplementation(libs.junit)
@@ -58,11 +57,8 @@ application {
 /*
  * Grimholt is distributed as a self-contained executable JAR.
  *
- * During the fork migration Minestom remains an internal implementation
- * dependency. It is intentionally transitional and will be removed once the
- * required runtime source has been brought under Grimholt ownership. The
- * released server artifact must never require a separately installed
- * Minestom/Minecraft server JAR.
+ * Grimholt owns the runtime. The released server artifact must not require
+ * Minestom or another Minecraft server implementation at runtime.
  */
 val standaloneJar by tasks.registering(Jar::class) {
     group = "distribution"
@@ -87,7 +83,7 @@ val standaloneJar by tasks.registering(Jar::class) {
 
 /*
  * Dependency lockdown is a build-time guard, not merely documentation.
- * Minestom is explicitly allowed; Bukkit/Spigot/Paper/Folia are forbidden.
+ * Minestom/Bukkit/Spigot/Paper/Folia are forbidden runtime dependencies.
  */
 tasks.register("dependencyAudit") {
     group = "verification"
@@ -95,6 +91,7 @@ tasks.register("dependencyAudit") {
 
     doLast {
         val forbidden = setOf(
+            "net.minestom:minestom",
             "org.bukkit:bukkit",
             "org.spigotmc:spigot-api",
             "io.papermc.paper:paper-api",
