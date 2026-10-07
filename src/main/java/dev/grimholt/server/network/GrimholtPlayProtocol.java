@@ -15,7 +15,7 @@ public final class GrimholtPlayProtocol {
 
     public record Bootstrap(int entityId, String dimension, int maxPlayers,
                             int viewDistance, int simulationDistance, long seed,
-                            Position position) {}
+                            Position position, boolean onlineMode) {}
 
     public byte[] login(Bootstrap bootstrap) {
         Objects.requireNonNull(bootstrap, "bootstrap");
@@ -43,6 +43,7 @@ public final class GrimholtPlayProtocol {
             data.writeBoolean(false); // no last-death location
             VanillaProtocol26_2.writeVarInt(data, 0); // portal cooldown
             VanillaProtocol26_2.writeVarInt(data, 63); // sea level
+            data.writeBoolean(bootstrap.onlineMode());
             data.writeBoolean(false); // secure chat not enforced
             return out.toByteArray();
         } catch (IOException e) {
