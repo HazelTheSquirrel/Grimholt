@@ -4,7 +4,7 @@
 >
 > Before **every implementation change**, the current phase, this plan, the architecture, the dependency policy and the relevant existing code must be reviewed. After the change, the same checklist is run again as an adversarial second pass.
 >
-> **Repository rule:** Work only on `main`.
+> **Repository rule:** For this fork migration, implementation work is performed on the `test` branch. `main` remains the stable baseline until a deliberate merge.
 >
 > **Project goal:** Build an independent Minecraft server implementation/distribution based on Minestom, with vanilla Minecraft compatibility for the targeted version and a first-class Grimholt Plugin API. Bukkit, Spigot, Paper and Folia are explicitly excluded.
 
@@ -27,7 +27,7 @@ These rules apply to every phase.
 
 ### 0.2 Branch and repository rules
 
-- [ ] Work only on `main`.
+- [ ] For this fork migration, implementation work is performed on the `test` branch. `main` remains the stable baseline until a deliberate merge.
 - [ ] Never create a feature branch for implementation unless the user explicitly changes this rule.
 - [ ] Do not silently rewrite unrelated files.
 - [ ] Every logical change has a clear commit message.
@@ -1140,22 +1140,22 @@ This section supersedes historical phase-review documents. The repository delibe
 Paper/Folia is allowed only as an implementation-reading reference for concurrency/ownership questions. It is never a dependency, compatibility target or public API.
 
 
-## 17. Snapshot-first execution rule — 2026-10-07
+## 17. Snapshot/update execution rule — 2026-10-07
 
-The behavioral source of truth is now **Minecraft Java Edition 26.4 Snapshot 3**.
+The active validated baseline is **Minecraft Java Edition 26.2**. Future official releases and snapshots may become Grimholt development targets as soon as their required protocol/runtime support can be implemented or integrated by Grimholt itself.
 
 The project intentionally separates:
-- **behavior/data reference:** latest official vanilla snapshot;
-- **runtime/protocol substrate:** the newest Minestom version that Grimholt can actually consume.
+- **behavior/data reference:** the selected official Minecraft release/snapshot;
+- **runtime/protocol substrate:** Grimholt-owned code plus Minestom-derived source during the migration.
 
 This prevents Minestom's current version ceiling from forcing Grimholt to implement older gameplay semantics.
 
 ### Required implementation order from this point
 
-1. Build a deterministic vanilla-reference harness and snapshot data baseline.
-2. Audit Minestom facilities that can be consumed without modifying Minestom.
+1. Build a deterministic vanilla-reference harness and selected release/snapshot data baseline.
+2. Inventory Minestom source/runtime areas that must be forked into Grimholt.
 3. Establish Grimholt-owned tick ownership and cross-owner handoff primitives.
-4. Implement world/chunk state ownership on top of Minestom's dispatcher/instance facilities.
+4. Replace Minestom-owned runtime boundaries with Grimholt-owned implementations incrementally.
 5. Implement vanilla behavior in dependency order: player movement -> blocks/ticks/fluids -> items/containers -> entities/AI -> combat -> villagers/raids -> dimensions/portals -> world generation -> data packs/commands/registries.
 6. For every subsystem, compare observable behavior against the current vanilla snapshot reference.
 7. Expand the Grimholt Plugin API only after the corresponding server capability has a stable ownership contract.
@@ -1163,13 +1163,13 @@ This prevents Minestom's current version ceiling from forcing Grimholt to implem
 9. Run CI after every logical change; a failed run blocks further phase advancement until repaired.
 10. Only after correctness gates pass, run the 50/100/250/500/750/1000-player benchmark matrix.
 
-### Minestom rule
+### Minestom fork rule
 
-Minestom source is never modified by Grimholt. If Minestom already provides the required transport, registry, chunk, instance, entity, scheduling or persistence facility, Grimholt consumes it behind its own boundary. Missing vanilla behavior is implemented in Grimholt.
+Minestom is the source foundation, not a permanent runtime authority. During migration, Grimholt may consume the upstream artifact behind a boundary, but new core functionality must be designed so the corresponding Minestom source can be imported, owned and modified by Grimholt. The final runtime must not require the external Minestom Maven artifact.
 
-### Snapshot rule
+### Update rule
 
-The latest official snapshot is allowed to move the behavioral target forward. Runtime support is only advanced when the Minestom substrate actually supports the corresponding protocol/runtime safely.
+Grimholt owns its Minecraft update cadence. A new release or snapshot does not wait for a third-party server fork. Required protocol, registry and runtime changes are integrated directly into Grimholt; Minestom, Paper, Folia, Purpur, Bukkit/Spigot and other projects are references where useful.
 
 Paper/Folia remains permitted only as a temporary implementation-reading reference for concurrency ownership questions, never as a dependency or API target.
 
