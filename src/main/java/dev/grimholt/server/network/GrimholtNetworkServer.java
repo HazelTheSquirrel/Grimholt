@@ -14,14 +14,20 @@ public final class GrimholtNetworkServer implements AutoCloseable {
     private final GrimholtServerImpl server;
     private final GrimholtCommandDispatcher commands;
     private final VanillaServerKernel kernel;
+    private final boolean onlineMode;
     private final Set<GrimholtConnection> connections = ConcurrentHashMap.newKeySet();
     private volatile ServerSocket socket;
     private volatile boolean running;
 
     public GrimholtNetworkServer(GrimholtServerImpl server, GrimholtCommandDispatcher commands, VanillaServerKernel kernel) {
+        this(server, commands, kernel, true);
+    }
+
+    public GrimholtNetworkServer(GrimholtServerImpl server, GrimholtCommandDispatcher commands, VanillaServerKernel kernel, boolean onlineMode) {
         this.server = server;
         this.commands = commands;
         this.kernel = kernel;
+        this.onlineMode = onlineMode;
     }
 
     public void start(GrimholtConfig config) {
@@ -44,7 +50,7 @@ public final class GrimholtNetworkServer implements AutoCloseable {
                     Socket client = socket.accept();
                     VanillaGeneratedData generated = new VanillaGeneratedData();
                     VanillaPacketCatalog catalog = VanillaPacketCatalog.load(generated);
-                    GrimholtConnection connection = new GrimholtConnection(client, server, commands, catalog, generated, kernel, connections::remove);
+                    GrimholtConnection connection = new GrimholtConnection(client, server, commands, catalog, generated, kernel, onlineMode, connections::remove);
                     connections.add(connection);
                     Thread.ofVirtual().name("Grimholt-Connection").start(connection::run);
                 } catch (IOException | RuntimeException failure) {
