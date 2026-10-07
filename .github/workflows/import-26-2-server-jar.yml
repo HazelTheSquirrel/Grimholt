@@ -1,0 +1,51 @@
+name: Import Mojang 26.2 server JAR
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download and commit Mojang 26.2 server JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          target="reference/minecraft/26.2/server.jar"
+          url="https://piston-data.mojang.com/v1/objects/823e2250d24b3ddac457a60c92a6a941943fcd6a/server.jar"
+          expected="823e2250d24b3ddac457a60c92a6a941943fcd6a"
+
+          if [ -f "$target" ]; then
+            echo "Reference JAR already exists; nothing to do."
+            exit 0
+          fi
+
+          mkdir -p "$(dirname "$target")"
+          curl --fail --location --retry 5 --retry-delay 2 --output "$target" "$url"
+
+          actual="$(sha1sum "$target" | awk '{print tolower($1)}')"
+          if [ "$actual" != "$expected" ]; then
+            echo "SHA-1 mismatch: expected $expected, got $actual"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$target"
+          git commit -m "Add Mojang Minecraft 26.2 reference server JAR"
+          git push
+
+          rm -f "$GITHUB_WORKSPACE/.github/workflows/import-26-2-server-jar.yml"
+          git add -u .github/workflows/import-26-2-server-jar.yml
+          git commit -m "Remove one-time 26.2 JAR import workflow"
+          git push
