@@ -39,7 +39,7 @@ public final class MinestomAdapter {
                 overworld = MinecraftServer.getInstanceManager().createInstanceContainer(DimensionType.OVERWORLD);
                 overworld.setGenerator(new GrimholtTerrainGenerator(0L));
                 overworld.enableAutoChunkLoad(true);
-                api.addWorld(overworld);
+                api.addWorld(overworld.getUuid(), "minecraft:overworld");
                 var events = MinecraftServer.getGlobalEventHandler();
                 events.addListener(AsyncPlayerConfigurationEvent.class, e -> {
                     if (!reserve(e.getPlayer().getUuid(), config.maxPlayers())) {
@@ -52,7 +52,12 @@ public final class MinestomAdapter {
                 events.addListener(PlayerSpawnEvent.class, e -> {
                     if (e.isFirstSpawn()) {
                         var p = new MinestomPlayer(e.getPlayer());
-                        api.addPlayer(e.getPlayer());
+                        api.addPlayer(e.getPlayer().getUuid(), e.getPlayer().getUsername(),
+                                message -> e.getPlayer().sendMessage(net.kyori.adventure.text.Component.text(message)),
+                                reason -> e.getPlayer().kick(net.kyori.adventure.text.Component.text(reason)));
+                        api.updatePlayer(e.getPlayer().getUuid(), new dev.grimholt.api.Position(
+                                e.getPlayer().getPosition().x(), e.getPlayer().getPosition().y(), e.getPlayer().getPosition().z(),
+                                e.getPlayer().getPosition().yaw(), e.getPlayer().getPosition().pitch()));
                         if (vanillaKernel != null) {
                             var instance = e.getPlayer().getInstance();
                             if (instance != null) {
@@ -72,6 +77,8 @@ public final class MinestomAdapter {
                     var instance = e.getPlayer().getInstance();
                     if (instance == null) return;
                     var pos = e.getNewPosition();
+                    api.updatePlayer(e.getPlayer().getUuid(), new dev.grimholt.api.Position(
+                            pos.x(), pos.y(), pos.z(), pos.yaw(), pos.pitch()));
                     vanillaKernel.updatePlayerPosition(instance.getUuid(), e.getPlayer().getUuid(),
                             pos.x(), pos.y(), pos.z(), pos.yaw(), pos.pitch(), e.isOnGround());
                 });
