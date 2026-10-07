@@ -105,7 +105,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             VanillaProtocolCodec.writeUuid(out, uuid);
             VanillaProtocolCodec.writeString(out, username, 16);
             VanillaProtocol26_2.writeVarInt(out, 0);
-            out.writeBoolean(false);
+            out.write(0);
         });
     }
 
@@ -142,7 +142,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     public void sendChat(String message) {
         sendBestEffortPlay("minecraft:system_chat", out -> {
             VanillaProtocolCodec.writeString(out, "{\"text\":" + quote(message) + "}", 32767);
-            out.writeBoolean(false);
+            out.write(0);
         });
     }
 
