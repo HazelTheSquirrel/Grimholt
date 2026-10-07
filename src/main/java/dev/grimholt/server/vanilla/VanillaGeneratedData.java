@@ -30,8 +30,9 @@ public final class VanillaGeneratedData {
 
     public boolean available() {
         if (filesystemRoot != null && Files.isDirectory(filesystemRoot)) return true;
-        try (InputStream in = classLoader.getResourceAsStream(ROOT + "/manifest.properties")) {
-            return in != null;
+        try (InputStream manifest = classLoader.getResourceAsStream(ROOT + "/manifest.properties");
+             InputStream blocks = classLoader.getResourceAsStream(ROOT + "/reports/blocks.json")) {
+            return manifest != null && blocks != null;
         } catch (IOException e) {
             return false;
         }
