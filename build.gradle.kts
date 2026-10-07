@@ -186,14 +186,14 @@ val generateVanilla26_2 by tasks.registering {
         Files.createDirectories(out)
         generatedDir.toFile().copyRecursively(out.toFile(), overwrite = true)
         out.resolve("manifest.properties").toFile().writeText(
-            "version=$version\\n" +
-            "protocol=776\\n" +
-            "worldDataVersion=4903\\n" +
-            "dataPackVersion=107.1\\n" +
-            "resourcePackVersion=88\\n" +
-            "javaMajor=25\\n" +
-            "serverSha1=$expectedSha1\\n" +
-            "serverPath=reference/minecraft/26.2/server.jar\\n"
+            "version=$version\n" +
+            "protocol=776\n" +
+            "worldDataVersion=4903\n" +
+            "dataPackVersion=107.1\n" +
+            "resourcePackVersion=88\n" +
+            "javaMajor=25\n" +
+            "serverSha1=$expectedSha1\n" +
+            "serverPath=reference/minecraft/26.2/server.jar\n"
         )
     }
 }
@@ -228,14 +228,14 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
         val work = layout.buildDirectory.dir("vanilla-reference-smoke/26.2").get().asFile.toPath()
         if (Files.exists(work)) work.toFile().deleteRecursively()
         Files.createDirectories(work)
-        Files.writeString(work.resolve("eula.txt"), "eula=true\\n")
+        Files.writeString(work.resolve("eula.txt"), "eula=true\n")
         Files.writeString(work.resolve("server.properties"),
-            "online-mode=false\\n" +
-            "server-port=0\\n" +
-            "server-ip=127.0.0.1\\n" +
-            "enable-query=false\\n" +
-            "enable-rcon=false\\n" +
-            "spawn-protection=0\\n")
+            "online-mode=false\n" +
+            "server-port=0\n" +
+            "server-ip=127.0.0.1\n" +
+            "enable-query=false\n" +
+            "enable-rcon=false\n" +
+            "spawn-protection=0\n")
         val javaExecutable = Path.of(
             System.getProperty("java.home"), "bin",
             if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
@@ -245,7 +245,7 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
         ).directory(work.toFile()).redirectErrorStream(true).start()
         val output = StringBuilder()
         val reader = Thread {
-            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\\n') } }
+            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\n') } }
         }
         reader.start()
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90)
@@ -259,7 +259,7 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
             process.destroyForcibly()
             process.waitFor(10, TimeUnit.SECONDS)
             reader.join(2000)
-            error("Minecraft 26.2 reference server did not reach ready state. Output:\\n$output")
+            error("Minecraft 26.2 reference server did not reach ready state. Output:\n$output")
         }
         process.destroy()
         if (!process.waitFor(10, TimeUnit.SECONDS)) {
@@ -267,6 +267,6 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
             process.waitFor(10, TimeUnit.SECONDS)
         }
         reader.join(5000)
-        check(!process.isAlive) { "Minecraft 26.2 reference server did not terminate. Output:\\n$output" }
+        check(!process.isAlive) { "Minecraft 26.2 reference server did not terminate. Output:\n$output" }
     }
 }
