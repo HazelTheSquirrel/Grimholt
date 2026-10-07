@@ -33,6 +33,13 @@ public final class VanillaRegionManager implements AutoCloseable {
         return runtimes.computeIfAbsent(owner, VanillaRegionRuntime::new);
     }
 
+    public VanillaRegionRuntime region(UUID worldId, VanillaWorldModel worldModel, int chunkX, int chunkZ) {
+        Objects.requireNonNull(worldModel, "worldModel");
+        if (!worldId.equals(worldModel.worldId())) throw new IllegalArgumentException("World model UUID does not match region UUID");
+        OwnedRegion owner = regions.region(worldId, chunkX, chunkZ);
+        return runtimes.computeIfAbsent(owner, ignored -> new VanillaRegionRuntime(owner, worldModel));
+    }
+
     public void execute(UUID worldId, int chunkX, int chunkZ, Runnable action) {
         region(worldId, chunkX, chunkZ).owner().execute(action);
     }
