@@ -2,36 +2,63 @@
 
 ## Core principle
 
-Grimholt is a server implementation, not a Bukkit compatibility layer.
+Grimholt is a **Minecraft server fork**, not a Bukkit compatibility layer, Minestom plugin, or permanent wrapper around an external Minestom runtime.
 
 The public dependency direction is:
 
-Minecraft client
-  -> Grimholt server
-  -> Grimholt API
-  -> Grimholt plugins
+Minecraft client -> Grimholt server runtime -> Grimholt API -> Grimholt plugins
 
-Server internals may use Minestom. Plugins must depend on the Grimholt API and explicitly documented stable libraries only.
+Minestom is the source foundation from which Grimholt is being forked. During the migration, external Minestom code may remain behind internal boundaries, but those boundaries are temporary.
 
-## Boundary layers
+## Strategic end state
 
-### 1. Bootstrap
-Owns process startup, configuration, logging and shutdown.
+The final architecture is:
 
-### 2. Server kernel
-Owns lifecycle, global coordination, ownership contracts and server-wide state. Tick execution is partitioned; there is no plugin-facing global main-thread contract.
+Minecraft client -> Grimholt protocol/runtime -> Grimholt region/world/entity simulation
 
-### 3. Minecraft implementation
-Owns protocol-facing behavior and vanilla gameplay.
+Grimholt must own:
 
-### 4. Persistence
-Owns world/player/configuration persistence and serialization boundaries.
+- protocol and connection lifecycle,
+- configuration/login/play handling,
+- world and chunk state,
+- entity and player state,
+- gameplay ticking,
+- physics and interactions,
+- vanilla block/item/entity behavior,
+- persistence,
+- scheduling and region ownership,
+- plugin lifecycle and public API.
 
-### 5. Plugin platform
-Owns plugin discovery, class loading, dependency resolution, lifecycle, events, commands, scheduling and services.
+An external Minestom Maven artifact must **not** be required at runtime in the final architecture.
 
-### 6. Public API
-Contains only types that plugins are expected to compile against.
+## Fork migration
+
+The project is intentionally migrating in stages:
+
+1. establish Grimholt-owned kernel and public API;
+2. import/adopt the required Minestom source foundation into Grimholt;
+3. establish Grimholt package and ownership boundaries;
+4. move network/protocol ownership into Grimholt;
+5. move instance/chunk/world ownership into Grimholt;
+6. move entity/player simulation into Grimholt;
+7. make Grimholt scheduling/ticking authoritative;
+8. complete Grimholt-owned Minecraft parity;
+9. remove the external `net.minestom:minestom` dependency;
+10. maintain future updates as deliberate Grimholt fork integrations.
+
+## Current transitional boundary (2026-10-07)
+
+Today, Minestom still provides substantial low-level runtime functionality, including the live transport/connection path and instance substrate. Grimholt owns the higher-level kernel, API, world model abstractions and growing vanilla implementation.
+
+This is **not the final architecture**.
+
+The distinction is important:
+
+- **Current:** Grimholt is built on Minestom.
+- **Target:** Grimholt is a fork derived from Minestom, with Grimholt owning the resulting server runtime.
+- **Final:** No external Minestom server runtime is needed to run Grimholt.
+
+Minestom therefore remains an important upstream/source foundation, but it is not allowed to become the permanent authoritative implementation of Grimholt gameplay or server behavior.
 
 ## Concurrency model
 
@@ -48,13 +75,6 @@ The API must not force plugins to assume that every operation executes on one gl
 A plugin must never receive unrestricted references to internal implementation objects.
 
 The API should expose capabilities, not implementation classes.
-
-Examples:
-
-- Public `Player` interface instead of internal player implementation.
-- Public `World` interface instead of internal world implementation.
-- Public event contracts instead of direct event-bus internals.
-- Public scheduler abstraction instead of executor internals.
 
 ## Performance rules
 
@@ -77,7 +97,7 @@ Forbidden runtime dependencies:
 - Paper
 - Folia
 
-Minestom is an implementation foundation, not a plugin API.
+Minestom is currently an allowed **transitional source/runtime dependency**, but it is not an allowed permanent final runtime dependency.
 
 Every new dependency must have:
 - a concrete reason,
@@ -101,45 +121,3 @@ A feature is done only when:
 4. dependency boundaries were checked,
 5. concurrency implications were checked,
 6. the feature was re-reviewed after implementation.
-
-
-## Current runtime boundary (2026-10-07)
-
-The architecture is intentionally transitional.
-
-Today, Minestom still owns:
-
-- network accept/login/configuration/play transport,
-- the live Minestom `InstanceContainer`,
-- the live Minestom `InstanceContainer` and transport adapter; persistence is transitioning to Grimholt-owned storage.
-- player movement events,
-- the scheduler primitive used to execute Grimholt region work.
-
-Grimholt owns:
-
-- the public server/plugin API,
-- lifecycle coordination,
-- the vanilla gameplay kernel,
-- the region ownership abstraction,
-- the Grimholt world model,
-- the Minecraft 26.2 target-version parity implementation.
-
-So Grimholt is currently a **server implementation built on Minestom**, not a source fork of Minestom and not yet a fully independent Minecraft runtime.
-
-### Required final boundary
-
-The end state is:
-
-`Minecraft client -> Grimholt protocol/runtime -> Grimholt region/world/entity simulation`
-
-with Minestom isolated behind a replaceable compatibility/transport adapter.
-
-Minestom must not remain the authoritative owner of:
-
-- world/chunk state,
-- entity state,
-- player simulation,
-- gameplay ticking,
-- vanilla block/entity behavior.
-
-This distinction is important: **using Minestom as a low-level implementation library is allowed by the project design; making Minestom the server's authoritative gameplay runtime is not the final architecture.**
