@@ -36,7 +36,7 @@ public final class MinestomAdapter {
             MinecraftServer.setBrandName("Grimholt");
             if (api != null) {
                 var metrics = api.services().require(MetricsRegistry.class);
-                overworld = MinecraftServer.getInstanceManager().createInstanceContainer(DimensionType.OVERWORLD.key());
+                overworld = MinecraftServer.getInstanceManager().createInstanceContainer(DimensionType.OVERWORLD);
                 overworld.setGenerator(new GrimholtTerrainGenerator(0L));
                 overworld.enableAutoChunkLoad(true);
                 api.addWorld(overworld);
