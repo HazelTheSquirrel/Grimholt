@@ -1,7 +1,9 @@
 package dev.grimholt.server.api;
 
 import dev.grimholt.api.*;
+import dev.grimholt.server.command.GrimholtCommandDispatcher;
 import dev.grimholt.server.lifecycle.Lifecycle;
+import dev.grimholt.server.network.GrimholtConnection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -11,12 +13,16 @@ public final class GrimholtServerImpl implements GrimholtServer {
     private final DefaultEventBus events;
     private final BoundedScheduler scheduler;
     private final DefaultServiceRegistry services;
+    private final GrimholtCommandDispatcher commands;
     private PluginManager plugins;
+    private volatile int maxPlayers = 1000;
     private final Map<UUID, GrimholtPlayerImpl> players = new ConcurrentHashMap<>();
     private final Map<UUID, GrimholtWorldImpl> worlds = new ConcurrentHashMap<>();
+    private final Map<UUID, GrimholtConnection> connections = new ConcurrentHashMap<>();
 
-    public GrimholtServerImpl(Lifecycle l, DefaultEventBus e, BoundedScheduler s, DefaultServiceRegistry r) {
-        lifecycle = l; events = e; scheduler = s; services = r;
+    public GrimholtServerImpl(Lifecycle l, DefaultEventBus e, BoundedScheduler s, DefaultServiceRegistry r,
+                              GrimholtCommandDispatcher commands) {
+        lifecycle = l; events = e; scheduler = s; services = r; this.commands = Objects.requireNonNull(commands);
     }
 
     public void attachPluginManager(PluginManager p) {
@@ -24,8 +30,15 @@ public final class GrimholtServerImpl implements GrimholtServer {
         plugins = Objects.requireNonNull(p);
     }
 
+    public void configureLimits(int maxPlayers) {
+        if (maxPlayers < 1) throw new IllegalArgumentException("maxPlayers");
+        this.maxPlayers = maxPlayers;
+    }
+
+    public int maxPlayers() { return maxPlayers; }
+
     public void addWorld(UUID id, String dimension) {
-        worlds.put(id, new GrimholtWorldImpl(id, dimension, () -> players.values().stream()
+        worlds.putIfAbsent(id, new GrimholtWorldImpl(id, dimension, () -> players.values().stream()
                 .map(x -> (GrimholtPlayer) x).toList()));
     }
 
@@ -33,12 +46,27 @@ public final class GrimholtServerImpl implements GrimholtServer {
         players.put(id, new GrimholtPlayerImpl(id, name, messageSink, kickSink));
     }
 
+    public void playerConnected(UUID id, String name, GrimholtConnection connection) {
+        addPlayer(id, name, connection::sendChat, connection::kick);
+        connections.put(id, connection);
+    }
+
+    public void playerDisconnected(UUID id) {
+        connections.remove(id);
+        removePlayer(id);
+    }
+
     public void updatePlayer(UUID id, Position position) {
         GrimholtPlayerImpl player = players.get(id);
         if (player != null) player.position(position);
     }
 
-    public void removePlayer(UUID id) { players.remove(id); }
+    public void updatePlayerPosition(UUID id, Position position) { updatePlayer(id, position); }
+
+    public void removePlayer(UUID id) {
+        players.remove(id);
+        connections.remove(id);
+    }
 
     public ServerState state() {
         return switch (lifecycle.state()) {
@@ -59,21 +87,23 @@ public final class GrimholtServerImpl implements GrimholtServer {
     public Scheduler scheduler() { return scheduler; }
     public ServiceRegistry services() { return services; }
     public PluginManager plugins() { return Objects.requireNonNull(plugins, "Plugin manager not attached"); }
-    public void bindTickScheduler(java.util.function.Consumer<Runnable> executor) { scheduler.bindTickExecutor(executor); }
+    public GrimholtCommandDispatcher commandDispatcher() { return commands; }
 
-    public void registerCommand(dev.grimholt.api.Command command) {
-        throw new UnsupportedOperationException(
-                "Command transport is not yet owned by the Grimholt runtime");
-    }
+    @Override public void registerCommand(Command command) { commands.register(command); }
 
-    public void broadcast(String message) {
+    @Override public void broadcast(String message) {
         players.values().forEach(player -> player.sendMessage(message));
     }
 
     public void clear() {
         players.clear();
         worlds.clear();
+        connections.clear();
         events.clear();
         services.clear();
+    }
+
+    public void attachConnection(GrimholtConnection connection) {
+        Objects.requireNonNull(connection, "connection");
     }
 }
