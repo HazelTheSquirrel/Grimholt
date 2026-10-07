@@ -12,11 +12,13 @@ This includes direct dependencies and accidental transitive dependencies.
 
 ## Minestom
 
-Minestom is permitted as the server implementation foundation.
+Minestom is currently permitted only as a temporary migration dependency/source foundation.
 
 However, Grimholt's public API must not become a thin re-export of Minestom.
 
-Internal Minestom types should remain behind the Grimholt implementation boundary whenever practical.
+Required Minestom implementation code will progressively become Grimholt-owned, adapted or replaced.
+
+The final standalone Grimholt runtime must not require the external `net.minestom:minestom` Maven artifact. Every remaining Minestom dependency needs a migration/removal path.
 
 ## Review checklist
 
