@@ -14,7 +14,7 @@ public final class GrimholtNetworkServer implements AutoCloseable {
     private final GrimholtServerImpl server;
     private final GrimholtCommandDispatcher commands;
     private final VanillaServerKernel kernel;
-    private final boolean onlineMode;
+    private volatile boolean onlineMode;
     private final Set<GrimholtConnection> connections = ConcurrentHashMap.newKeySet();
     private volatile ServerSocket socket;
     private volatile boolean running;
@@ -39,6 +39,7 @@ public final class GrimholtNetworkServer implements AutoCloseable {
         } catch (IOException e) {
             throw new IllegalStateException("Cannot bind Grimholt network socket", e);
         }
+        onlineMode = config.onlineMode();
         running = true;
         acceptLoop();
     }
