@@ -29,7 +29,10 @@ public final class VanillaGeneratedData {
     }
 
     public boolean available() {
-        if (filesystemRoot != null && Files.isDirectory(filesystemRoot)) return true;
+        if (filesystemRoot != null && Files.isDirectory(filesystemRoot)) {
+            return Files.isRegularFile(filesystemRoot.resolve("manifest.properties"))
+                && Files.isRegularFile(filesystemRoot.resolve("reports/blocks.json"));
+        }
         try (InputStream manifest = classLoader.getResourceAsStream(ROOT + "/manifest.properties");
              InputStream blocks = classLoader.getResourceAsStream(ROOT + "/reports/blocks.json")) {
             return manifest != null && blocks != null;
