@@ -4,6 +4,7 @@ import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.generator.GenerationUnit;
 import net.minestom.server.instance.generator.Generator;
+import dev.grimholt.server.vanilla.VanillaOverworldGenerator;
 
 /**
  * Temporary compatibility terrain for the Minestom transport.
@@ -14,10 +15,10 @@ import net.minestom.server.instance.generator.Generator;
  * wired into the native world pipeline.</p>
  */
 public final class GrimholtTerrainGenerator implements Generator {
-    private final long seed;
+    private final VanillaOverworldGenerator generator;
 
     public GrimholtTerrainGenerator(long seed) {
-        this.seed = seed;
+        this.generator = new VanillaOverworldGenerator(seed);
     }
 
     @Override
@@ -42,15 +43,6 @@ public final class GrimholtTerrainGenerator implements Generator {
     }
 
     private int surfaceY(int x, int z) {
-        long h = seed;
-        h ^= (long) x * 0x9E3779B97F4A7C15L;
-        h ^= (long) z * 0xC2B2AE3D27D4EB4FL;
-        h ^= h >>> 30;
-        h *= 0xBF58476D1CE4E5B9L;
-        h ^= h >>> 27;
-        h *= 0x94D049BB133111EBL;
-        h ^= h >>> 31;
-        int variation = (int) Math.floorMod(h, 9L) - 4;
-        return 64 + variation;
+        return generator.surfaceY(x, z);
     }
 }
