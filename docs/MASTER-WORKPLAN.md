@@ -21,8 +21,8 @@ These rules apply to every phase.
 - [ ] No Paper dependency.
 - [ ] No Folia dependency.
 - [ ] No compatibility layer that requires those APIs at runtime.
-- [ ] Minestom may be used internally as the implementation foundation.
-- [ ] Minestom implementation classes must not become the Grimholt public plugin API.
+- [x] External Minestom runtime dependency removed.
+- [x] Grimholt implementation classes own the runtime; Minestom is reference-only.
 - [ ] Plugins compile against Grimholt API, not against internal server classes.
 
 ### 0.2 Branch and repository rules
@@ -259,13 +259,15 @@ and deterministic failure behavior.
 - [ ] Ensure shutdown is idempotent.
 - [ ] Ensure all owned executors/resources are closed.
 
-## 4.6 Minestom integration boundary
+## 4.6 Native runtime boundary
 
-- [ ] Integrate the current supported Minestom version/API.
-- [ ] Keep Minestom behind the implementation boundary.
-- [ ] Do not expose Minestom types from Grimholt API.
-- [ ] Define the first adapter/wrapper layer.
-- [ ] Document which Minestom functionality is currently relied upon.
+- [x] Grimholt owns the command/dispatcher core.
+- [x] Grimholt owns TCP connections and protocol framing.
+- [x] Grimholt owns player connection lifecycle.
+- [x] Grimholt owns world/chunk transport abstractions.
+- [x] Grimholt owns entity lifecycle abstractions.
+- [x] Grimholt owns region ticking and scheduling.
+- [x] Remove the Minestom runtime dependency and adapter.
 
 ## 4.7 Exit gate
 
