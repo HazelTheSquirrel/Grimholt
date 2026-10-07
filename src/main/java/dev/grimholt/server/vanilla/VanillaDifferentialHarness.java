@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Differential harness against a real Mojang 26.4 Snapshot 3 reference.
+ * Differential harness against a real Mojang 26.2 reference.
  *
  * <p>The harness fails closed when no exact reference jar is supplied. A
  * successful process launch is not treated as gameplay parity; callers must
@@ -19,7 +19,7 @@ public final class VanillaDifferentialHarness {
     private final Path referenceJar;
 
     public VanillaDifferentialHarness(Path referenceJar) {
-        this.referenceJar = VanillaSnapshot26_4S3.requireReference(referenceJar).jar();
+        this.referenceJar = VanillaSnapshot26_2.requireReference(referenceJar).jar();
     }
 
     public Result run(List<String> args, Path workDir, long timeoutSeconds)
@@ -57,18 +57,18 @@ public final class VanillaDifferentialHarness {
         String value = System.getenv("GRIMHOLT_MC_26_4_S3_JAR");
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(
-                "Set GRIMHOLT_MC_26_4_S3_JAR to the real Minecraft 26.4 Snapshot 3 server jar");
+                "Set GRIMHOLT_MC_26_4_S3_JAR to the real Minecraft 26.2 server jar");
         }
-        return VanillaSnapshot26_4S3.requireReference(Path.of(value)).jar();
+        return VanillaSnapshot26_2.requireReference(Path.of(value)).jar();
     }
 
     public static void requireReference(String property) {
         String value = System.getenv(property);
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(
-                "Set " + property + " to the real Minecraft 26.4 Snapshot 3 server jar");
+                "Set " + property + " to the real Minecraft 26.2 server jar");
         }
-        VanillaSnapshot26_4S3.requireReference(Path.of(value));
+        VanillaSnapshot26_2.requireReference(Path.of(value));
     }
 
     private static String javaExecutable() {
