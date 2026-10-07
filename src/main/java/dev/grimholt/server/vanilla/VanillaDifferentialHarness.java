@@ -54,10 +54,10 @@ public final class VanillaDifferentialHarness {
     }
 
     public static Path requireReferenceFromEnvironment() {
-        String value = System.getenv("GRIMHOLT_MC_26_4_S3_JAR");
+        String value = System.getenv("GRIMHOLT_MC_26_2_JAR");
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(
-                "Set GRIMHOLT_MC_26_4_S3_JAR to the real Minecraft 26.2 server jar");
+                "Set GRIMHOLT_MC_26_2_JAR to the real Minecraft 26.2 server jar");
         }
         return VanillaSnapshot26_2.requireReference(Path.of(value)).jar();
     }
