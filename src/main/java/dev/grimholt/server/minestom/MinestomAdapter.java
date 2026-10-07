@@ -56,6 +56,8 @@ public final class MinestomAdapter {
                         if (vanillaKernel != null) {
                             var instance = e.getPlayer().getInstance();
                             if (instance != null) {
+                                var state = vanillaKernel.registerPlayer(instance.getUuid(), e.getPlayer().getUuid());
+                                state.connect(e.getPlayer().getUsername());
                                 vanillaKernel.updatePlayerPosition(instance.getUuid(), e.getPlayer().getUuid(),
                                         e.getPlayer().getPosition().x(), e.getPlayer().getPosition().y(),
                                         e.getPlayer().getPosition().z(), e.getPlayer().getPosition().yaw(),
@@ -75,7 +77,7 @@ public final class MinestomAdapter {
                 });
                 events.addListener(PlayerDisconnectEvent.class, e -> {
                     release(e.getPlayer().getUuid());
-                    if (vanillaKernel != null) vanillaKernel.removePlayer(e.getPlayer().getUuid());
+                    if (vanillaKernel != null) { var state = vanillaKernel.removePlayer(e.getPlayer().getUuid()); if (state != null) state.disconnect(); }
                     var p = new MinestomPlayer(e.getPlayer()); metrics.quit(); api.events().post(new PlayerQuitEvent(p)); api.removePlayer(e.getPlayer().getUuid());
                 });
             }
