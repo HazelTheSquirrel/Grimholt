@@ -111,7 +111,7 @@ Today, Minestom still owns:
 
 - network accept/login/configuration/play transport,
 - the live Minestom `InstanceContainer`,
-- Anvil world loading through `AnvilLoader`,
+- the live Minestom `InstanceContainer` and transport adapter; persistence is transitioning to Grimholt-owned storage.
 - player movement events,
 - the scheduler primitive used to execute Grimholt region work.
 
@@ -122,7 +122,7 @@ Grimholt owns:
 - the vanilla gameplay kernel,
 - the region ownership abstraction,
 - the Grimholt world model,
-- the target-version parity implementation.
+- the Minecraft 26.2 target-version parity implementation.
 
 So Grimholt is currently a **server implementation built on Minestom**, not a source fork of Minestom and not yet a fully independent Minecraft runtime.
 
