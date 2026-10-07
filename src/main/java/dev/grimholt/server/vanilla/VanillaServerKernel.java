@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 public final class VanillaServerKernel implements AutoCloseable {
     private final VanillaRegionManager regions;
     private final Map<UUID, VanillaWorldModel> worlds = new ConcurrentHashMap<>();
+    private final Map<UUID, VanillaPlayerState> players = new ConcurrentHashMap<>();
     private final Consumer<Throwable> failureHandler;
     private volatile boolean running;
 
@@ -39,6 +40,7 @@ public final class VanillaServerKernel implements AutoCloseable {
         running = false;
         regions.close();
         worlds.clear();
+        players.clear();
     }
 
     public boolean running() {
@@ -53,6 +55,31 @@ public final class VanillaServerKernel implements AutoCloseable {
 
     public VanillaWorldModel world(UUID worldId) {
         return worlds.get(worldId);
+    }
+
+    public VanillaPlayerState registerPlayer(UUID worldId, UUID playerId) {
+        requireRunning();
+        if (!worlds.containsKey(worldId)) throw new IllegalArgumentException("Unknown world: " + worldId);
+        Objects.requireNonNull(playerId, "playerId");
+        return players.computeIfAbsent(playerId, ignored -> new VanillaPlayerState(playerId));
+    }
+
+    public VanillaPlayerState player(UUID playerId) {
+        return players.get(playerId);
+    }
+
+    public void updatePlayerPosition(UUID worldId, UUID playerId, double x, double y, double z,
+                                     float yaw, float pitch, boolean onGround) {
+        VanillaPlayerState player = registerPlayer(worldId, playerId);
+        player.position(x, y, z, yaw, pitch, onGround);
+    }
+
+    public VanillaPlayerState removePlayer(UUID playerId) {
+        return players.remove(playerId);
+    }
+
+    public int playerCount() {
+        return players.size();
     }
 
     public VanillaRegionRuntime region(UUID worldId, int chunkX, int chunkZ) {
