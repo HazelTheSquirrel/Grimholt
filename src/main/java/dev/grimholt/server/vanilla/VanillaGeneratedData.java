@@ -8,14 +8,14 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * Access layer for data generated from the exact 26.2 server jar.
+ * Access layer for data generated from the exact 26.4 server jar.
  *
  * <p>No hand-written substitute is accepted. Data is loaded from either the
  * explicit GRIMHOLT_VANILLA_DATA directory or the classpath location produced
  * by the Gradle generation task.</p>
  */
 public final class VanillaGeneratedData {
-    public static final String ROOT = "vanilla/26.2";
+    public static final String ROOT = "vanilla/26.4";
     private final Path filesystemRoot;
     private final ClassLoader classLoader;
 
@@ -44,7 +44,7 @@ public final class VanillaGeneratedData {
     public void requireAvailable() {
         if (!available()) {
             throw new IllegalStateException(
-                "Exact 26.2 generated data is missing. Run generateVanilla26_2 " +
+                "Exact 26.4 generated data is missing. Run generateVanilla26_2 " +
                 "or set GRIMHOLT_VANILLA_DATA to its generated directory.");
         }
     }
@@ -70,7 +70,7 @@ public final class VanillaGeneratedData {
 
     public String require(String relativePath) {
         return read(relativePath).orElseThrow(() ->
-            new IllegalStateException("Missing exact 26.2 generated file: " + relativePath));
+            new IllegalStateException("Missing exact 26.4 generated file: " + relativePath));
     }
 
     public List<String> files() {
