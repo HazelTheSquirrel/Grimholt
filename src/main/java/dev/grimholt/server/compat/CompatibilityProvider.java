@@ -1,17 +1,17 @@
 package dev.grimholt.server.compat;
 
-import net.minestom.server.MinecraftServer;
+import dev.grimholt.server.vanilla.VanillaSnapshot26_2;
 
 public final class CompatibilityProvider {
-    public static final String VANILLA_BEHAVIOR_REFERENCE = "26.4 Snapshot 3";
+    public static final String VANILLA_BEHAVIOR_REFERENCE = VanillaSnapshot26_2.VERSION;
 
     private CompatibilityProvider() {}
 
     public static CompatibilityInfo current(String implementationVersion) {
         return new CompatibilityInfo(
-                "26.2",
-                MinecraftServer.PROTOCOL_VERSION,
-                MinecraftServer.DATA_VERSION,
+                VanillaSnapshot26_2.VERSION,
+                VanillaSnapshot26_2.PROTOCOL,
+                VanillaSnapshot26_2.WORLD_DATA_VERSION,
                 implementationVersion
         );
     }
