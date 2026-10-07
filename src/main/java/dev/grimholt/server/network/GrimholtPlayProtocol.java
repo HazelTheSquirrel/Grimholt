@@ -89,7 +89,7 @@ public final class GrimholtPlayProtocol {
             DataOutputStream data = new DataOutputStream(out);
             data.writeLong(((long) Math.floor(position.x()) & 0x3ffffffL) << 38
                     | ((long) Math.floor(position.z()) & 0x3ffffffL) << 12
-                    | (Math.floor(position.y()) & 0xfffL));
+                    | ((long) Math.floor(position.y()) & 0xfffL));
             data.writeFloat(position.yaw());
             return out.toByteArray();
         } catch (IOException e) {
