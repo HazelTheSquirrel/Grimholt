@@ -24,7 +24,7 @@ Grimholt API
 Grimholt Plugins
 ```
 
-Minestom is the starting codebase and a reference for proven server infrastructure. Relevant source will progressively be imported/adopted into Grimholt, renamed/repackaged where required, modified and owned by Grimholt.
+Minestom was the starting technical foundation. It is now only a reference for behavior/protocol/architecture. Grimholt implementation code is reimplemented and owned by Grimholt; Minestom source is not copied or vendored into the runtime.
 
 ## Ownership rule
 
