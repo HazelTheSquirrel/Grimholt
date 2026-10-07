@@ -47,6 +47,17 @@ class VanillaParityInfrastructureTest {
         finally{pool.shutdownNow();}
     }
 
+    @Test void thousandPlayerBenchmarkCompletes(){
+        try {
+            VanillaMultithreadingBenchmark.Result result=new VanillaMultithreadingBenchmark().run(1000,64);
+            assertEquals(1000,result.players());
+            assertEquals(64,result.regions());
+            assertEquals(40000,result.operations());
+            assertTrue(result.elapsedNanos()>0);
+            assertTrue(result.opsPerSecond()>0);
+        } catch(Exception e){fail(e);}
+    }
+
     @Test void differentialHarnessRequiresRealReference(){
         assertThrows(IllegalStateException.class,()->VanillaDifferentialHarness.requireReference("GRIMHOLT_MC_26_4_S3_JAR"));
     }
