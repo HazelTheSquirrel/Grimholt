@@ -128,135 +128,138 @@ tasks.jar {
 
 
 /*
- * Exact Mojang 26.4 Snapshot 3 data/reference tooling.
+ * Exact Mojang 26.2 reference tooling.
+ *
+ * The checked-in reference/minecraft/26.2/server.jar is the sole vanilla
+ * reference input. Grimholt never ships it inside the runtime artifact.
+ * Updating Minecraft is intentionally manual: replace the reference JAR,
+ * update the pinned checksum/constants, regenerate the reports, then run CI.
  */
-val vanillaGeneratedDir = layout.buildDirectory.dir("generated-vanilla/26.4-snapshot-3")
-val vanillaDownloadDir = layout.buildDirectory.dir("vanilla-reference")
+val vanillaGeneratedDir = layout.buildDirectory.dir("generated-vanilla/26.2")
+val vanillaReferenceJar = layout.projectDirectory.file("reference/minecraft/26.2/server.jar")
 
-val generateVanilla26_4S3 by tasks.registering {
+val generateVanilla26_2 by tasks.registering {
     group = "vanilla"
-    description = "Download Mojang 26.4 Snapshot 3 and generate exact reports/data."
+    description = "Generate exact Minecraft 26.2 reports from the checked-in reference server.jar."
     val outputDir = vanillaGeneratedDir
-    val downloadDir = vanillaDownloadDir
+    inputs.file(vanillaReferenceJar)
     outputs.dir(outputDir)
 
     doLast {
-        val version = "26.4-snapshot-3"
-        val manifest = URI("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").toURL().readText()
-        val versionPattern = """\{"id"\s*:\s*"${Pattern.quote(version)}"[^{}]*"url"\s*:\s*"([^"]+)"[^{}]*\}"""
-        val versionUrl = Regex(versionPattern).find(manifest)?.groupValues?.get(1)
-            ?: error("Mojang version manifest does not contain " + version)
-        val versionJson = URI(versionUrl).toURL().readText()
-        val server = Regex("""\"server\"\s*:\s*\{[^{}]*\"sha1\"\s*:\s*\"([0-9a-f]{40})\"[^{}]*\"url\"\s*:\s*\"([^\"]+)\"""")
-            .find(versionJson) ?: error("Mojang version metadata does not contain a server download for " + version)
-        val expectedSha1 = server.groupValues[1]
-        val jarUrl = server.groupValues[2]
-
-        val downloadPath = downloadDir.get().asFile.toPath().resolve("server-" + version + ".jar")
-        Files.createDirectories(downloadPath.parent)
-        if (!Files.isRegularFile(downloadPath)) {
-            URI(jarUrl).toURL().openStream().use { input ->
-                Files.copy(input, downloadPath, StandardCopyOption.REPLACE_EXISTING)
-            }
-        }
+        val version = "26.2"
+        val expectedSha1 = "823e2250d24b3ddac457a60c92a6a941943fcd6a"
+        val jar = vanillaReferenceJar.asFile.toPath()
+        check(Files.isRegularFile(jar)) { "Missing Minecraft 26.2 reference JAR: $jar" }
         val actualSha1 = MessageDigest.getInstance("SHA-1")
-            .digest(Files.readAllBytes(downloadPath))
+            .digest(Files.readAllBytes(jar))
             .joinToString("") { "%02x".format(it) }
         check(actualSha1 == expectedSha1) {
-            "SHA-1 mismatch for " + version + ": expected " + expectedSha1 + ", got " + actualSha1
+            "SHA-1 mismatch for Minecraft 26.2 reference: expected $expectedSha1, got $actualSha1"
         }
 
-        val workDir = downloadDir.get().asFile.toPath().resolve("reports-work")
+        val workDir = layout.buildDirectory.dir("vanilla-reference/26.2").get().asFile.toPath()
+        if (Files.exists(workDir)) workDir.toFile().deleteRecursively()
         Files.createDirectories(workDir)
         val javaExecutable = Path.of(
             System.getProperty("java.home"), "bin",
             if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
         )
+        val generatedDir = workDir.resolve("generated")
         val process = ProcessBuilder(
-            javaExecutable.toString(), "-DbundlerMainClass=net.minecraft.data.Main", "-jar", downloadPath.toAbsolutePath().toString(), "--all", "--output", workDir.resolve("generated").toString()
+            javaExecutable.toString(),
+            "-DbundlerMainClass=net.minecraft.data.Main",
+            "-jar", jar.toAbsolutePath().toString(),
+            "--all", "--output", generatedDir.toAbsolutePath().toString()
         ).directory(workDir.toFile()).redirectErrorStream(true).start()
         check(process.waitFor(180, TimeUnit.SECONDS)) {
-            "Mojang " + version + " report generation timed out"
+            process.destroyForcibly()
+            "Mojang 26.2 report generation timed out"
         }
+        val output = process.inputStream.readBytes().toString(Charsets.UTF_8)
         check(process.exitValue() == 0) {
-            "Mojang " + version + " --all failed (" + process.exitValue() + "): " + process.inputStream.readBytes().toString(Charsets.UTF_8)
+            "Mojang 26.2 --all failed (${process.exitValue()}): $output"
         }
+        check(Files.isDirectory(generatedDir)) { "Mojang 26.2 data generator produced no generated directory" }
 
         val out = outputDir.get().asFile.toPath()
         if (Files.exists(out)) out.toFile().deleteRecursively()
         Files.createDirectories(out)
-
-        val generated = workDir.resolve("generated")
-        check(Files.isDirectory(generated)) { "Mojang data generator produced no generated directory" }
-        generated.toFile().copyRecursively(out.toFile(), overwrite = true)
-
+        generatedDir.toFile().copyRecursively(out.toFile(), overwrite = true)
         out.resolve("manifest.properties").toFile().writeText(
-            "version=" + version + "\n" +
-            "protocol=1073742165\n" +
-            "worldDataVersion=5122\n" +
-            "dataPackVersion=123\n" +
-            "resourcePackVersion=100\n" +
-            "javaMajor=25\n" +
-            "serverSha1=" + expectedSha1 + "\n" +
-            "serverUrl=" + jarUrl + "\n"
+            "version=$version\\n" +
+            "protocol=776\\n" +
+            "worldDataVersion=4903\\n" +
+            "dataPackVersion=107.1\\n" +
+            "resourcePackVersion=88\\n" +
+            "javaMajor=25\\n" +
+            "serverSha1=$expectedSha1\\n" +
+            "serverPath=reference/minecraft/26.2/server.jar\\n"
         )
     }
 }
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(generateVanilla26_4S3)
-    from(vanillaGeneratedDir) {
-        into("vanilla/26.4-snapshot-3")
+    dependsOn(generateVanilla26_2)
+    from(vanillaGeneratedDir) { into("vanilla/26.2") }
+}
+
+val verifyVanilla26_2Reference by tasks.registering {
+    group = "verification"
+    description = "Verify the checked-in Minecraft 26.2 reference server.jar checksum."
+    doLast {
+        val jar = vanillaReferenceJar.asFile.toPath()
+        check(Files.isRegularFile(jar)) { "Reference jar does not exist: $jar" }
+        val actual = MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(jar))
+            .joinToString("") { "%02x".format(it) }
+        check(actual == "823e2250d24b3ddac457a60c92a6a941943fcd6a") {
+            "Minecraft 26.2 reference SHA-1 mismatch: $actual"
+        }
+        println("Verified Minecraft 26.2 reference: $jar")
     }
 }
 
-val vanillaReferenceSmoke26_4S3 by tasks.registering {
+val vanillaReferenceSmoke26_2 by tasks.registering {
     group = "verification"
     notCompatibleWithConfigurationCache("The smoke test launches and manages an external JVM process.")
-    description = "Boot the exact Mojang 26.4 Snapshot 3 server jar and verify a clean startup/shutdown."
-    dependsOn(generateVanilla26_4S3)
+    description = "Boot the exact checked-in Mojang 26.2 server.jar and verify clean startup/shutdown."
+    dependsOn(verifyVanilla26_2Reference)
     doLast {
-        val jar = vanillaDownloadDir.get().asFile.toPath().resolve("server-26.4-snapshot-3.jar")
-        check(Files.isRegularFile(jar)) { "Generated reference jar missing: " + jar }
-        val work = layout.buildDirectory.dir("vanilla-reference-smoke").get().asFile.toPath()
+        val jar = vanillaReferenceJar.asFile.toPath()
+        val work = layout.buildDirectory.dir("vanilla-reference-smoke/26.2").get().asFile.toPath()
         if (Files.exists(work)) work.toFile().deleteRecursively()
         Files.createDirectories(work)
-        Files.writeString(work.resolve("eula.txt"), "eula=true\n")
+        Files.writeString(work.resolve("eula.txt"), "eula=true\\n")
         Files.writeString(work.resolve("server.properties"),
-            "online-mode=false\n" +
-            "server-port=0\n" +
-            "server-ip=127.0.0.1\n" +
-            "enable-query=false\n" +
-            "enable-rcon=false\n" +
-            "spawn-protection=0\n")
+            "online-mode=false\\n" +
+            "server-port=0\\n" +
+            "server-ip=127.0.0.1\\n" +
+            "enable-query=false\\n" +
+            "enable-rcon=false\\n" +
+            "spawn-protection=0\\n")
         val javaExecutable = Path.of(
             System.getProperty("java.home"), "bin",
             if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
         )
         val process = ProcessBuilder(
-            javaExecutable.toString(), "-Xms512M", "-Xmx2G",
-            "-jar", jar.toAbsolutePath().toString(), "--nogui"
+            javaExecutable.toString(), "-Xms512M", "-Xmx2G", "-jar", jar.toAbsolutePath().toString(), "--nogui"
         ).directory(work.toFile()).redirectErrorStream(true).start()
         val output = StringBuilder()
         val reader = Thread {
-            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\n') } }
+            process.inputStream.bufferedReader().useLines { lines -> lines.forEach { output.append(it).append('\\n') } }
         }
         reader.start()
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90)
         var ready = false
         while (System.nanoTime() < deadline && process.isAlive) {
             val text = output.toString()
-            if (text.contains("Done (") || text.contains("For help, type \"help\"")) {
-                ready = true
-                break
-            }
+            if (text.contains("Done (") || text.contains("For help, type \\"help\\"")) { ready = true; break }
             Thread.sleep(250)
         }
         if (!ready) {
             process.destroyForcibly()
             process.waitFor(10, TimeUnit.SECONDS)
             reader.join(2000)
-            error("26.4 Snapshot 3 reference server did not reach ready state. Output:\\n" + output)
+            error("Minecraft 26.2 reference server did not reach ready state. Output:\\n$output")
         }
         process.destroy()
         if (!process.waitFor(10, TimeUnit.SECONDS)) {
@@ -264,20 +267,6 @@ val vanillaReferenceSmoke26_4S3 by tasks.registering {
             process.waitFor(10, TimeUnit.SECONDS)
         }
         reader.join(5000)
-        check(!process.isAlive) {
-            "26.4 Snapshot 3 reference server did not terminate after the smoke test. Output:\\n" + output
-        }
-    }
-}
-
-val verifyVanilla26_4S3Reference by tasks.registering {
-    group = "verification"
-    description = "Verify that an operator supplied reference is exactly 26.4 Snapshot 3."
-    doLast {
-        val value = System.getenv("GRIMHOLT_MC_26_4_S3_JAR")
-            ?: error("Set GRIMHOLT_MC_26_4_S3_JAR to the real 26.4 Snapshot 3 server jar")
-        val jar = file(value)
-        check(jar.isFile()) { "Reference jar does not exist: " + jar }
-        println("Verified path for pinned Minecraft 26.4 Snapshot 3 reference: " + jar)
+        check(!process.isAlive) { "Minecraft 26.2 reference server did not terminate. Output:\\n$output" }
     }
 }
