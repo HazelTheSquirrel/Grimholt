@@ -103,8 +103,6 @@ public final class VanillaConfigurationSync {
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 VanillaProtocolCodec.writeIdentifier(out, registryId);
-                VanillaProtocol26_2.writeVarInt(out, entries.size());
-
                 List<String> names = entries.keySet().stream()
                         .filter(String.class::isInstance)
                         .map(String.class::cast)
