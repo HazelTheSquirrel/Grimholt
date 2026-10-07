@@ -58,10 +58,11 @@ application {
 /*
  * Grimholt is distributed as a self-contained executable JAR.
  *
- * Minestom remains an internal implementation dependency, but the released
- * server artifact must not require the operator to install a separate
- * Minestom/Minecraft server JAR. Runtime dependencies are folded into the
- * executable artifact; Grimholt owns the actual server lifecycle and API.
+ * During the fork migration Minestom remains an internal implementation
+ * dependency. It is intentionally transitional and will be removed once the
+ * required runtime source has been brought under Grimholt ownership. The
+ * released server artifact must never require a separately installed
+ * Minestom/Minecraft server JAR.
  */
 val standaloneJar by tasks.registering(Jar::class) {
     group = "distribution"
