@@ -12,7 +12,7 @@ class VanillaSnapshot26_2Test {
         assertEquals("26.2", VanillaSnapshot26_2.VERSION);
         assertEquals(776, VanillaSnapshot26_2.PROTOCOL);
         assertEquals(4_903, VanillaSnapshot26_2.WORLD_DATA_VERSION);
-        assertEquals(107, VanillaSnapshot26_2.DATA_PACK_VERSION);
+        assertEquals("107.1", VanillaSnapshot26_2.DATA_PACK_VERSION);
     }
 
     @Test
