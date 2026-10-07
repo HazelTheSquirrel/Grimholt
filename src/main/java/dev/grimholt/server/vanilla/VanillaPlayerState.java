@@ -14,6 +14,9 @@ public final class VanillaPlayerState {
     private int experience;
     private int level;
     private boolean dead;
+    private double x, y, z;
+    private float yaw, pitch;
+    private boolean onGround;
 
     public VanillaPlayerState(UUID uuid) {
         this.uuid = java.util.Objects.requireNonNull(uuid, "uuid");
@@ -29,6 +32,21 @@ public final class VanillaPlayerState {
     public int experience() { return experience; }
     public int level() { return level; }
     public boolean dead() { return dead; }
+    public double x() { return x; }
+    public double y() { return y; }
+    public double z() { return z; }
+    public float yaw() { return yaw; }
+    public float pitch() { return pitch; }
+    public boolean onGround() { return onGround; }
+
+    public void position(double x, double y, double z, float yaw, float pitch, boolean onGround) {
+        if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)
+                || !Float.isFinite(yaw) || !Float.isFinite(pitch)) {
+            throw new IllegalArgumentException("position must be finite");
+        }
+        this.x = x; this.y = y; this.z = z; this.yaw = yaw; this.pitch = pitch;
+        this.onGround = onGround;
+    }
 
     public void damage(float amount) {
         if (amount < 0) throw new IllegalArgumentException("amount must be non-negative");
