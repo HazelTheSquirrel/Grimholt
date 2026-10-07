@@ -31,7 +31,7 @@ public final class Grimholt {
     private final SecurityLimits limits = SecurityLimits.defaults();
     private final VanillaServerKernel vanillaKernel =
             new VanillaServerKernel(1024, scheduler::run, failure -> Logging.failure(failure));
-    private final GrimholtNetworkServer network = new GrimholtNetworkServer(api, commands);
+    private final GrimholtNetworkServer network = new GrimholtNetworkServer(api, commands, vanillaKernel);
     private final GrimholtRegionTickEngine regionTicks =
             new GrimholtRegionTickEngine(vanillaKernel, resources);
     private final PluginBoundary plugins = new PluginBoundary(api, scheduler, events, services);
