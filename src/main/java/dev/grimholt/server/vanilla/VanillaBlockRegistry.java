@@ -46,6 +46,19 @@ public final class VanillaBlockRegistry {
         states.putIfAbsent(definition.id(), state);
         stateIds.computeIfAbsent(stateKey(state), ignored -> {int id=nextStateId.getAndIncrement();byStateId.put(id,state);return id;});
     }
+    public void registerAuthoritative(BlockState state, int id, boolean defaultState) {
+        Objects.requireNonNull(state, "state");
+        if (id < 0) throw new IllegalArgumentException("state id");
+        VanillaBlockDefinition d = definitions.get(state.id());
+        if (d == null) {
+            register(new VanillaBlockDefinition(state.id(), 1, true, true, false, true, false, state.properties()));
+        }
+        if (defaultState) states.put(state.id(), state);
+        stateIds.put(stateKey(state), id);
+        byStateId.put(id, state);
+        nextStateId.accumulateAndGet(id + 1, Math::max);
+    }
+
     public void register(BlockState state) {
         Objects.requireNonNull(state);
         VanillaBlockDefinition d=definitions.get(state.id());
