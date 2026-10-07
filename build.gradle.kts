@@ -144,6 +144,7 @@ val generateVanilla26_2 by tasks.registering {
     val outputDir = vanillaGeneratedDir
     inputs.file(vanillaReferenceJar)
     outputs.dir(outputDir)
+    notCompatibleWithConfigurationCache("The data generator launches the checked-in Mojang reference JVM.")
 
     doLast {
         val version = "26.2"
