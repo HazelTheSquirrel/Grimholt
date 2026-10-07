@@ -15,7 +15,7 @@ public final class VanillaChunk {
     public VanillaChunk(VanillaWorldModel world,int chunkX,int chunkZ){this.worldModel=Objects.requireNonNull(world);this.chunkX=chunkX;this.chunkZ=chunkZ;this.ticker=new VanillaTickEngine(world.blocks(),4096);}
     public int chunkX(){return chunkX;} public int chunkZ(){return chunkZ;} public boolean loaded(){return loaded;}
     public void load(){loaded=true;} public void unload(){loaded=false;}
-    public VanillaWorldModel worldModel(){return worldModel;}
+    public VanillaWorldModel worldModel(){return worldModel;} public VanillaWorldState world(){return worldModel.blocks();}
     public BlockState block(BlockPos p){
         int sy=Math.floorDiv(p.y(),16), ly=Math.floorMod(p.y(),16);
         if(sy<MIN_SECTION_Y||sy>MAX_SECTION_Y)return BlockState.of("minecraft:air");
@@ -34,7 +34,7 @@ public final class VanillaChunk {
     public void setFluid(BlockPos p,VanillaFluidState s){if(s.isEmpty())fluids.remove(p);else fluids.put(p,s);worldModel.setFluid(p,s);}
     public VanillaTickEngine ticker(){return ticker;}
     public int sectionCount(){return sections.size();}
-    public Map<Integer,int[]> sectionSnapshot(){Map<Integer,int[]> out=new HashMap<>();for(var e:sections.entrySet())out.put(e.getKey(),e.getValue().copyStates());return Map.copyOf(out);}
+    public Map<BlockPos,BlockState> blockSnapshot(){Map<BlockPos,BlockState> out=new HashMap<>();for(int y=MIN_SECTION_Y*16;y<(MAX_SECTION_Y+1)*16;y++)for(int z=chunkZ*16;z<chunkZ*16+16;z++)for(int xx=chunkX*16;xx<chunkX*16+16;xx++){BlockPos p=new BlockPos(xx,y,z);BlockState s=block(p);if(!s.id().equals("minecraft:air"))out.put(p,s);}return Map.copyOf(out);} public Map<Integer,int[]> sectionSnapshot(){Map<Integer,int[]> out=new HashMap<>();for(var e:sections.entrySet())out.put(e.getKey(),e.getValue().copyStates());return Map.copyOf(out);}
     public Map<BlockPos,VanillaFluidState> fluidSnapshot(){return Map.copyOf(fluids);}
     public void tick(){if(loaded)ticker.tick();}
 }
