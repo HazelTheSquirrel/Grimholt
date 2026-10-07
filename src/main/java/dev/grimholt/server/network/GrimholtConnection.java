@@ -25,6 +25,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private final GrimholtPlayProtocol playProtocol = new GrimholtPlayProtocol();
     private final VanillaChunkWireCodec chunkCodec = new VanillaChunkWireCodec();
     private final GrimholtCommandTreeWire commandTreeWire = new GrimholtCommandTreeWire();
+    private final GrimholtPlayerInventory inventory = new GrimholtPlayerInventory();
     private final Consumer<GrimholtConnection> closed;
     private final boolean onlineMode;
     private final GrimholtOnlineAuthentication authentication;
@@ -297,7 +298,20 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         pendingTeleportId = teleport;
         send(VanillaProtocol26_2.State.PLAY, "minecraft:player_position",
                 out -> out.write(playProtocol.synchronizePosition(teleport, position)));
+        sendInitialInventory();
         streamInitialChunks();
+    }
+
+    private void sendInitialInventory() {
+        for (int slot = 0; slot < inventory.size(); slot++) {
+            final int inventorySlot = slot;
+            sendBestEffortPlay("minecraft:set_player_inventory", out -> {
+                VanillaProtocol26_2.writeVarInt(out, inventorySlot);
+                VanillaProtocol26_2.writeVarInt(out, 0); // empty ItemStack
+            });
+        }
+        sendBestEffortPlay("minecraft:set_held_slot",
+                out -> VanillaProtocol26_2.writeVarInt(out, inventory.selectedHotbarSlot()));
     }
 
     private UUID overworldId() {
@@ -328,6 +342,14 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         if (name.contains("confirm_teleportation")) {
             int teleport = VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(frame.payload()));
             if (teleport == pendingTeleportId) pendingTeleportId = -1;
+            return;
+        }
+
+        if (name.contains("set_carried_item")) {
+            int slot = VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(frame.payload()));
+            inventory.selectedHotbarSlot(slot);
+            sendBestEffortPlay("minecraft:set_held_slot",
+                    out -> VanillaProtocol26_2.writeVarInt(out, inventory.selectedHotbarSlot()));
             return;
         }
 
