@@ -1,0 +1,10 @@
+package dev.grimholt.server.vanilla;
+import java.util.*;import java.util.concurrent.ConcurrentHashMap;
+public final class VanillaItemRegistry{
+ private final Map<String,VanillaItemDefinition> items=new ConcurrentHashMap<>();
+ public VanillaItemRegistry(){for(String id:List.of("air","stone","dirt","grass_block","cobblestone","sand","gravel","oak_log","oak_planks","crafting_table","furnace","chest","hopper","torch","redstone","iron_ingot","gold_ingot","diamond","netherite_ingot","stick","coal","wheat","bread","apple","carrot","potato","beef","cooked_beef","porkchop","cooked_porkchop","chicken","cooked_chicken","mutton","cooked_mutton","egg","water_bucket","lava_bucket","bucket","bow","crossbow","shield","fishing_rod","flint_and_steel","shears","elytra","arrow","trident","snowball","ender_pearl","experience_bottle","book","enchanted_book","leather","string","feather","paper","sugar","gunpowder"))register(new VanillaItemDefinition("minecraft:"+id,64,0,false,Map.of()));
+ register(new VanillaItemDefinition("minecraft:bow",1,384,false,Map.of()));register(new VanillaItemDefinition("minecraft:crossbow",1,465,false,Map.of()));register(new VanillaItemDefinition("minecraft:shield",1,336,false,Map.of()));register(new VanillaItemDefinition("minecraft:elytra",1,432,false,Map.of()));
+ register(new VanillaItemDefinition("minecraft:bread",64,0,true,Map.of("minecraft:food","nutrition=5,saturation=6")));register(new VanillaItemDefinition("minecraft:apple",64,0,true,Map.of("minecraft:food","nutrition=4,saturation=2.4")));
+ }
+ public void register(VanillaItemDefinition i){items.putIfAbsent(i.id(),i);} public VanillaItemDefinition get(String id){return items.get(id);} public VanillaItemDefinition require(String id){var i=get(id);if(i==null)throw new IllegalArgumentException("Unknown item: "+id);return i;} public boolean contains(String id){return items.containsKey(id);} public int size(){return items.size();} public Map<String,VanillaItemDefinition> snapshot(){return Map.copyOf(items);}
+}

@@ -1,0 +1,10 @@
+package dev.grimholt.server.vanilla;
+import java.util.*;
+public final class VanillaPhysicsEngine{
+ public record CollisionResult(Vec3 position,Vec3 velocity,boolean onGround,double fallDistance){}
+ public CollisionResult move(VanillaWorldModel w,Vec3 pos,Vec3 vel,Aabb box,boolean onGround,boolean noClip){if(noClip)return new CollisionResult(pos.add(vel),vel,false,0);double dx=clip(w,pos,box,vel.x(),0),dy=clip(w,pos,box,vel.y(),1),dz=clip(w,pos,box,vel.z(),2);boolean ground=vel.y()<0&&dy!=vel.y();return new CollisionResult(pos.add(new Vec3(dx,dy,dz)),new Vec3(dx!=vel.x()?0:vel.x(),dy!=vel.y()?0:vel.y(),dz!=vel.z()?0:vel.z()),ground||onGround,Math.max(0,-vel.y()));}
+ private double clip(VanillaWorldModel w,Vec3 p,Aabb b,double d,int axis){if(d==0)return 0;Aabb moving=b.move(p.x(),p.y(),p.z());Aabb swept=moving.expand(axis==0?d:0,axis==1?d:0,axis==2?d:0);int minX=(int)Math.floor(swept.minX())-1,maxX=(int)Math.floor(swept.maxX())+1,minY=(int)Math.floor(swept.minY())-1,maxY=(int)Math.floor(swept.maxY())+1,minZ=(int)Math.floor(swept.minZ())-1,maxZ=(int)Math.floor(swept.maxZ())+1;for(int y=minY;y<=maxY;y++)for(int z=minZ;z<=maxZ;z++)for(int x=minX;x<=maxX;x++){var def=w.blockRegistry().definition(w.getBlock(new BlockPos(x,y,z)).id());if(def==null||!def.solid())continue;Aabb o=new Aabb(x,y,z,x+1,y+1,z+1);if(!swept.intersects(o))continue;d=switch(axis){case 0->clipX(moving,o,d);case 1->clipY(moving,o,d);default->clipZ(moving,o,d);};}return d;}
+ private double clipX(Aabb b,Aabb o,double d){if(d>0&&b.maxX()<=o.minX())return Math.min(d,o.minX()-b.maxX());if(d<0&&b.minX()>=o.maxX())return Math.max(d,o.maxX()-b.minX());return 0;}
+ private double clipY(Aabb b,Aabb o,double d){if(d>0&&b.maxY()<=o.minY())return Math.min(d,o.minY()-b.maxY());if(d<0&&b.minY()>=o.maxY())return Math.max(d,o.maxY()-b.minY());return 0;}
+ private double clipZ(Aabb b,Aabb o,double d){if(d>0&&b.maxZ()<=o.minZ())return Math.min(d,o.minZ()-b.maxZ());if(d<0&&b.minZ()>=o.maxZ())return Math.max(d,o.maxZ()-b.minZ());return 0;}
+}

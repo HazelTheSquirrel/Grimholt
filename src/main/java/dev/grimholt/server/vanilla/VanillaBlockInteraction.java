@@ -1,0 +1,7 @@
+package dev.grimholt.server.vanilla;
+import java.util.*;
+public final class VanillaBlockInteraction{
+ public enum Result{SUCCESS,PASS,FAIL} public record BreakResult(Result result,BlockState previous,VanillaItemStack drop,int ticks){}
+ public BreakResult breakBlock(VanillaWorldModel w,BlockPos p,VanillaItemStack tool,boolean creative){BlockState s=w.getBlock(p);var d=w.blockRegistry().definition(s.id());if(d==null||s.id().equals("minecraft:air"))return new BreakResult(Result.PASS,s,VanillaItemStack.empty(),0);if(!creative&&Float.isInfinite(d.hardness()))return new BreakResult(Result.FAIL,s,VanillaItemStack.empty(),-1);int ticks=creative?0:Math.max(1,(int)Math.ceil(d.hardness()*30));w.setBlock(p,w.blockRegistry().defaultState("minecraft:air"));var i=w.itemRegistry().get(s.id());return new BreakResult(Result.SUCCESS,s,creative?VanillaItemStack.empty():new VanillaItemStack(s.id(),1,i==null?64:i.maxStackSize(),Map.of()),ticks);}
+ public Result placeBlock(VanillaWorldModel w,BlockPos p,BlockState s,VanillaItemStack held){if(held.isEmpty()||!held.itemId().equals(s.id())||!w.blockRegistry().contains(s.id()))return Result.FAIL;var existing=w.getBlock(p);var d=w.blockRegistry().definition(existing.id());if(d!=null&&!d.fluidReplaceable()&&!existing.id().equals("minecraft:air"))return Result.FAIL;w.setBlock(p,s);return Result.SUCCESS;}
+}
