@@ -252,7 +252,7 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
         var ready = false
         while (System.nanoTime() < deadline && process.isAlive) {
             val text = output.toString()
-            if (text.contains("Done (") || text.contains("For help, type \\"help\\"")) { ready = true; break }
+            if (text.contains("Done (")) { ready = true; break }
             Thread.sleep(250)
         }
         if (!ready) {
