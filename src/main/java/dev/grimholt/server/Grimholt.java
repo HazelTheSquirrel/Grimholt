@@ -17,7 +17,7 @@ public final class Grimholt {
  public static void main(String[] args){Path configPath=args.length==0?Path.of("grimholt.properties"):Path.of(args[0]);Grimholt server=new Grimholt();Runtime.getRuntime().addShutdownHook(new Thread(server::stop,"Grimholt-Shutdown"));server.start(configPath);}
  public synchronized void start(Path configPath){
   if(!lifecycle.beginStart())throw new IllegalStateException("Grimholt cannot start from state "+lifecycle.state());
-  try{config=configLoader.load(configPath);Logging.startup(config.bindAddress(),config.port());plugins.start();plugins.discover(Path.of("plugins"));minestom.start(config,api); vanillaKernel.start(); var worldId=minestom.overworldId(); if(worldId!=null) vanillaKernel.registerWorld(worldId); scheduleVanillaTick(); plugins.loadAll();plugins.enableAll();lifecycle.started();events.post(new dev.grimholt.server.event.ServerReadyEvent());Logging.started();}
+  try{config=configLoader.load(configPath);Logging.startup(config.bindAddress(),config.port());plugins.start();plugins.discover(Path.of("plugins"));minestom.start(config,api,vanillaKernel); vanillaKernel.start(); var worldId=minestom.overworldId(); if(worldId!=null) vanillaKernel.registerWorld(worldId); scheduleVanillaTick(); plugins.loadAll();plugins.enableAll();lifecycle.started();events.post(new dev.grimholt.server.event.ServerReadyEvent());Logging.started();}
   catch(Throwable failure){lifecycle.failed();try{plugins.disableAll();}catch(Throwable x){failure.addSuppressed(x);}try{vanillaKernel.stop();}catch(Throwable x){failure.addSuppressed(x);}try{minestom.stop();}catch(Throwable x){failure.addSuppressed(x);}scheduler.close();Logging.failure(failure);throwUnchecked(failure);}
  }
  public synchronized void stop(){
