@@ -2,6 +2,7 @@ package dev.grimholt.server.vanilla;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.UUID;
 
 /** Wire primitives owned by Grimholt for the Minecraft 26.2 protocol. */
