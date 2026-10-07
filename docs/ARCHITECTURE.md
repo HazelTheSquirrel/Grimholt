@@ -101,3 +101,45 @@ A feature is done only when:
 4. dependency boundaries were checked,
 5. concurrency implications were checked,
 6. the feature was re-reviewed after implementation.
+
+
+## Current runtime boundary (2026-10-07)
+
+The architecture is intentionally transitional.
+
+Today, Minestom still owns:
+
+- network accept/login/configuration/play transport,
+- the live Minestom `InstanceContainer`,
+- Anvil world loading through `AnvilLoader`,
+- player movement events,
+- the scheduler primitive used to execute Grimholt region work.
+
+Grimholt owns:
+
+- the public server/plugin API,
+- lifecycle coordination,
+- the vanilla gameplay kernel,
+- the region ownership abstraction,
+- the Grimholt world model,
+- the target-version parity implementation.
+
+So Grimholt is currently a **server implementation built on Minestom**, not a source fork of Minestom and not yet a fully independent Minecraft runtime.
+
+### Required final boundary
+
+The end state is:
+
+`Minecraft client -> Grimholt protocol/runtime -> Grimholt region/world/entity simulation`
+
+with Minestom isolated behind a replaceable compatibility/transport adapter.
+
+Minestom must not remain the authoritative owner of:
+
+- world/chunk state,
+- entity state,
+- player simulation,
+- gameplay ticking,
+- vanilla block/entity behavior.
+
+This distinction is important: **using Minestom as a low-level implementation library is allowed by the project design; making Minestom the server's authoritative gameplay runtime is not the final architecture.**
