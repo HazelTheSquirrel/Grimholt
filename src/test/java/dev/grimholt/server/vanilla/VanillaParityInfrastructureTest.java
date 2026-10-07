@@ -40,7 +40,7 @@ class VanillaParityInfrastructureTest {
                     w.setBlock(new BlockPos(n&255,64,(n>>>8)&255),BlockState.of("minecraft:stone"));
                 }}));
             }
-            for(Future<?> f:jobs)assertDoesNotThrow(f::get);
+            for(Future<?> f:jobs)assertDoesNotThrow(() -> f.get());
             long blocks=regions.stream().mapToLong(w->w.chunks().stream().mapToLong(c->c.blockSnapshot().size()).sum()).sum();
             assertEquals(1000,blocks);
         } catch(Exception e){fail(e);}
