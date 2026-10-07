@@ -1172,3 +1172,15 @@ Minestom source is never modified by Grimholt. If Minestom already provides the 
 The latest official snapshot is allowed to move the behavioral target forward. Runtime support is only advanced when the Minestom substrate actually supports the corresponding protocol/runtime safely.
 
 Paper/Folia remains permitted only as a temporary implementation-reading reference for concurrency ownership questions, never as a dependency or API target.
+
+## 18. Incremental implementation checkpoint — 2026-10-07
+
+The following concrete correctness gates are now implemented on top of the prior baseline:
+
+- [x] Kernel-owned world models are bound to region runtimes instead of creating an unrelated world model per region.
+- [x] Player lifecycle state is owned by Grimholt and survives the Minestom event boundary as a dedicated `VanillaPlayerState`.
+- [x] Player position, rotation and on-ground state are captured into the Grimholt-owned player model.
+- [x] Region access respects tick ownership; tests no longer read mutable region state from an unowned thread.
+- [x] CI run 181 completed successfully on commit `3f10a8ce59fd30d828a816ab769fd72ad90fbbf7`.
+
+This checkpoint does **not** change the definition of full vanilla parity. The remaining mechanics and data systems listed above are still implementation work, not documentation placeholders.
