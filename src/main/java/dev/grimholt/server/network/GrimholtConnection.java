@@ -126,7 +126,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
         String name = packetName(VanillaProtocol26_2.State.LOGIN,
                 VanillaProtocol26_2.Direction.SERVERBOUND, frame.packetId()).orElse("");
-        if (name.contains("encryption_response")) {
+        if (name.equals("minecraft:key") || name.contains("encryption_response")) {
             if (!onlineMode || authenticated) throw new IOException("Unexpected encryption response");
             handleEncryptionResponse(frame.payload());
             return;
