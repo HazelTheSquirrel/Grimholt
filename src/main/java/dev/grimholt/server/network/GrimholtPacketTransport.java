@@ -10,6 +10,7 @@ public final class GrimholtPacketTransport implements Closeable {
     private InputStream input;
     private OutputStream output;
     private final int maxFrameBytes;
+    private volatile int compressionThreshold = -1;
 
     public GrimholtPacketTransport(Socket socket, int maxFrameBytes) throws IOException {
         this.socket = Objects.requireNonNull(socket, "socket");
@@ -19,13 +20,21 @@ public final class GrimholtPacketTransport implements Closeable {
     }
 
     public VanillaProtocol26_2.Frame read() throws IOException {
-        return VanillaProtocol26_2.decodeFrame(input, maxFrameBytes);
+        return VanillaProtocol26_2.decodeFrame(input, maxFrameBytes, compressionThreshold);
     }
 
     public synchronized void write(VanillaProtocol26_2.Frame frame) throws IOException {
-        output.write(VanillaProtocol26_2.encodeFrame(frame));
+        output.write(VanillaProtocol26_2.encodeFrame(frame, compressionThreshold, maxFrameBytes));
         output.flush();
     }
+
+    /** Enable the Minecraft zlib packet layer after the compression negotiation packet itself. */
+    public synchronized void enableCompression(int threshold) {
+        if (threshold < 0) throw new IllegalArgumentException("threshold");
+        compressionThreshold = threshold;
+    }
+
+    public int compressionThreshold() { return compressionThreshold; }
 
     public void enableEncryption(byte[] secret) throws IOException {
         try {
