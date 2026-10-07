@@ -3,7 +3,6 @@ package dev.grimholt.server.network;
 import dev.grimholt.server.vanilla.*;
 import org.junit.jupiter.api.Test;
 import java.io.*;
-import java.util.Arrays;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,7 +31,5 @@ class VanillaProtocolCodecTest {
                 VanillaNbt.END
         };
         assertArrayEquals(expected, encoded);
-        assertEquals(0, encoded[1] == VanillaNbt.END ? 1 : 0);
-        assertTrue(Arrays.equals(expected, encoded));
     }
 }
