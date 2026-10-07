@@ -13,13 +13,15 @@ import java.util.concurrent.RejectedExecutionException;
 public final class GrimholtNetworkServer implements AutoCloseable {
     private final GrimholtServerImpl server;
     private final GrimholtCommandDispatcher commands;
+    private final VanillaServerKernel kernel;
     private final Set<GrimholtConnection> connections = ConcurrentHashMap.newKeySet();
     private volatile ServerSocket socket;
     private volatile boolean running;
 
-    public GrimholtNetworkServer(GrimholtServerImpl server, GrimholtCommandDispatcher commands) {
+    public GrimholtNetworkServer(GrimholtServerImpl server, GrimholtCommandDispatcher commands, VanillaServerKernel kernel) {
         this.server = server;
         this.commands = commands;
+        this.kernel = kernel;
     }
 
     public void start(GrimholtConfig config) {
@@ -40,8 +42,9 @@ public final class GrimholtNetworkServer implements AutoCloseable {
             while (running) {
                 try {
                     Socket client = socket.accept();
-                    VanillaPacketCatalog catalog = VanillaPacketCatalog.load(new VanillaGeneratedData());
-                    GrimholtConnection connection = new GrimholtConnection(client, server, commands, catalog, connections::remove);
+                    VanillaGeneratedData generated = new VanillaGeneratedData();
+                    VanillaPacketCatalog catalog = VanillaPacketCatalog.load(generated);
+                    GrimholtConnection connection = new GrimholtConnection(client, server, commands, catalog, generated, kernel, connections::remove);
                     connections.add(connection);
                     Thread.ofVirtual().name("Grimholt-Connection").start(connection::run);
                 } catch (IOException | RuntimeException failure) {
