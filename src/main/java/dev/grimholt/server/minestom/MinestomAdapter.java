@@ -5,6 +5,7 @@ import dev.grimholt.server.api.MinestomPlayer;
 import dev.grimholt.server.config.GrimholtConfig;
 import dev.grimholt.server.event.*;
 import dev.grimholt.server.metrics.MetricsRegistry;
+import dev.grimholt.server.vanilla.VanillaServerKernel;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
@@ -24,9 +25,11 @@ public final class MinestomAdapter {
     private final AtomicInteger admittedPlayers = new AtomicInteger();
     private final java.util.Set<UUID> admitted = ConcurrentHashMap.newKeySet();
 
-    public void start(GrimholtConfig config) { start(config, null); }
+    public void start(GrimholtConfig config) { start(config, null, null); }
 
-    public void start(GrimholtConfig config, GrimholtServerImpl api) {
+    public void start(GrimholtConfig config, GrimholtServerImpl api) { start(config, api, null); }
+
+    public void start(GrimholtConfig config, GrimholtServerImpl api, VanillaServerKernel vanillaKernel) {
         if (server != null) throw new IllegalStateException("Minestom adapter already initialized");
         configureRuntime(config);
         MinecraftServer initialized = MinecraftServer.init(config.onlineMode() ? new Auth.Online() : new Auth.Offline());
@@ -52,11 +55,30 @@ public final class MinestomAdapter {
                 events.addListener(PlayerSpawnEvent.class, e -> {
                     if (e.isFirstSpawn()) {
                         var p = new MinestomPlayer(e.getPlayer());
-                        api.addPlayer(e.getPlayer()); metrics.joined(); api.events().post(new PlayerJoinEvent(p));
+                        api.addPlayer(e.getPlayer());
+                        if (vanillaKernel != null) {
+                            var instance = e.getPlayer().getInstance();
+                            if (instance != null) {
+                                vanillaKernel.updatePlayerPosition(instance.getUuid(), e.getPlayer().getUuid(),
+                                        e.getPlayer().getPosition().x(), e.getPlayer().getPosition().y(),
+                                        e.getPlayer().getPosition().z(), e.getPlayer().getPosition().yaw(),
+                                        e.getPlayer().getPosition().pitch(), e.getPlayer().isOnGround());
+                            }
+                        }
+                        metrics.joined(); api.events().post(new PlayerJoinEvent(p));
                     }
+                });
+                events.addListener(PlayerMoveEvent.class, e -> {
+                    if (vanillaKernel == null) return;
+                    var instance = e.getPlayer().getInstance();
+                    if (instance == null) return;
+                    var pos = e.getNewPosition();
+                    vanillaKernel.updatePlayerPosition(instance.getUuid(), e.getPlayer().getUuid(),
+                            pos.x(), pos.y(), pos.z(), pos.yaw(), pos.pitch(), e.isOnGround());
                 });
                 events.addListener(PlayerDisconnectEvent.class, e -> {
                     release(e.getPlayer().getUuid());
+                    if (vanillaKernel != null) vanillaKernel.removePlayer(e.getPlayer().getUuid());
                     var p = new MinestomPlayer(e.getPlayer()); metrics.quit(); api.events().post(new PlayerQuitEvent(p)); api.removePlayer(e.getPlayer().getUuid());
                 });
             }
