@@ -70,6 +70,8 @@ CPU-heavy work such as world generation, storage I/O and expensive calculations 
 
 The API must not force plugins to assume that every operation executes on one global server thread. Location-bound work belongs to the owner of that location; entity-bound work follows the entity; global work uses a global coordinator; blocking I/O is asynchronous.
 
+At startup Grimholt detects logical processor capacity and host memory. The runtime uses an 80% server resource budget for physical memory and reserves 20% for the operating system and safety margin. CPU capacity is used as scheduling input; actual scaling is validated with measurements rather than assumed.
+
 ## Plugin safety
 
 A plugin must never receive unrestricted references to internal implementation objects.
