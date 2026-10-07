@@ -81,6 +81,12 @@ public final class VanillaServerKernel implements AutoCloseable {
         return regions.regionCount();
     }
 
+    /** Advances all currently live logical regions without owning Minestom state. */
+    public void tick() {
+        requireRunning();
+        regions.tickAll();
+    }
+
     private void requireRunning() {
         if (!running) throw new IllegalStateException("Vanilla kernel is not running");
     }
