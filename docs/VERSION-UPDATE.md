@@ -1,6 +1,6 @@
 # Minecraft version update procedure
 
-Grimholt is pinned to one exact Minecraft release at a time. The active baseline is Minecraft Java Edition 26.2.
+Grimholt is pinned to one exact Minecraft release at a time and may advance independently of Minestom. The active baseline is Minecraft Java Edition 26.2.
 
 ## Reference inputs
 
@@ -25,7 +25,7 @@ When moving to a new Minecraft release:
 5. Point `VanillaGeneratedData.ROOT` and the Gradle generation task at the new version.
 6. Update the active `VanillaSnapshot` facade.
 7. Update the Grimholt protocol catalog/codec and all version-specific tests.
-8. Update the Minestom dependency only as a separate substrate compatibility decision.
+8. Inspect Minestom and other server implementations as technical references where useful; do not wait for their releases.
 9. Run `generateVanilla<version>`, `test`, the exact vanilla reference smoke test and `assemble`.
 10. Only after all checks pass is the new version considered the active Grimholt baseline.
 
@@ -33,4 +33,4 @@ When moving to a new Minecraft release:
 
 The reference JAR is never used as Grimholt's gameplay implementation. Its generated reports are authoritative data input for registries/protocol metadata and its executable is used only for differential/reference tests. Vanilla gameplay remains Grimholt-owned.
 
-Minestom remains a replaceable low-level substrate. A Minestom version bump does not automatically change the Grimholt vanilla target.
+Minestom source may be imported, adapted and modified as part of the fork migration. A Minestom version bump does not automatically change the Grimholt Minecraft target, and Grimholt must remain able to advance independently.
