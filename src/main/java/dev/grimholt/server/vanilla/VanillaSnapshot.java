@@ -8,8 +8,8 @@ public final class VanillaSnapshot {
     public static final String MOJANG_VERSION_ID = VanillaSnapshot26_2.VERSION;
     public static final int PROTOCOL = VanillaSnapshot26_2.PROTOCOL;
     public static final int WORLD_DATA_VERSION = VanillaSnapshot26_2.WORLD_DATA_VERSION;
-    public static final int DATA_PACK_VERSION = VanillaSnapshot26_2.DATA_PACK_VERSION;
-    public static final int RESOURCE_PACK_VERSION = VanillaSnapshot26_2.RESOURCE_PACK_VERSION;
+    public static final String DATA_PACK_VERSION = VanillaSnapshot26_2.DATA_PACK_VERSION;
+    public static final String RESOURCE_PACK_VERSION = VanillaSnapshot26_2.RESOURCE_PACK_VERSION;
 
     private VanillaSnapshot() {}
 }
