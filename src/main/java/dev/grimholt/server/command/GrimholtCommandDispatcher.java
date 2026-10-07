@@ -45,6 +45,8 @@ public final class GrimholtCommandDispatcher {
 
     public int size() { return commands.size(); }
 
+    public List<String> registeredNames() { return commands.keySet().stream().sorted().toList(); }
+
     private static String[] tokenize(String input) {
         if (input == null) return new String[0];
         String value = input.trim();
