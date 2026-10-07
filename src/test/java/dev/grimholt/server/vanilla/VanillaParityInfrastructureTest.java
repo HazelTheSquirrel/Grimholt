@@ -26,14 +26,23 @@ class VanillaParityInfrastructureTest {
         try(var region=new VanillaAnvilRegion(path)){region.writeChunk(0,0,data);assertArrayEquals(data,region.readChunk(0,0));}
     }
 
-    @Test void thousandPlayerStressIsConcurrentAndDeterministic(){
-        VanillaWorldModel world=new VanillaWorldModel(UUID.randomUUID());
+    @Test void thousandPlayerStressIsConcurrentAndRegionOwned(){
+        int regionCount=64;
+        List<VanillaWorldModel> regions=new ArrayList<>();
+        for(int i=0;i<regionCount;i++)regions.add(new VanillaWorldModel(UUID.randomUUID()));
         ExecutorService pool=Executors.newFixedThreadPool(Math.min(16,Runtime.getRuntime().availableProcessors()));
+        Object[] locks=new Object[regionCount];for(int i=0;i<regionCount;i++)locks[i]=new Object();
         try{
             List<Future<?>> jobs=new ArrayList<>();
-            for(int i=0;i<1000;i++){final int n=i;jobs.add(pool.submit(()->world.setBlock(new BlockPos(n&255,64,(n>>>8)&255),BlockState.of("minecraft:stone"))));}
+            for(int i=0;i<1000;i++){final int n=i;final int region=n%regionCount;
+                jobs.add(pool.submit(()->{synchronized(locks[region]){
+                    VanillaWorldModel w=regions.get(region);
+                    w.setBlock(new BlockPos(n&255,64,(n>>>8)&255),BlockState.of("minecraft:stone"));
+                }}));
+            }
             for(Future<?> f:jobs)assertDoesNotThrow(f::get);
-            assertEquals(1000,world.chunks().stream().mapToLong(c->c.blockSnapshot().size()).sum());
+            long blocks=regions.stream().mapToLong(w->w.chunks().stream().mapToLong(c->c.blockSnapshot().size()).sum()).sum();
+            assertEquals(1000,blocks);
         } catch(Exception e){fail(e);}
         finally{pool.shutdownNow();}
     }
