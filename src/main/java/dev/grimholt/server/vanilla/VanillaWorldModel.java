@@ -10,6 +10,8 @@ public final class VanillaWorldModel {
     private final VanillaBlockStateRegistry blockStates = new VanillaBlockStateRegistry(blockRegistry);
     private final VanillaItemRegistry itemRegistry = new VanillaItemRegistry();
     private final VanillaEntityRegistry entityRegistry = new VanillaEntityRegistry();
+    private final VanillaRegistryIds itemProtocolIds = new VanillaRegistryIds();
+    private final VanillaRegistryIds entityProtocolIds = new VanillaRegistryIds();
     private final Map<Long,VanillaChunk> chunks = new HashMap<>();
     private final Map<BlockPos,VanillaFluidState> fluids = new HashMap<>();
     private final Map<UUID,VanillaEntityState> entities = new ConcurrentHashMap<>();
@@ -22,7 +24,7 @@ public final class VanillaWorldModel {
         blockStates.registerCoreSchemas();
         if(generatedData != null && generatedData.available()){
             VanillaGeneratedRegistryLoader.loadBlocks(generatedData, blockRegistry);
-            VanillaGeneratedRegistryLoader.loadEntityAndItemNames(generatedData, itemRegistry, entityRegistry);
+            VanillaGeneratedRegistryLoader.loadEntityAndItemNames(generatedData, itemRegistry, entityRegistry, itemProtocolIds, entityProtocolIds);
         }
     }
     public UUID worldId(){return worldId;}
@@ -31,6 +33,8 @@ public final class VanillaWorldModel {
     public VanillaBlockStateRegistry blockStates(){return blockStates;}
     public VanillaItemRegistry itemRegistry(){return itemRegistry;}
     public VanillaEntityRegistry entityRegistry(){return entityRegistry;}
+    public VanillaRegistryIds itemProtocolIds(){return itemProtocolIds;}
+    public VanillaRegistryIds entityProtocolIds(){return entityProtocolIds;}
     public long seed(){return seed;}
     public void seed(long seed){this.seed=seed;}
     public VanillaGameplaySystems.Dimension dimension(){return dimension;}
