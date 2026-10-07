@@ -2,8 +2,8 @@
 
 Grimholt uses two deliberately separate version anchors:
 
-- **Vanilla behavior reference:** Minecraft Java Edition **26.4 Snapshot 3** (published 2026-10-06).
-- **Current Minestom runtime/protocol foundation:** Minestom **26.2** until Minestom provides the required newer protocol/runtime support.
+- **Vanilla behavior reference:** Minecraft Java Edition **26.2** (published 2026-10-06).
+- **Current Minestom runtime/protocol foundation:** Minestom **26.2** (the exact active runtime substrate).
 
 The snapshot is the source of truth for gameplay semantics, world rules, registries, data-driven behavior and concurrency-safe ownership requirements. Minestom is the implementation substrate only; Minestom delegation is never evidence of vanilla parity.
 
@@ -11,8 +11,8 @@ The snapshot is the source of truth for gameplay semantics, world rules, registr
 
 | Layer | Version | Rule |
 |---|---|---|
-| Vanilla behavior | 26.4 Snapshot 3 | Mandatory behavioral reference |
-| Vanilla data | 26.4 Snapshot 3 | Target data/registry semantics |
+| Vanilla behavior | 26.2 | Mandatory behavioral reference |
+| Vanilla data | 26.2 | Target data/registry semantics |
 | Runtime protocol | Minestom 26.2 | Temporary implementation ceiling |
 | Grimholt API | Independent | Must not expose Minestom implementation types |
 | Multithreading | Grimholt-owned + Minestom facilities | Never modify Minestom source |
@@ -29,7 +29,7 @@ When Minestom gains support for a newer Minecraft version, the runtime layer may
 | Anvil world persistence | Wired | 26.2 AnvilLoader with explicit dimension |
 | Independent Grimholt plugin API | Implemented foundation | Public API contains no Minestom or SLF4J types |
 | Plugin discovery/dependency/lifecycle | Implemented foundation | Descriptor validation, ordering, classloader cleanup |
-| Vanilla 26.4 Snapshot 3 behavior | NOT IMPLEMENTED/PROVEN | Requires reference-driven implementation and executable parity tests |
+| Vanilla 26.2 behavior | NOT IMPLEMENTED/PROVEN | Requires reference-driven implementation and executable parity tests |
 | Vanilla world generation | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned/reference-driven generation |
 | Vanilla physics/fluids/redstone | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
 | Vanilla entities/AI/villagers/raids | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
@@ -39,7 +39,7 @@ When Minestom gains support for a newer Minecraft version, the runtime layer may
 
 ## Snapshot baseline
 
-The 26.4 Snapshot 3 reference currently introduces, among other things:
+The 26.2 reference currently introduces, among other things:
 
 - Ice Caves biome and associated generation rules.
 - Ice Crystals and Icicles.
@@ -48,8 +48,8 @@ The 26.4 Snapshot 3 reference currently introduces, among other things:
 - Snowball knockback behavior.
 - New pathfinding and gameplay tags.
 - New block sound-set registry.
-- Data Pack version 123.0.
-- Resource Pack version 100.0.
+- Data Pack version 107.1.
+- Resource Pack version 88.0.
 - Updated feature, placement, noise and registry data.
 
 These are not optional documentation details: the corresponding server-side data and behavior must be represented in Grimholt before the snapshot can be considered parity-complete.
@@ -100,6 +100,6 @@ A feature is only marked **Implemented** after executable tests demonstrate the 
 
 ## References
 
-- Official Minecraft 26.4 Snapshot 3: https://feedback.minecraft.net/hc/en-us/articles/49412490179853-Minecraft-Java-Edition-26-4-Snapshot-3
+- Official Minecraft 26.2: https://feedback.minecraft.net/hc/en-us/articles/49412490179853-Minecraft-Java-Edition-26-4-Snapshot-3
 - Minestom: https://github.com/Minestom/Minestom
 - Folia region ownership reference: https://docs.papermc.io/folia/reference/region-logic/
