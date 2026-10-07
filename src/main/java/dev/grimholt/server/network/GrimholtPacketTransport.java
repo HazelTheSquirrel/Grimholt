@@ -7,8 +7,8 @@ import java.util.Objects;
 
 public final class GrimholtPacketTransport implements Closeable {
     private final Socket socket;
-    private final InputStream input;
-    private final OutputStream output;
+    private InputStream input;
+    private OutputStream output;
     private final int maxFrameBytes;
 
     public GrimholtPacketTransport(Socket socket, int maxFrameBytes) throws IOException {
@@ -25,6 +25,15 @@ public final class GrimholtPacketTransport implements Closeable {
     public synchronized void write(VanillaProtocol26_2.Frame frame) throws IOException {
         output.write(VanillaProtocol26_2.encodeFrame(frame));
         output.flush();
+    }
+
+    public void enableEncryption(byte[] secret) throws IOException {
+        try {
+            input = GrimholtCipher.input(input, secret);
+            output = GrimholtCipher.output(output, secret);
+        } catch (java.security.GeneralSecurityException e) {
+            throw new IOException("Unable to enable Minecraft AES transport encryption", e);
+        }
     }
 
     public boolean open() { return !socket.isClosed(); }
