@@ -18,6 +18,11 @@ public final class VanillaProtocol26_4S3 {
     public enum State { HANDSHAKE, STATUS, LOGIN, CONFIGURATION, PLAY }
 
     public record Frame(int packetId, byte[] payload) {
+        @Override public boolean equals(Object other) {
+            return other instanceof Frame frame && packetId == frame.packetId && Arrays.equals(payload, frame.payload);
+        }
+        @Override public int hashCode() { return 31 * Integer.hashCode(packetId) + Arrays.hashCode(payload); }
+        @Override public String toString() { return "Frame[" + packetId + ", payload=" + Arrays.toString(payload) + "]"; }
         public Frame {
             if (packetId < 0) throw new IllegalArgumentException("packetId");
             Objects.requireNonNull(payload, "payload");
