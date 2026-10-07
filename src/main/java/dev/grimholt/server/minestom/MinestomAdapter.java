@@ -95,5 +95,7 @@ public final class MinestomAdapter {
             MinecraftServer.stopCleanly();
         } finally { overworld = null; server = null; admitted.clear(); admittedPlayers.set(0); }
     }
+    public UUID overworldId() { return overworld == null ? null : overworld.getUuid(); }
+
     public boolean isStarted() { return server != null && MinecraftServer.isStarted(); }
 }
