@@ -40,6 +40,29 @@ class VanillaServerKernelTest {
     }
 
     @Test
+    void ownsPlayerLifecycleAndPosition() {
+        try (VanillaServerKernel kernel = new VanillaServerKernel(8, Runnable::run, ignored -> {})) {
+            kernel.start();
+            UUID world = UUID.randomUUID();
+            UUID player = UUID.randomUUID();
+            kernel.registerWorld(world);
+
+            kernel.updatePlayerPosition(world, player, 12.5, 70.0, -4.25, 90.0f, 15.0f, true);
+            assertEquals(1, kernel.playerCount());
+            VanillaPlayerState state = kernel.player(player);
+            assertNotNull(state);
+            assertEquals(12.5, state.x());
+            assertEquals(70.0, state.y());
+            assertEquals(-4.25, state.z());
+            assertEquals(90.0f, state.yaw());
+            assertTrue(state.onGround());
+
+            assertSame(state, kernel.removePlayer(player));
+            assertEquals(0, kernel.playerCount());
+        }
+    }
+
+    @Test
     void rejectsUnknownWorlds() {
         try (VanillaServerKernel kernel = new VanillaServerKernel(8, Runnable::run,
                 ignored -> {})) {
