@@ -77,9 +77,9 @@ public final class VanillaNbt {
             case FLOAT->d.readFloat(); case DOUBLE->d.readDouble(); case STRING->d.readUTF();
             case LIST->{byte t=d.readByte();int n=d.readInt();List<Tag> list=new ArrayList<>(n);for(int i=0;i<n;i++)list.add(new Tag(t,readPayload(d,t)));yield new ListValue(t,list);}
             case COMPOUND->{Map<String,Tag> m=new LinkedHashMap<>();while(true){byte t=d.readByte();if(t==END)break;String n=d.readUTF();m.put(n,new Tag(t,readPayload(d,t)));}yield Map.copyOf(m);}
-            case BYTE_ARRAY->{int n=d.readInt();yield d.readNBytes(n);}; 
-            case INT_ARRAY->{int n=d.readInt();int[] a=new int[n];for(int i=0;i<n;i++)a[i]=d.readInt();yield a;};
-            case LONG_ARRAY->{int n=d.readInt();long[] a=new long[n];for(int i=0;i<n;i++)a[i]=d.readLong();yield a;};
+            case BYTE_ARRAY->{int n=d.readInt();yield d.readNBytes(n);} 
+            case INT_ARRAY->{int n=d.readInt();int[] a=new int[n];for(int i=0;i<n;i++)a[i]=d.readInt();yield a;}
+            case LONG_ARRAY->{int n=d.readInt();long[] a=new long[n];for(int i=0;i<n;i++)a[i]=d.readLong();yield a;}
             default->throw new IOException("Unsupported NBT type "+type);
         };
     }
