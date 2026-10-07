@@ -137,8 +137,28 @@ val vanillaGeneratedDir = layout.buildDirectory.dir("generated-vanilla/26.4")
 val vanillaReferenceJar = layout.projectDirectory.file("reference/minecraft/26.4/server.jar")
 val vanillaReferenceUrl = URI("https://piston-data.mojang.com/v1/objects/2d89c95c030e635387448f332961074ce1adbb4b/server.jar")
 
-val generateVanilla26_2 by tasks.registering {
+val downloadVanilla26_4Reference by tasks.registering {
     group = "vanilla"
+    description = "Download the exact Mojang Minecraft 26.4-snapshot-3 reference JAR when it is not checked in."
+    outputs.file(vanillaReferenceJar)
+    doLast {
+        val jar = vanillaReferenceJar.asFile.toPath()
+        if (!Files.isRegularFile(jar)) {
+            Files.createDirectories(jar.parent)
+            vanillaReferenceUrl.toURL().openStream().use { input ->
+                Files.copy(input, jar, StandardCopyOption.REPLACE_EXISTING)
+            }
+        }
+        val expected = "2d89c95c030e635387448f332961074ce1adbb4b"
+        val actual = MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(jar))
+            .joinToString("") { "%02x".format(it) }
+        check(actual == expected) { "Minecraft 26.4-snapshot-3 reference SHA-1 mismatch: expected $expected, got $actual" }
+    }
+}
+
+val generateVanilla26_4 by tasks.registering {
+    group = "vanilla"
+    dependsOn(downloadVanilla26_4Reference)
     description = "Generate exact Minecraft 26.4-snapshot-3 reports from the checked-in reference server.jar."
     val outputDir = vanillaGeneratedDir
     inputs.file(vanillaReferenceJar)
@@ -199,12 +219,13 @@ val generateVanilla26_2 by tasks.registering {
 }
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(generateVanilla26_2)
+    dependsOn(generateVanilla26_4)
     from(vanillaGeneratedDir) { into("vanilla/26.4") }
 }
 
-val verifyVanilla26_2Reference by tasks.registering {
+val verifyVanilla26_4Reference by tasks.registering {
     group = "verification"
+    dependsOn(downloadVanilla26_4Reference)
     description = "Verify the checked-in Minecraft 26.4-snapshot-3 reference server.jar checksum."
     doLast {
         val jar = vanillaReferenceJar.asFile.toPath()
@@ -218,11 +239,11 @@ val verifyVanilla26_2Reference by tasks.registering {
     }
 }
 
-val vanillaReferenceSmoke26_2 by tasks.registering {
+val vanillaReferenceSmoke26_4 by tasks.registering {
     group = "verification"
     notCompatibleWithConfigurationCache("The smoke test launches and manages an external JVM process.")
     description = "Boot the exact checked-in Mojang 26.4-snapshot-3 server.jar and verify clean startup/shutdown."
-    dependsOn(verifyVanilla26_2Reference)
+    dependsOn(verifyVanilla26_4Reference)
     doLast {
         val jar = vanillaReferenceJar.asFile.toPath()
         val work = layout.buildDirectory.dir("vanilla-reference-smoke/26.4-snapshot-3").get().asFile.toPath()
