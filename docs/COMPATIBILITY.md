@@ -5,7 +5,7 @@ Grimholt uses two deliberately separate version anchors:
 - **Vanilla behavior reference:** Minecraft Java Edition **26.2** (published 2026-10-06).
 - **Current Minestom runtime/protocol foundation:** Minestom **26.2** (the exact active runtime substrate).
 
-The snapshot is the source of truth for gameplay semantics, world rules, registries, data-driven behavior and concurrency-safe ownership requirements. Minestom is the implementation substrate only; Minestom delegation is never evidence of vanilla parity.
+The snapshot is the source of truth for gameplay semantics, world rules, registries, data-driven behavior and concurrency-safe ownership requirements. Minestom is the source foundation being forked, not the authority for Grimholt compatibility.
 
 ## Version policy
 
@@ -13,11 +13,11 @@ The snapshot is the source of truth for gameplay semantics, world rules, registr
 |---|---|---|
 | Vanilla behavior | 26.2 | Mandatory behavioral reference |
 | Vanilla data | 26.2 | Target data/registry semantics |
-| Runtime protocol | Minestom 26.2 | Temporary implementation ceiling |
+| Grimholt runtime | Independent | Must ultimately be fully Grimholt-owned |
 | Grimholt API | Independent | Must not expose Minestom implementation types |
-| Multithreading | Grimholt-owned + Minestom facilities | Never modify Minestom source |
+| Multithreading | Grimholt-owned | Runtime ownership and scheduling are Grimholt responsibilities |
 
-When Minestom gains support for a newer Minecraft version, the runtime layer may advance independently. No gameplay behavior may be downgraded merely because the current Minestom runtime is older.
+Grimholt may advance to a newer Minecraft release or snapshot independently of Minestom. Minestom releases are technical references and source inputs, not release gates.
 
 ## Current evidence
 
@@ -56,7 +56,7 @@ These are not optional documentation details: the corresponding server-side data
 
 ## Multithreading contract
 
-Minestom already supplies a configurable parallel dispatcher and instance/entity ticking infrastructure. Grimholt will use those facilities without modifying Minestom source.
+Grimholt is building its own scheduling and ownership model. Existing Minestom facilities may be used temporarily behind migration boundaries, but they are not the final runtime authority.
 
 Grimholt-owned gameplay code must follow these rules:
 
@@ -101,5 +101,5 @@ A feature is only marked **Implemented** after executable tests demonstrate the 
 ## References
 
 - Official Minecraft 26.2: https://feedback.minecraft.net/hc/en-us/articles/49412490179853-Minecraft-Java-Edition-26-4-Snapshot-3
-- Minestom: https://github.com/Minestom/Minestom
-- Folia region ownership reference: https://docs.papermc.io/folia/reference/region-logic/
+- Minestom source is used as a fork/reference source.
+- Other Minecraft server implementations are architectural/reference material only.
