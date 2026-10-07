@@ -16,7 +16,15 @@ public final class VanillaWorldModel {
     private long seed;
     private VanillaGameplaySystems.Dimension dimension=VanillaGameplaySystems.Dimension.OVERWORLD;
 
-    public VanillaWorldModel(UUID worldId){this.worldId=Objects.requireNonNull(worldId);blockStates.registerCoreSchemas();}
+    public VanillaWorldModel(UUID worldId){this(worldId, new VanillaGeneratedData());}
+    public VanillaWorldModel(UUID worldId, VanillaGeneratedData generatedData){
+        this.worldId=Objects.requireNonNull(worldId);
+        blockStates.registerCoreSchemas();
+        if(generatedData != null && generatedData.available()){
+            VanillaGeneratedRegistryLoader.loadBlocks(generatedData, blockRegistry);
+            VanillaGeneratedRegistryLoader.loadEntityAndItemNames(generatedData, itemRegistry, entityRegistry);
+        }
+    }
     public UUID worldId(){return worldId;}
     public VanillaWorldState blocks(){return legacyBlocks;}
     public VanillaBlockRegistry blockRegistry(){return blockRegistry;}
