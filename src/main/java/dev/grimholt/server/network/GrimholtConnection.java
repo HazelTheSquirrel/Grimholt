@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 
 public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private static final AtomicInteger NEXT_ENTITY_ID = new AtomicInteger(1);
+    private static final int LOGIN_COMPRESSION_THRESHOLD = 256;
     private final Socket socket;
     private final GrimholtServerImpl server;
     private final GrimholtCommandDispatcher commands;
@@ -92,7 +93,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     private void handleStatus(VanillaProtocol26_2.Frame frame) throws IOException {
         if (frame.packetId() == 0) {
-            String json = "{\"version\":{\"name\":\"26.2\",\"protocol\":" + VanillaSnapshot26_2.PROTOCOL +
+            String json = "{\"version\":{\"name\":\"" + VanillaSnapshot26_2.VERSION + "\",\"protocol\":" + VanillaSnapshot26_2.PROTOCOL +
                     "},\"players\":{\"max\":" + server.maxPlayers() + ",\"online\":" + server.players().size() +
                     "},\"description\":{\"text\":\"Grimholt\"}}";
             send(VanillaProtocol26_2.State.STATUS, "minecraft:status_response",
@@ -119,6 +120,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                 uuid = in.available() >= 16 ? VanillaProtocolCodec.readUuid(in)
                         : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
                 authenticated = true;
+                enableLoginCompression();
                 sendLoginSuccess();
             }
             return;
@@ -165,6 +167,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             username = profile.username();
             transport.enableEncryption(secret);
             authenticated = true;
+            enableLoginCompression();
             sendLoginSuccess();
         } catch (java.security.GeneralSecurityException e) {
             throw new IOException("Invalid Minecraft encryption response", e);
@@ -177,8 +180,25 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             VanillaProtocolCodec.writeUuid(out, uuid);
             VanillaProtocolCodec.writeString(out, username, 16);
             VanillaProtocol26_2.writeVarInt(out, 0); // profile properties
-            VanillaProtocolCodec.writeUuid(out, sessionId); // 26.2 session id
+            VanillaProtocolCodec.writeUuid(out, sessionId); // session id
         });
+    }
+
+    private void enableLoginCompression() throws IOException {
+        String compressionPacket = null;
+        for (String candidate : new String[] {"minecraft:login_compression", "minecraft:set_compression"}) {
+            if (catalog.id(VanillaProtocol26_2.State.LOGIN, VanillaProtocol26_2.Direction.CLIENTBOUND, candidate).isPresent()) {
+                compressionPacket = candidate;
+                break;
+            }
+        }
+        if (compressionPacket == null) {
+            throw new IOException("Minecraft 26.4 login compression packet is missing from Mojang packet catalog");
+        }
+        final String packet = compressionPacket;
+        send(VanillaProtocol26_2.State.LOGIN, packet,
+                out -> VanillaProtocol26_2.writeVarInt(out, LOGIN_COMPRESSION_THRESHOLD));
+        transport.enableCompression(LOGIN_COMPRESSION_THRESHOLD);
     }
 
     private void sendConfigurationStart() throws IOException {
