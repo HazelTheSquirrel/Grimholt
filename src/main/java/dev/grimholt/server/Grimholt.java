@@ -21,7 +21,7 @@ public final class Grimholt {
   catch(Throwable failure){lifecycle.failed();try{plugins.disableAll();}catch(Throwable x){failure.addSuppressed(x);}try{vanillaKernel.stop();}catch(Throwable x){failure.addSuppressed(x);}try{minestom.stop();}catch(Throwable x){failure.addSuppressed(x);}scheduler.close();Logging.failure(failure);throwUnchecked(failure);}
  }
  public synchronized void stop(){
-  if(!lifecycle.beginStop()){var s=lifecycle.state();if(s==LifecycleState.STOPPED||s==LifecycleState.NEW)return;if(s==LifecycleState.FAILED){try{plugins.disableAll();}finally{try{minestom.stop();}finally{scheduler.close();}}return;}throw new IllegalStateException("Grimholt cannot stop from state "+s);}
+  if(!lifecycle.beginStop()){var s=lifecycle.state();if(s==LifecycleState.STOPPED||s==LifecycleState.NEW)return;if(s==LifecycleState.FAILED){try{plugins.disableAll();}finally{try{vanillaKernel.stop();}finally{try{minestom.stop();}finally{scheduler.close();}}}return;}throw new IllegalStateException("Grimholt cannot stop from state "+s);}
   Logging.stopping();Throwable failure=null;try{plugins.disableAll();}catch(Throwable x){failure=x;}try{vanillaKernel.stop();}catch(Throwable x){if(failure==null)failure=x;else failure.addSuppressed(x);}try{minestom.stop();}catch(Throwable x){if(failure==null)failure=x;else failure.addSuppressed(x);}scheduler.close();lifecycle.stopped();Logging.stopped();if(failure!=null){Logging.failure(failure);throwUnchecked(failure);}
  }
  private static void throwUnchecked(Throwable f){if(f instanceof RuntimeException e)throw e;if(f instanceof Error e)throw e;throw new IllegalStateException("Grimholt lifecycle operation failed",f);}
