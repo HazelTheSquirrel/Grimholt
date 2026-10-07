@@ -17,6 +17,7 @@ public final class VanillaSnapshot26_4S3 {
     public static final int DATA_PACK_VERSION = 123;
     public static final int RESOURCE_PACK_VERSION = 100;
     public static final int JAVA_MAJOR = 25;
+    public static final String SERVER_SHA1 = "2d89c95c030e635387448f332961074ce1adbb4b";
 
     private VanillaSnapshot26_4S3() {}
 
