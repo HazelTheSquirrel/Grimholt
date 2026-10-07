@@ -218,10 +218,42 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:finish_configuration", out -> {});
             return;
         }
-        if (name.contains("acknowledge_finish_configuration")) {
+        if (name.equals("minecraft:finish_configuration") || name.contains("acknowledge_finish_configuration")) {
             enterPlay();
             return;
         }
+
+        // Configuration is a bidirectional phase. Vanilla clients may send
+        // settings, plugin payloads, cookies and resource-pack responses while
+        // the server is still synchronizing registries. These packets are
+        // legitimate and must not tear down an otherwise valid connection.
+        if (name.equals("minecraft:client_information")
+                || name.equals("minecraft:custom_payload")
+                || name.equals("minecraft:cookie_response")
+                || name.equals("minecraft:resource_pack")) {
+            return;
+        }
+
+        if (name.equals("minecraft:keep_alive")) {
+            long id = new DataInputStream(new ByteArrayInputStream(frame.payload())).readLong();
+            if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
+                    VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:keep_alive").isPresent()) {
+                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:keep_alive",
+                        out -> new DataOutputStream(out).writeLong(id));
+            }
+            return;
+        }
+
+        if (name.equals("minecraft:pong")) {
+            int id = VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(frame.payload()));
+            if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
+                    VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:ping").isPresent()) {
+                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:ping",
+                        out -> VanillaProtocol26_2.writeVarInt(out, id));
+            }
+            return;
+        }
+
         throw new IOException("Unsupported configuration packet: " + frame.packetId());
     }
 
