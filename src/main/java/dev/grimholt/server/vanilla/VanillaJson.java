@@ -77,7 +77,7 @@ public final class VanillaJson {
         while (p < input.length()) {
             char c = input.charAt(p++);
             if (c == '"') return out.toString();
-            if (c != '\') { out.append(c); continue; }
+            if (c != '\\\\') { out.append(c); continue; }
             if (p >= input.length()) throw error("Unterminated escape");
             char e = input.charAt(p++);
             switch (e) {
