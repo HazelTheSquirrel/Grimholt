@@ -126,37 +126,38 @@ tasks.jar {
 
 
 /*
- * Exact Mojang 26.2 reference tooling.
+ * Exact Mojang 26.4-snapshot-3 reference tooling.
  *
- * The checked-in reference/minecraft/26.2/server.jar is the sole vanilla
+ * The checked-in reference/minecraft/26.4/server.jar is the sole vanilla
  * reference input. Grimholt never ships it inside the runtime artifact.
  * Updating Minecraft is intentionally manual: replace the reference JAR,
  * update the pinned checksum/constants, regenerate the reports, then run CI.
  */
-val vanillaGeneratedDir = layout.buildDirectory.dir("generated-vanilla/26.2")
-val vanillaReferenceJar = layout.projectDirectory.file("reference/minecraft/26.2/server.jar")
+val vanillaGeneratedDir = layout.buildDirectory.dir("generated-vanilla/26.4")
+val vanillaReferenceJar = layout.projectDirectory.file("reference/minecraft/26.4/server.jar")
+val vanillaReferenceUrl = URI("https://piston-data.mojang.com/v1/objects/2d89c95c030e635387448f332961074ce1adbb4b/server.jar")
 
 val generateVanilla26_2 by tasks.registering {
     group = "vanilla"
-    description = "Generate exact Minecraft 26.2 reports from the checked-in reference server.jar."
+    description = "Generate exact Minecraft 26.4-snapshot-3 reports from the checked-in reference server.jar."
     val outputDir = vanillaGeneratedDir
     inputs.file(vanillaReferenceJar)
     outputs.dir(outputDir)
     notCompatibleWithConfigurationCache("The data generator launches the checked-in Mojang reference JVM.")
 
     doLast {
-        val version = "26.2"
-        val expectedSha1 = "823e2250d24b3ddac457a60c92a6a941943fcd6a"
+        val version = "26.4-snapshot-3"
+        val expectedSha1 = "2d89c95c030e635387448f332961074ce1adbb4b"
         val jar = vanillaReferenceJar.asFile.toPath()
-        check(Files.isRegularFile(jar)) { "Missing Minecraft 26.2 reference JAR: $jar" }
+        check(Files.isRegularFile(jar)) { "Missing Minecraft 26.4-snapshot-3 reference JAR: $jar" }
         val actualSha1 = MessageDigest.getInstance("SHA-1")
             .digest(Files.readAllBytes(jar))
             .joinToString("") { "%02x".format(it) }
         check(actualSha1 == expectedSha1) {
-            "SHA-1 mismatch for Minecraft 26.2 reference: expected $expectedSha1, got $actualSha1"
+            "SHA-1 mismatch for Minecraft 26.4-snapshot-3 reference: expected $expectedSha1, got $actualSha1"
         }
 
-        val workDir = layout.buildDirectory.dir("vanilla-reference/26.2").get().asFile.toPath()
+        val workDir = layout.buildDirectory.dir("vanilla-reference/26.4-snapshot-3").get().asFile.toPath()
         if (Files.exists(workDir)) workDir.toFile().deleteRecursively()
         Files.createDirectories(workDir)
         val javaExecutable = Path.of(
@@ -172,13 +173,13 @@ val generateVanilla26_2 by tasks.registering {
         ).directory(workDir.toFile()).redirectErrorStream(true).start()
         check(process.waitFor(180, TimeUnit.SECONDS)) {
             process.destroyForcibly()
-            "Mojang 26.2 report generation timed out"
+            "Mojang 26.4-snapshot-3 report generation timed out"
         }
         val output = process.inputStream.readBytes().toString(Charsets.UTF_8)
         check(process.exitValue() == 0) {
-            "Mojang 26.2 --all failed (${process.exitValue()}): $output"
+            "Mojang 26.4-snapshot-3 --all failed (${process.exitValue()}): $output"
         }
-        check(Files.isDirectory(generatedDir)) { "Mojang 26.2 data generator produced no generated directory" }
+        check(Files.isDirectory(generatedDir)) { "Mojang 26.4-snapshot-3 data generator produced no generated directory" }
 
         val out = outputDir.get().asFile.toPath()
         if (Files.exists(out)) out.toFile().deleteRecursively()
@@ -186,45 +187,45 @@ val generateVanilla26_2 by tasks.registering {
         generatedDir.toFile().copyRecursively(out.toFile(), overwrite = true)
         out.resolve("manifest.properties").toFile().writeText(
             "version=$version\n" +
-            "protocol=776\n" +
-            "worldDataVersion=4903\n" +
-            "dataPackVersion=107.1\n" +
-            "resourcePackVersion=88\n" +
+            "protocol=1073742165\n" +
+            "worldDataVersion=5122\n" +
+            "dataPackVersion=123.0\n" +
+            "resourcePackVersion=100\n" +
             "javaMajor=25\n" +
             "serverSha1=$expectedSha1\n" +
-            "serverPath=reference/minecraft/26.2/server.jar\n"
+            "serverPath=reference/minecraft/26.4/server.jar\n"
         )
     }
 }
 
 tasks.named<ProcessResources>("processResources") {
     dependsOn(generateVanilla26_2)
-    from(vanillaGeneratedDir) { into("vanilla/26.2") }
+    from(vanillaGeneratedDir) { into("vanilla/26.4") }
 }
 
 val verifyVanilla26_2Reference by tasks.registering {
     group = "verification"
-    description = "Verify the checked-in Minecraft 26.2 reference server.jar checksum."
+    description = "Verify the checked-in Minecraft 26.4-snapshot-3 reference server.jar checksum."
     doLast {
         val jar = vanillaReferenceJar.asFile.toPath()
         check(Files.isRegularFile(jar)) { "Reference jar does not exist: $jar" }
         val actual = MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(jar))
             .joinToString("") { "%02x".format(it) }
-        check(actual == "823e2250d24b3ddac457a60c92a6a941943fcd6a") {
-            "Minecraft 26.2 reference SHA-1 mismatch: $actual"
+        check(actual == "2d89c95c030e635387448f332961074ce1adbb4b") {
+            "Minecraft 26.4-snapshot-3 reference SHA-1 mismatch: $actual"
         }
-        println("Verified Minecraft 26.2 reference: $jar")
+        println("Verified Minecraft 26.4-snapshot-3 reference: $jar")
     }
 }
 
 val vanillaReferenceSmoke26_2 by tasks.registering {
     group = "verification"
     notCompatibleWithConfigurationCache("The smoke test launches and manages an external JVM process.")
-    description = "Boot the exact checked-in Mojang 26.2 server.jar and verify clean startup/shutdown."
+    description = "Boot the exact checked-in Mojang 26.4-snapshot-3 server.jar and verify clean startup/shutdown."
     dependsOn(verifyVanilla26_2Reference)
     doLast {
         val jar = vanillaReferenceJar.asFile.toPath()
-        val work = layout.buildDirectory.dir("vanilla-reference-smoke/26.2").get().asFile.toPath()
+        val work = layout.buildDirectory.dir("vanilla-reference-smoke/26.4-snapshot-3").get().asFile.toPath()
         if (Files.exists(work)) work.toFile().deleteRecursively()
         Files.createDirectories(work)
         Files.writeString(work.resolve("eula.txt"), "eula=true\n")
@@ -258,7 +259,7 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
             process.destroyForcibly()
             process.waitFor(10, TimeUnit.SECONDS)
             reader.join(2000)
-            error("Minecraft 26.2 reference server did not reach ready state. Output:\n$output")
+            error("Minecraft 26.4-snapshot-3 reference server did not reach ready state. Output:\n$output")
         }
         process.destroy()
         if (!process.waitFor(10, TimeUnit.SECONDS)) {
@@ -266,6 +267,6 @@ val vanillaReferenceSmoke26_2 by tasks.registering {
             process.waitFor(10, TimeUnit.SECONDS)
         }
         reader.join(5000)
-        check(!process.isAlive) { "Minecraft 26.2 reference server did not terminate. Output:\n$output" }
+        check(!process.isAlive) { "Minecraft 26.4-snapshot-3 reference server did not terminate. Output:\n$output" }
     }
 }
