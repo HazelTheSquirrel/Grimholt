@@ -77,11 +77,11 @@ public final class VanillaJson {
         while (p < input.length()) {
             char c = input.charAt(p++);
             if (c == '"') return out.toString();
-            if (c != '\\\\') { out.append(c); continue; }
+            if (c != '\\') { out.append(c); continue; }
             if (p >= input.length()) throw error("Unterminated escape");
             char e = input.charAt(p++);
             switch (e) {
-                case '"','\\','/' -> out.append(e);
+                case '"', '\\', '/' -> out.append(e);
                 case 'b' -> out.append('\b');
                 case 'f' -> out.append('\f');
                 case 'n' -> out.append('\n');
