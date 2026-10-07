@@ -106,7 +106,7 @@ public final class VanillaGeneratedRegistryLoader {
 
     private static String jsonString(Object value) {
         if (value == null) return "null";
-        if (value instanceof String s) return "\""+s.replace("\\\\","\\\\\\\\").replace("\"","\\\\\"")+" \"".trim();
+        if (value instanceof String s) return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
         if (value instanceof Boolean || value instanceof Number) return String.valueOf(value);
         if (value instanceof List<?> list) return list.stream().map(VanillaGeneratedRegistryLoader::jsonString).collect(java.util.stream.Collectors.joining(",", "[", "]"));
         if (value instanceof Map<?,?> map) {
