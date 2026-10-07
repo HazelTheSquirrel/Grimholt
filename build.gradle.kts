@@ -210,7 +210,7 @@ val generateVanilla26_4 by tasks.registering {
             "protocol=1073742165\n" +
             "worldDataVersion=5122\n" +
             "dataPackVersion=123.0\n" +
-            "resourcePackVersion=100\n" +
+            "resourcePackVersion=100.0\n" +
             "javaMajor=25\n" +
             "serverSha1=\$expectedSha1\n" +
             "serverPath=reference/minecraft/26.4/server.jar\n"
