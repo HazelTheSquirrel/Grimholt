@@ -11,10 +11,8 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.player.*;
 import net.minestom.server.instance.InstanceContainer;
-import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.world.DimensionType;
 
-import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,9 +36,8 @@ public final class MinestomAdapter {
             MinecraftServer.setBrandName("Grimholt");
             if (api != null) {
                 var metrics = api.services().require(MetricsRegistry.class);
-                Path worldPath = Path.of(config.worldDirectory());
-                overworld = MinecraftServer.getInstanceManager().createInstanceContainer(
-                        new AnvilLoader(worldPath, DimensionType.OVERWORLD.key()));
+                overworld = MinecraftServer.getInstanceManager().createInstanceContainer(DimensionType.OVERWORLD.key());
+                overworld.setGenerator(new GrimholtTerrainGenerator(0L));
                 overworld.enableAutoChunkLoad(true);
                 api.addWorld(overworld);
                 var events = MinecraftServer.getGlobalEventHandler();
@@ -113,7 +110,6 @@ public final class MinestomAdapter {
     public void stop() {
         if (server == null) return;
         try {
-            if (overworld != null) { overworld.saveInstance().join(); overworld.saveChunksToStorage().join(); }
             MinecraftServer.stopCleanly();
         } finally { overworld = null; server = null; admitted.clear(); admittedPlayers.set(0); }
     }
