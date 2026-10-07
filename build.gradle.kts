@@ -206,14 +206,31 @@ val generateVanilla26_4 by tasks.registering {
         Files.createDirectories(out)
         generatedDir.toFile().copyRecursively(out.toFile(), overwrite = true)
         out.resolve("manifest.properties").toFile().writeText(
-            "version=$version\n" +
+            "version=\$version\n" +
             "protocol=1073742165\n" +
             "worldDataVersion=5122\n" +
             "dataPackVersion=123.0\n" +
             "resourcePackVersion=100\n" +
             "javaMajor=25\n" +
-            "serverSha1=$expectedSha1\n" +
+            "serverSha1=\$expectedSha1\n" +
             "serverPath=reference/minecraft/26.4/server.jar\n"
+        )
+
+        // Persist a deterministic index of vanilla tag files generated from
+        // the reference JAR. Runtime code consumes this index instead of guessing
+        // which tags exist in the target snapshot.
+        val tagsRoot = out.resolve("data/minecraft/tags")
+        val tagFiles = if (Files.isDirectory(tagsRoot)) {
+            Files.walk(tagsRoot).use { stream ->
+                stream.filter(Files::isRegularFile)
+                    .map { out.relativize(it).toString().replace('\\', '/') }
+                    .filter { it.endsWith(".json") }
+                    .sorted()
+                    .toList()
+            }
+        } else emptyList()
+        out.resolve("reports/tag_files.json").toFile().writeText(
+            "[" + tagFiles.joinToString(",") { "\"$it\"" } + "]\n"
         )
     }
 }
