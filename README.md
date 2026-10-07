@@ -1,6 +1,18 @@
 # Grimholt
 
-Grimholt is an independent Minecraft server implementation/distribution built on a replaceable Minestom substrate.
+Grimholt is an independent Minecraft server fork derived from the Minestom codebase.
+
+## Strategic goal
+
+The highest-level goal is to build **Grimholt as its own long-term Minestom fork**, not as a plugin, wrapper, or application that permanently depends on an external Minestom server runtime.
+
+The intended relationship is:
+
+Minecraft client -> Grimholt runtime -> Grimholt protocol/world/entity/tick/plugin systems
+
+Minestom is the **technical starting point and source foundation**. Its code can be adopted, modified and replaced inside Grimholt as the project evolves. The final Grimholt server must own its runtime behavior and must not depend on an externally released Minestom version to function.
+
+This is similar in spirit to established Minecraft server fork ecosystems: Grimholt has its own identity, API, lifecycle, implementation decisions, performance model and release/update process.
 
 ## Goals
 
@@ -13,9 +25,13 @@ Grimholt is an independent Minecraft server implementation/distribution built on
 
 ## Current status
 
-Engineering foundation + active Vanilla parity implementation. **Minecraft parity is not complete yet.** The repository contains the ownership kernel and a growing set of Grimholt-owned vanilla systems; protocol compatibility provided by Minestom is not counted as vanilla parity. The behavioral target is Minecraft Java 26.2. Minestom is deliberately pinned as a low-level substrate and is not the source of Grimholt's vanilla behavior. Grimholt implements the 26.4 behavior, registries, world model, tick model and protocol contract in its own code; Minestom is only a temporary compatibility transport until Grimholt's native 26.4 transport replaces it. We do not modify Minestom. The server artifact is self-contained: operators do not install a separate Minestom or Minecraft server JAR.
+Grimholt is currently in the **transition from Minestom-based implementation to source-fork architecture**.
 
-This repository is intentionally being built in phases. A phase is not considered complete until its implementation and a separate verification pass agree.
+The repository already contains a Grimholt-owned server kernel, world model, vanilla systems, plugin API, version-pinned Minecraft 26.2 reference tooling and a growing parity implementation. The current build still consumes `net.minestom:minestom` as an implementation dependency. That dependency is explicitly transitional.
+
+The target is to progressively bring the required Minestom source into Grimholt, establish Grimholt ownership of the runtime, replace the remaining Minestom-owned server boundaries, and ultimately remove the external Minestom dependency.
+
+**Minecraft parity is not complete yet.** The current behavioral target is Minecraft Java 26.2 (protocol `776`, world data version `4903`, Java 25).
 
 ## Engineering rule
 
@@ -37,6 +53,8 @@ See `docs/MASTER-WORKPLAN.md`, `docs/COMPATIBILITY.md` and `docs/ARCHITECTURE.md
 
 ## Versioning rule
 
-Minecraft and Minestom are intentionally versioned independently. A Minecraft update changes the pinned `VanillaSnapshot` and regenerated Mojang reference data; the Minestom substrate is not updated merely because Minecraft changes. If the substrate changes, that is a separate compatibility decision.
+Minecraft and the Grimholt/Minestom fork baseline are intentionally managed as controlled, explicit updates. A Minecraft update changes the pinned `VanillaSnapshot` and regenerated reference data. A Minestom-derived change is integrated deliberately into Grimholt rather than being silently inherited from a Maven version.
 
-The exact target currently pinned is **Minecraft 26.2** (protocol `776`, world data version `4903`, Java 25). The generated Mojang reports are treated as reference input, not as a replacement for Grimholt-owned behavior.
+The exact Minecraft target currently pinned is **26.2** (protocol `776`, world data version `4903`, Java 25). The generated Mojang reports are treated as reference input, not as a replacement for Grimholt-owned behavior.
+
+See `docs/MASTER-WORKPLAN.md`, `docs/ARCHITECTURE.md`, `docs/VERSION-UPDATE.md` and issue #1 for the strategic fork migration.
