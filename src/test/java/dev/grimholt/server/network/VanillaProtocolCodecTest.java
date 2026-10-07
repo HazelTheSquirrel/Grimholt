@@ -22,7 +22,7 @@ class VanillaProtocolCodecTest {
         byte[] encoded = VanillaProtocolCodec.writeNetworkNbtCompoundBytes(
                 VanillaNbt.compound(Map.of("value", VanillaNbt.integer(42))));
         assertEquals(VanillaNbt.COMPOUND, encoded[0]);
-        assertEquals(0, encoded[1]); // first UTF-8 name byte is zero for length high byte
-        assertEquals(5, encoded[2]); // "value" length
+        assertEquals(0, encoded[1]);
+        assertEquals(5, encoded[2]);
     }
 }
