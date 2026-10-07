@@ -26,7 +26,7 @@ jobs:
       - name: Test
         run: gradle --no-daemon clean test
       - name: Vanilla 26.4-S3 reference smoke test
-        run: gradle --no-daemon vanillaReferenceSmoke26_4S3
+        run: gradle --no-daemon --no-configuration-cache vanillaReferenceSmoke26_4S3
 
       - name: Assemble
         run: gradle --no-daemon assemble
