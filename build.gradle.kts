@@ -212,6 +212,7 @@ tasks.named<ProcessResources>("processResources") {
 
 val vanillaReferenceSmoke26_4S3 by tasks.registering {
     group = "verification"
+    notCompatibleWithConfigurationCache("The smoke test launches and manages an external JVM process.")
     description = "Boot the exact Mojang 26.4 Snapshot 3 server jar and verify a clean startup/shutdown."
     dependsOn(generateVanilla26_4S3)
     doLast {
