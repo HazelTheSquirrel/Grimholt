@@ -30,6 +30,18 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.register<JavaExec>("benchmark") {
+    group = "verification"
+    description = "Run the Grimholt region/world-model microbenchmark."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("dev.grimholt.server.vanilla.VanillaBenchmarkMain")
+    args(
+        providers.gradleProperty("players").orElse("1000").get(),
+        providers.gradleProperty("regions").orElse("50").get(),
+        providers.gradleProperty("iterations").orElse("20").get()
+    )
+}
+
 application {
     mainClass = "dev.grimholt.server.Grimholt"
 }
