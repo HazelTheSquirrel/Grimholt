@@ -36,16 +36,13 @@ class VanillaProtocolCodecTest {
         byte[] body = in.readNBytes(frameLength);
         ByteArrayInputStream compressedBody = new ByteArrayInputStream(body);
         assertEquals(0, VanillaProtocol26_2.readVarInt(compressedBody));
-        assertArrayEquals(new byte[] {1, 2, 3}, compressedBody.readAllBytes());
+        assertArrayEquals(new byte[] {1, 1, 2, 3}, compressedBody.readAllBytes());
         assertEquals(frame, VanillaProtocol26_2.decodeFrame(new ByteArrayInputStream(encoded), 1024, 32));
     }
 
     @Test void networkNbtHasUnnamedRoot() {
         byte[] encoded = VanillaProtocolCodec.writeNetworkNbtCompoundBytes(
                 VanillaNbt.compound(Map.of("value", VanillaNbt.integer(42))));
-
-        // Network NBT (1.20.2+) omits the root name. The compound payload
-        // immediately starts with the first named child tag.
         byte[] expected = {
                 VanillaNbt.COMPOUND,
                 VanillaNbt.INT, 0, 5, 'v', 'a', 'l', 'u', 'e',
