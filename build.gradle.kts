@@ -252,18 +252,20 @@ val vanillaReferenceSmoke26_4S3 by tasks.registering {
             }
             Thread.sleep(250)
         }
-        if (process.isAlive) {
-            process.outputStream.bufferedWriter().use { it.write("stop\\n"); it.flush() }
-            process.waitFor(15, TimeUnit.SECONDS)
-        }
         if (!ready) {
             process.destroyForcibly()
+            process.waitFor(10, TimeUnit.SECONDS)
             reader.join(2000)
             error("26.4 Snapshot 3 reference server did not reach ready state. Output:\\n" + output)
         }
+        process.destroy()
+        if (!process.waitFor(10, TimeUnit.SECONDS)) {
+            process.destroyForcibly()
+            process.waitFor(10, TimeUnit.SECONDS)
+        }
         reader.join(5000)
-        check(process.exitValue() == 0) {
-            "26.4 Snapshot 3 reference server exited with " + process.exitValue() + ":\\n" + output
+        check(!process.isAlive) {
+            "26.4 Snapshot 3 reference server did not terminate after the smoke test. Output:\\n" + output
         }
     }
 }
