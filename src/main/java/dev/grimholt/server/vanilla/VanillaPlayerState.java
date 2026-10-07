@@ -6,6 +6,8 @@ public final class VanillaPlayerState {
     public enum GameMode { SURVIVAL, CREATIVE, ADVENTURE, SPECTATOR }
 
     private final UUID uuid;
+    private String name = "";
+    private boolean connected;
     private final VanillaInventory inventory = new VanillaInventory(41);
     private GameMode gameMode = GameMode.SURVIVAL;
     private float health = 20.0f;
@@ -23,6 +25,14 @@ public final class VanillaPlayerState {
     }
 
     public UUID uuid() { return uuid; }
+    public String name() { return name; }
+    public boolean connected() { return connected; }
+    public void connect(String name) {
+        if (name == null || name.isBlank()) throw new IllegalArgumentException("name must not be blank");
+        this.name = name;
+        this.connected = true;
+    }
+    public void disconnect() { this.connected = false; }
     public VanillaInventory inventory() { return inventory; }
     public GameMode gameMode() { return gameMode; }
     public void gameMode(GameMode mode) { gameMode = java.util.Objects.requireNonNull(mode); }
