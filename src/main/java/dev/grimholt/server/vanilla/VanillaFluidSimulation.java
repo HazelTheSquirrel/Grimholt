@@ -1,0 +1,6 @@
+package dev.grimholt.server.vanilla;
+import java.util.*;
+public final class VanillaFluidSimulation{
+ public int tick(VanillaWorldModel w,int budget){int updates=0;ArrayDeque<BlockPos> q=new ArrayDeque<>(w.fluidPositions());Set<BlockPos> seen=new HashSet<>();while(!q.isEmpty()&&updates<budget){BlockPos p=q.removeFirst();if(!seen.add(p))continue;VanillaFluidState f=w.getFluid(p);if(f.isEmpty())continue;BlockPos d=new BlockPos(p.x(),p.y()-1,p.z());if(canFlow(w,d)){w.setFluid(d,new VanillaFluidState(f.id(),1,false));q.add(d);updates++;continue;}int next=f.source()?1:f.level()+1;if(next>8)continue;for(int[] v:new int[][]{{1,0},{-1,0},{0,1},{0,-1}}){BlockPos n=new BlockPos(p.x()+v[0],p.y(),p.z()+v[1]);if(!canFlow(w,n))continue;if(w.getFluid(n).isEmpty()||w.getFluid(n).level()>next){if(f.id().equals("minecraft:water")&&w.getBlock(n).id().equals("minecraft:lava"))w.setBlock(n,w.blockRegistry().defaultState("minecraft:stone"));else{w.setFluid(n,new VanillaFluidState(f.id(),next,false));q.add(n);}updates++;}}}return updates;}
+ private boolean canFlow(VanillaWorldModel w,BlockPos p){var d=w.blockRegistry().definition(w.getBlock(p).id());return d==null||d.fluidReplaceable();}
+}
