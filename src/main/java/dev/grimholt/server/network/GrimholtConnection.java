@@ -85,17 +85,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     }
 
     private void handleHandshake(VanillaProtocol26_2.Frame frame) throws IOException {
-        if (frame.packetId() != 0) throw new IOException("Expected handshake packet");
-        ByteArrayInputStream in = new ByteArrayInputStream(frame.payload());
-        int protocol = VanillaProtocol26_2.readVarInt(in);
-        VanillaProtocol26_2.requireProtocol(protocol);
-        VanillaProtocolCodec.readString(in, 255);
-        if (in.available() < 2) throw new EOFException("Handshake missing port");
-        in.skipNBytes(2);
-        int next = VanillaProtocol26_2.readVarInt(in);
-        if (next == 1) state = ConnectionState.STATUS;
-        else if (next == 2) state = ConnectionState.LOGIN;
-        else throw new IOException("Unsupported handshake next state: " + next);
+        VanillaProtocol26_2.Handshake handshake = VanillaProtocol26_2.decodeHandshake(frame);
+        state = handshake.nextState() == 1 ? ConnectionState.STATUS : ConnectionState.LOGIN;
     }
 
     private void handleStatus(VanillaProtocol26_2.Frame frame) throws IOException {

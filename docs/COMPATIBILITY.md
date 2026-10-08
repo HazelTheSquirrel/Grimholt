@@ -2,8 +2,8 @@
 
 Grimholt uses two deliberately separate version anchors:
 
-- **Vanilla behavior reference:** Minecraft Java Edition **26.2** (published 2026-10-06).
-- **Current Minestom runtime/protocol foundation:** Minestom **26.2** (the exact active runtime substrate).
+- **Vanilla behavior reference:** Mojang Minecraft Java Edition **26.4-snapshot-3** (pinned reference JAR SHA-1 `2d89c95c030e635387448f332961074ce1adbb4b`).
+- **Current Minestom runtime/protocol foundation:** No external Minestom runtime dependency; Grimholt-owned protocol/runtime migration is in progress.
 
 The snapshot is the source of truth for gameplay semantics, world rules, registries, data-driven behavior and concurrency-safe ownership requirements. Minestom is the source foundation being forked, not the authority for Grimholt compatibility.
 
@@ -11,7 +11,7 @@ The snapshot is the source of truth for gameplay semantics, world rules, registr
 
 | Layer | Version | Rule |
 |---|---|---|
-| Vanilla behavior | 26.2 | Mandatory behavioral reference |
+| Vanilla behavior | 26.4-snapshot-3 | Mandatory behavioral reference |
 | Vanilla data | 26.2 | Target data/registry semantics |
 | Grimholt runtime | Independent | Must ultimately be fully Grimholt-owned |
 | Grimholt API | Independent | Must not expose Minestom implementation types |
@@ -23,10 +23,10 @@ Grimholt may advance to a newer Minecraft release or snapshot independently of M
 
 | Area | Status | Evidence |
 |---|---|---|
-| 26.2 protocol transport | Implemented | Minestom 26.2 integration |
-| Online/offline authentication selection | Implemented in bootstrap | Grimholt config selects online or offline authentication |
+| 26.4-snapshot-3 protocol transport | PARTIAL | Grimholt-owned framing and packet catalog; client interoperability is not yet proven |
+| Online/offline authentication | PARTIAL | Login flow exists; full real-client compatibility and edge-case validation remain open |
 | Configurable parallel dispatcher | Implemented | Grimholt configures Minestom dispatcher threads before initialization |
-| Anvil world persistence | Wired | 26.2 AnvilLoader with explicit dimension |
+| World persistence | PARTIAL/NOT PROVEN | Atomic file store exists; complete Anvil/chunk/player parity and restart tests remain open |
 | Independent Grimholt plugin API | Implemented foundation | Public API contains no Minestom or SLF4J types |
 | Plugin discovery/dependency/lifecycle | Implemented foundation | Descriptor validation, ordering, classloader cleanup |
 | Vanilla 26.2 behavior | NOT IMPLEMENTED/PROVEN | Requires reference-driven implementation and executable parity tests |
@@ -39,7 +39,7 @@ Grimholt may advance to a newer Minecraft release or snapshot independently of M
 
 ## Snapshot baseline
 
-The 26.2 reference currently introduces, among other things:
+The pinned 26.4-snapshot-3 reference is the sole target for generated registries, protocol reports and behavioral differential tests.
 
 - Ice Caves biome and associated generation rules.
 - Ice Crystals and Icicles.

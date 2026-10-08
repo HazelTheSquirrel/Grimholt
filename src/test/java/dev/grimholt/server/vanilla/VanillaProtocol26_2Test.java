@@ -77,4 +77,50 @@ class VanillaProtocol26_2Test {
                 () -> VanillaProtocol26_2.decodeFrame(
                         new ByteArrayInputStream(withTrailingData), 1024, 1));
     }
+    @Test
+    void handshakeParsesValidStatusAndLoginIntents() throws Exception {
+        assertEquals(1, VanillaProtocol26_2.decodeHandshake(handshake(1)).nextState());
+        var login = VanillaProtocol26_2.decodeHandshake(handshake(2));
+        assertEquals("localhost", login.host());
+        assertEquals(25565, login.port());
+        assertEquals(2, login.nextState());
+    }
+
+    @Test
+    void handshakeRejectsWrongPacketIdTruncationInvalidStateAndTrailingBytes() throws Exception {
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.decodeHandshake(new VanillaProtocol26_2.Frame(1, new byte[0])));
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.decodeHandshake(new VanillaProtocol26_2.Frame(0, new byte[]{1})));
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.decodeHandshake(handshake(3)));
+        byte[] valid = handshake(1).payload();
+        byte[] trailing = java.util.Arrays.copyOf(valid, valid.length + 1);
+        trailing[trailing.length - 1] = 0x01;
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.decodeHandshake(new VanillaProtocol26_2.Frame(0, trailing)));
+    }
+
+    @Test
+    void handshakeRejectsMismatchedProtocol() throws Exception {
+        var out = new ByteArrayOutputStream();
+        VanillaProtocol26_2.writeVarInt(out, VanillaProtocol26_2.PROTOCOL_VERSION - 1);
+        VanillaProtocolCodec.writeString(out, "localhost", 255);
+        out.write(0x63);
+        out.write(0xdd);
+        VanillaProtocol26_2.writeVarInt(out, 1);
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.decodeHandshake(new VanillaProtocol26_2.Frame(0, out.toByteArray())));
+    }
+
+    private static VanillaProtocol26_2.Frame handshake(int nextState) throws Exception {
+        var out = new ByteArrayOutputStream();
+        VanillaProtocol26_2.writeVarInt(out, VanillaProtocol26_2.PROTOCOL_VERSION);
+        VanillaProtocolCodec.writeString(out, "localhost", 255);
+        out.write(0x63);
+        out.write(0xdd);
+        VanillaProtocol26_2.writeVarInt(out, nextState);
+        return new VanillaProtocol26_2.Frame(0, out.toByteArray());
+    }
+
 }

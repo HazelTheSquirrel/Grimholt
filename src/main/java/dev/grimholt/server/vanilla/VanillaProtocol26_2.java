@@ -177,6 +177,37 @@ public final class VanillaProtocol26_2 {
         }
     }
 
+    /** Parsed handshake fields. The hostname is retained for diagnostics/routing only. */
+    public record Handshake(String host, int port, int nextState) {
+        public Handshake {
+            Objects.requireNonNull(host, "host");
+            if (port < 0 || port > 65535) throw new IllegalArgumentException("port");
+            if (nextState != 1 && nextState != 2) throw new IllegalArgumentException("nextState");
+        }
+    }
+
+    /** Strictly parses the initial handshake and rejects trailing or malformed payload data. */
+    public static Handshake decodeHandshake(Frame frame) throws IOException {
+        Objects.requireNonNull(frame, "frame");
+        if (frame.packetId() != 0) throw new IOException("Expected handshake packet id 0");
+        ByteArrayInputStream in = new ByteArrayInputStream(frame.payload());
+        int protocol = readVarInt(in);
+        try {
+            requireProtocol(protocol);
+        } catch (IllegalStateException mismatch) {
+            throw new IOException(mismatch.getMessage(), mismatch);
+        }
+        String host = VanillaProtocolCodec.readString(in, 255);
+        if (in.available() < 2) throw new EOFException("Handshake missing port");
+        int port = (in.read() << 8) | in.read();
+        int nextState = readVarInt(in);
+        if (nextState != 1 && nextState != 2) {
+            throw new IOException("Unsupported handshake next state: " + nextState);
+        }
+        if (in.available() != 0) throw new IOException("Trailing bytes after handshake packet");
+        return new Handshake(host, port, nextState);
+    }
+
     public static void requireProtocol(int protocol) {
         if (protocol != PROTOCOL_VERSION) {
             throw new IllegalStateException(
