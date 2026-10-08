@@ -15,6 +15,8 @@ public final class GrimholtNetworkServer implements AutoCloseable {
     private final GrimholtCommandDispatcher commands;
     private final VanillaServerKernel kernel;
     private volatile boolean onlineMode;
+    private volatile VanillaGeneratedData generatedData;
+    private volatile VanillaPacketCatalog packetCatalog;
     private final Set<GrimholtConnection> connections = ConcurrentHashMap.newKeySet();
     private volatile ServerSocket socket;
     private volatile boolean running;
@@ -40,6 +42,17 @@ public final class GrimholtNetworkServer implements AutoCloseable {
             throw new IllegalStateException("Cannot bind Grimholt network socket", e);
         }
         onlineMode = config.onlineMode();
+        try {
+            VanillaGeneratedData data = new VanillaGeneratedData();
+            data.requireAvailable();
+            VanillaPacketCatalog packets = VanillaPacketCatalog.load(data);
+            generatedData = data;
+            packetCatalog = packets;
+        } catch (RuntimeException failure) {
+            try { socket.close(); } catch (IOException closeFailure) { failure.addSuppressed(closeFailure); }
+            socket = null;
+            throw new IllegalStateException("Cannot initialize the pinned Minecraft 26.4 packet/data catalog", failure);
+        }
         running = true;
         acceptLoop();
     }
@@ -49,9 +62,8 @@ public final class GrimholtNetworkServer implements AutoCloseable {
             while (running) {
                 try {
                     Socket client = socket.accept();
-                    VanillaGeneratedData generated = new VanillaGeneratedData();
-                    VanillaPacketCatalog catalog = VanillaPacketCatalog.load(generated);
-                    GrimholtConnection connection = new GrimholtConnection(client, server, commands, catalog, generated, kernel, onlineMode, connections::remove);
+                    GrimholtConnection connection = new GrimholtConnection(
+                            client, server, commands, packetCatalog, generatedData, kernel, onlineMode, connections::remove);
                     connections.add(connection);
                     Thread.ofVirtual().name("Grimholt-Connection").start(connection::run);
                 } catch (IOException | RuntimeException failure) {
