@@ -1,30 +1,28 @@
-# Dependency Policy
+# Dependency policy
 
 ## Hard bans
 
-Grimholt must not depend on:
-- Bukkit
-- Spigot
-- Paper
-- Folia
-
-This includes direct dependencies and accidental transitive dependencies.
+Grimholt runtime and public API must not depend on Bukkit, Spigot, Paper, Folia, Velocity or another Minecraft server implementation. Direct and transitive dependencies are in scope.
 
 ## Minestom
 
-Minestom is no longer a runtime dependency of Grimholt.
+The external `net.minestom:minestom` runtime dependency is absent from the current Gradle dependency declaration/runtime graph audit. Grimholt code must not silently reintroduce it. Minestom may be studied as technical/reference material; any source adoption must be license-reviewed and deliberately imported, modified and owned by Grimholt rather than hidden behind a permanent runtime dependency.
 
-It may be consulted as a behavioral/architectural reference, but Grimholt implementation code must be original and Grimholt-owned. No Minestom type may cross a Grimholt public API boundary.
+The dependency audit is a useful guard but is not a complete proof by itself. Review direct/transitive dependency graphs, packaged JAR contents and source imports during release review.
 
-The standalone runtime must remain buildable and executable without the external `net.minestom:minestom` Maven artifact.
+## Third-party dependency checklist
 
-## Review checklist
+For every addition:
+- purpose and alternatives;
+- version pin and update policy;
+- license and notices;
+- transitive dependencies;
+- thread safety and allocation profile;
+- startup/shutdown and native requirements;
+- security advisories;
+- public API leakage;
+- effect on standalone packaging.
 
-For every dependency:
-- Why is it needed?
-- Can the JDK or existing Minestom stack provide it?
-- Is it thread-safe under the intended usage?
-- What is its allocation profile?
-- What is its license?
-- Does it expose native/platform requirements?
-- Does it create an API compatibility obligation?
+## Reference JAR
+
+The pinned Mojang server JAR is only for checksum-verified data generation and isolated reference tests. It must never be on Grimholt's runtime classpath or bundled into the standalone JAR. The license/usage boundary must be respected; do not redistribute generated or proprietary contents beyond what is permitted.

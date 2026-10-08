@@ -1,74 +1,36 @@
-# Grimholt Fork Migration
+# Grimholt fork migration and completion order
 
-## Branch
+## Branch and target
 
-All fork-engine experiments and structural changes are currently developed on **test**. main remains the stable baseline until a deliberate merge.
+Implementation is performed on `test`; `main` remains the stable baseline until an intentional merge. Target: Minecraft Java 26.4 Snapshot 3, pinned by SHA-1 `2d89c95c030e635387448f332961074ce1adbb4b`.
 
-## What "fork" means
+## Meaning of independent fork
 
-Grimholt is not intended to become a permanent application layered on top of Minestom.
+Grimholt must own protocol, connections, authentication, player/session state, world/chunk/entity simulation, gameplay, data, persistence, scheduler and plugin API. It must run without an external Minecraft server runtime. The Mojang JAR is a test/reference oracle only. No Bukkit/Spigot/Paper/Folia/Velocity API or Minestom runtime dependency is permitted.
 
-The migration target is:
+## Migration stages
 
-```
-Minecraft Client
-      ↓
-Grimholt Protocol / Network
-      ↓
-Grimholt Runtime Kernel
-      ↓
-Grimholt Regions / World / Entities / Tick
-      ↓
-Grimholt API
-      ↓
-Grimholt Plugins
-```
+1. Establish reproducible build, dependency and reference gates.
+2. Finish connection state machine and prove real-client status/login/configuration/play.
+3. Make player, world, chunk and entity models the single authoritative runtime state.
+4. Implement core survival loop: movement/physics, block interaction, item drops, inventory, save/reload.
+5. Implement block/fluid/redstone tick engine and block entities.
+6. Implement item components, menus, recipes, containers, entities, AI and combat.
+7. Implement dimensions, portals, villagers, POIs, raids and bosses.
+8. Consume generated registries/tags/data and implement datapacks/commands/loot/advancements.
+9. Achieve seeded world-generation and lighting parity.
+10. Harden concurrency, persistence, security and plugin lifecycle.
+11. Run real-client, differential, fuzz, crash-injection, soak and networked scale tests.
+12. Publish release artifacts and only then deliberately merge `test` to `main`.
 
-Minestom was the starting technical foundation. It is now only a reference for behavior/protocol/architecture. Grimholt implementation code is reimplemented and owned by Grimholt; Minestom source is not copied or vendored into the runtime.
+## Ownership checklist for every subsystem
 
-## Ownership rule
+Document its mutable state, sole owner, legal threads, handoff protocol, queue bounds, error behavior, shutdown behavior, persistence format, packet effects, tests and telemetry. Async computation must operate on immutable snapshots and return results to the owner for mutation.
 
-Every subsystem must have an explicit answer to:
+## Reference-project policy
 
-- Who owns the state?
-- Who owns the tick?
-- Who owns the lifecycle?
-- Which thread/region may mutate it?
-- Which public API exposes it?
-- Which external dependency is required?
+Other server implementations and Minestom may be studied as technical references, subject to license review. Reference reading is not proof of parity. Do not copy code without a compatible license and explicit decision. No external implementation may remain a runtime authority.
 
-A Minestom type crossing a public Grimholt API boundary is a migration failure.
+## Performance and adaptive control
 
-## Migration order
-
-1. Resource profile — detect CPU and physical memory; establish the 80/20 resource policy.
-2. Concurrency kernel — region ownership, bounded queues, handoffs and telemetry.
-3. Minestom source inventory — map the runtime into source areas that must become Grimholt-owned.
-4. Network ownership — connection, configuration/login/play and packet lifecycle.
-5. World ownership — instances, chunks, storage and generation.
-6. Entity ownership — players, entities, tracking, physics and AI.
-7. Scheduler ownership — authoritative Grimholt ticking and background work.
-8. Vanilla parity — behavior/data/protocol correctness for the selected Minecraft baseline.
-9. Adaptive runtime — safe rule engine, then optional KI/ML controller.
-10. Dependency removal — delete the external net.minestom:minestom runtime dependency.
-11. Independent release pipeline — Minecraft releases/snapshots are integrated by Grimholt on its own schedule.
-
-## Reference projects
-
-Other server implementations may be studied for concurrency models, region scheduling, packet handling, memory management, entity activation, chunk I/O, redstone/physics behavior and compatibility edge cases.
-
-They are reference material only. Grimholt does not inherit their APIs, licensing assumptions, runtime dependencies or release cadence.
-
-## Performance guardrails
-
-The 1000-player objective is driven by measurable workload tests.
-
-Required metrics include MSPT, TPS, tick jitter, CPU, heap/GC pressure, queue depth, chunk latency, entity count, network pressure and plugin execution time.
-
-The future adaptive controller must use:
-
-```
-Telemetry → Decision → Safety Limits → Controller → Audit/Rollback
-```
-
-No AI component may directly mutate arbitrary game state.
+The 500–1000-player goal is an unproven target, not a promise. Measure realistic networked workloads first. Any future adaptive controller must be deterministic/safety-bounded, auditable and reversible; it cannot mutate arbitrary gameplay state.

@@ -1,105 +1,48 @@
-# Vanilla compatibility and parity
+# Minecraft compatibility and parity evidence
 
-Grimholt uses two deliberately separate version anchors:
+## Pinned target
 
-- **Vanilla behavior reference:** Mojang Minecraft Java Edition **26.4-snapshot-3** (pinned reference JAR SHA-1 `2d89c95c030e635387448f332961074ce1adbb4b`).
-- **Current Minestom runtime/protocol foundation:** No external Minestom runtime dependency; Grimholt-owned protocol/runtime migration is in progress.
+- **Minecraft Java Edition:** 26.4 Snapshot 3
+- **Reference JAR:** `reference/minecraft/26.4/server.jar`
+- **SHA-1:** `2d89c95c030e635387448f332961074ce1adbb4b`
+- **Toolchain:** Java 25 / Gradle 9.8.0
 
-The snapshot is the source of truth for gameplay semantics, world rules, registries, data-driven behavior and concurrency-safe ownership requirements. Minestom is the source foundation being forked, not the authority for Grimholt compatibility.
+This is the target for protocol, registries, generated data, gameplay behavior and differential tests. The reference JAR is not a runtime implementation.
 
-## Version policy
+## Evidence matrix
 
-| Layer | Version | Rule |
+| Area | Current status | Evidence / remaining gate |
 |---|---|---|
-| Vanilla behavior | 26.4-snapshot-3 | Mandatory behavioral reference |
-| Vanilla data | 26.2 | Target data/registry semantics |
-| Grimholt runtime | Independent | Must ultimately be fully Grimholt-owned |
-| Grimholt API | Independent | Must not expose Minestom implementation types |
-| Multithreading | Grimholt-owned | Runtime ownership and scheduling are Grimholt responsibilities |
+| Reference pin and checksum | Implemented | CI checks the checked-in JAR SHA-1 |
+| Mojang reference boot | CI smoke test | Proves the reference starts; not Grimholt compatibility |
+| Grimholt build / tests | CI gate | Latest run must be checked per commit |
+| Grimholt-owned handshake parsing | Partial | Strict field/trailing-byte validation and unit tests; not a full protocol implementation |
+| Status/login/configuration/play | Partial / unverified | Full packet matrix, real target client and disconnect/fuzz tests required |
+| Online authentication/encryption | Partial / unverified | Primitive tests exist; real session/client round trip and failure-path tests required |
+| Registry/configuration sync | Partial | Complete NBT/registry/custom datapack behavior required |
+| Player movement and synchronization | Partial | End-to-end movement, teleport, abilities, health, inventory and reconnect tests required |
+| World/chunk transport and lighting | Partial | Non-empty chunk, light propagation, border and client-render verification required |
+| Block/item/entity mechanics | Incomplete | Runtime-connected vanilla behavior and differential tests required |
+| World generation | Incomplete | Seeded terrain/biome/structure comparisons required |
+| Persistence | Partial / unverified | Complete chunk/player/entity/block-entity round-trip, restart and crash-injection required |
+| Plugin API | Foundation | Compatibility policy and gameplay APIs remain open |
+| Multithreading safety | Partial | Ownership stress, queue saturation and shutdown race tests required |
+| 500–1000 concurrent players | Not proven | Networked load tests and long soak evidence required |
 
-Grimholt may advance to a newer Minecraft release or snapshot independently of Minestom. Minestom releases are technical references and source inputs, not release gates.
+## Snapshot data baseline
 
-## Current evidence
+The generated reference metadata currently records protocol `1073742165`, world data version `5122`, data-pack version `123.0`, resource-pack version `100.0`, and Java major `25`. Verify these against the pinned JAR and generated reports whenever the reference changes; never copy these values into another version's metadata without regeneration.
 
-| Area | Status | Evidence |
-|---|---|---|
-| 26.4-snapshot-3 protocol transport | PARTIAL | Grimholt-owned framing and packet catalog; client interoperability is not yet proven |
-| Online/offline authentication | PARTIAL | Login flow exists; full real-client compatibility and edge-case validation remain open |
-| Configurable parallel dispatcher | Implemented | Grimholt configures Minestom dispatcher threads before initialization |
-| World persistence | PARTIAL/NOT PROVEN | Atomic file store exists; complete Anvil/chunk/player parity and restart tests remain open |
-| Independent Grimholt plugin API | Implemented foundation | Public API contains no Minestom or SLF4J types |
-| Plugin discovery/dependency/lifecycle | Implemented foundation | Descriptor validation, ordering, classloader cleanup |
-| Vanilla 26.2 behavior | NOT IMPLEMENTED/PROVEN | Requires reference-driven implementation and executable parity tests |
-| Vanilla world generation | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned/reference-driven generation |
-| Vanilla physics/fluids/redstone | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
-| Vanilla entities/AI/villagers/raids | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
-| Vanilla containers/crafting/combat | NOT IMPLEMENTED/PROVEN | Requires Grimholt-owned behavior implementation and tests |
-| Datapacks/loot/advancements/scoreboards parity | NOT IMPLEMENTED/PROVEN | Requires targeted snapshot data and behavior coverage |
-| 500-1000 player capacity | NOT PROVEN | Benchmark evidence does not exist yet |
+The snapshot-specific content list is derived from the exact pinned reference and must be confirmed against generated registries/tags, not inferred from names alone. Ensure Ice Caves, Ice Crystals, Icicles, Frostbite/freezing behavior, snowball knockback and related worldgen/tag/sound changes are represented where present in the actual generated reports.
 
-## Snapshot baseline
+## Acceptance policy
 
-The pinned 26.4-snapshot-3 reference is the sole target for generated registries, protocol reports and behavioral differential tests.
+A feature is only marked implemented when it is connected to the active runtime and executable tests demonstrate its behavior. A packet codec test is not a client interoperability test; loading an Anvil file is not world generation; a world-model microbenchmark is not a server-capacity benchmark.
 
-- Ice Caves biome and associated generation rules.
-- Ice Crystals and Icicles.
-- Frostbite mob.
-- Freezing mob effect.
-- Snowball knockback behavior.
-- New pathfinding and gameplay tags.
-- New block sound-set registry.
-- Data Pack version 107.1.
-- Resource Pack version 88.0.
-- Updated feature, placement, noise and registry data.
-
-These are not optional documentation details: the corresponding server-side data and behavior must be represented in Grimholt before the snapshot can be considered parity-complete.
-
-## Multithreading contract
-
-Grimholt is building its own scheduling and ownership model. Existing Minestom facilities may be used temporarily behind migration boundaries, but they are not the final runtime authority.
-
-Grimholt-owned gameplay code must follow these rules:
-
-1. World/chunk/entity mutable state has an explicit owner.
-2. A tick owner is the only writer for its owned mutable gameplay state.
-3. Cross-owner operations are explicit handoffs, never unsynchronized direct mutation.
-4. Heavy I/O, generation and computation are asynchronous only when their results can be applied through the owning tick context.
-5. Snapshot/compute/apply is required when computation observes mutable state outside its owner.
-6. Plugin APIs must never imply a universal global gameplay thread.
-7. Global state is isolated from region-local state.
-8. Shutdown cancels or drains owned work deterministically.
-9. Bounded queues and backpressure are mandatory for externally generated work.
-10. Thread ownership violations are programmer errors and must be observable in development/test mode.
-
-Folia's region ownership documentation is used only as an architectural comparison for these invariants. Grimholt does not depend on or expose Folia APIs.
-
-## Vanilla reference harness
-
-The project must eventually run the same deterministic scenario against:
-
-1. the official vanilla reference server/snapshot where legally and technically practical, and
-2. Grimholt.
-
-The harness compares observable behavior such as:
-
-- block state transitions,
-- entity state,
-- inventories,
-- damage/effects,
-- scheduled ticks,
-- random-tick outcomes under controlled seeds,
-- persistence round-trips,
-- commands and command tree behavior,
-- registry/data synchronization.
-
-A protocol-compatible connection alone is not a parity test.
-
-## Non-negotiable rule
-
-A feature is only marked **Implemented** after executable tests demonstrate the behavior. Minestom delegation is an implementation mechanism, never parity evidence.
-
-## References
-
-- Official Minecraft 26.2: https://feedback.minecraft.net/hc/en-us/articles/49412490179853-Minecraft-Java-Edition-26-4-Snapshot-3
-- Minestom source is used as a fork/reference source.
-- Other Minecraft server implementations are architectural/reference material only.
+The release gate requires:
+1. supported target client connects and enters Play;
+2. ordinary movement, block interaction, inventory and reconnect work;
+3. generated world and saved state survive restart;
+4. reference-differential and adversarial tests pass;
+5. the standalone artifact runs without external server implementation dependencies;
+6. all remaining limitations are explicit.

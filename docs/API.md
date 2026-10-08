@@ -1,22 +1,29 @@
 # Grimholt public API
 
-The public API lives under dev.grimholt.api.
+The public API is under `dev.grimholt.api`. It is a foundation, not yet a claim that all vanilla gameplay capabilities are exposed or stable.
 
-## Core surfaces
+## Existing API surfaces
 
-- GrimholtServer: server-facing capability surface.
-- GrimholtPlayer / GrimholtWorld: gameplay objects without Minestom types.
-- EventBus / Event / EventListener: plugin event model.
-- Scheduler / Task: bounded scheduling model.
-- ServiceRegistry: explicit capability/service ownership.
-- Command / CommandSender: command abstraction.
-- GrimholtPlugin / GrimholtPluginContext: plugin lifecycle and stable logging facade.
-- PluginManager / PluginDescriptor: discovery and dependency metadata.
+- Server/player/world abstractions: `GrimholtServer`, `GrimholtPlayer`, `GrimholtWorld`, `Position`, `ServerState`.
+- Plugins: `GrimholtPlugin`, `GrimholtPluginContext`, `PluginDescriptor`, `PluginManager`.
+- Events: `Event`, `EventBus`, `EventListener`.
+- Scheduling: `Scheduler`, `Task`.
+- Commands: `Command`, `CommandSender`.
+- Services and logging: `ServiceRegistry`, `GrimholtLogger`.
 
-## Compatibility rule
+## Current boundaries and gaps
 
-A public API type must not import or return Minestom, SLF4J, Adventure or other server-implementation classes. Internal adapters may use those libraries freely as long as implementation types do not cross the boundary. Plugin code must never be required to assume one global server thread.
+The API contains no Minestom types. That is necessary but not sufficient for a production API. Public contracts still need explicit compatibility/versioning rules, permissions, stable world/chunk/block/item/inventory/entity APIs, region-aware scheduling, event ownership and cleanup, plugin resource policy, and tested shutdown/failure behavior.
 
-## Lifecycle
+## Rules for future API changes
 
-Plugins receive onLoad, then onEnable. Disable happens in reverse load order. A plugin that fails during enable is disabled and the server startup is aborted.
+1. Plugins compile against the public API only, never server implementation packages.
+2. Do not expose Minecraft implementation or third-party types unless an intentional compatibility commitment is documented.
+3. Do not promise one universal gameplay thread. Every API operation must document its owner, async behavior and permitted handoff.
+4. API additions need API tests, compatibility review, Javadocs and a working example.
+5. Do not freeze APIs for mechanics that have not yet achieved stable runtime ownership.
+6. Plugin code is trusted code, not sandboxed code.
+
+## Lifecycle evidence
+
+The current manager has descriptor/discovery/dependency/lifecycle foundations. Before production readiness, verify load/enable/disable ordering, partial failure cleanup, listener/task deregistration, class-loader closure, dependency-cycle handling and repeatable start/stop with executable tests.

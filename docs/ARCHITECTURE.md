@@ -1,125 +1,55 @@
-# Grimholt Architecture
+# Grimholt architecture
 
-## Core principle
+## Target architecture
 
-Grimholt is a **Minecraft server fork**, not a Bukkit compatibility layer, Minestom plugin, or permanent wrapper around an external Minestom runtime.
+```
+Minecraft client
+  -> Grimholt network / protocol / authentication
+  -> Grimholt connection and session state
+  -> Grimholt world, chunk, player and entity models
+  -> Grimholt-owned region/tick and cross-owner handoff kernel
+  -> Grimholt gameplay systems and data registries
+  -> Grimholt public plugin API
+  -> Plugins
+```
 
-The public dependency direction is:
+The pinned Mojang server JAR is a reference oracle and test input, not a runtime dependency or implementation shortcut. The Gradle runtime no longer includes `net.minestom:minestom`; no Bukkit/Spigot/Paper/Folia server API is allowed.
 
-Minecraft client -> Grimholt server runtime -> Grimholt API -> Grimholt plugins
+## Current reality
 
-Minestom is the source foundation from which Grimholt is being forked. During the migration, external Minestom code may remain behind internal boundaries, but those boundaries are temporary.
+The repository has native Grimholt-owned components for resource profiling, region/world abstractions, player state, protocol framing/packet codecs, command-tree support, authentication primitives, persistence helpers and selected gameplay models. The 26.4 handshake parser now validates packet ID, protocol, host, port, next state and trailing bytes.
 
-## Strategic end state
+These components do **not** establish complete runtime ownership or parity. Many protocol packets and codecs are incomplete; real client interoperability is not yet evidenced; world generation, lighting, item/inventory behavior, redstone/fluids, entity AI, dimensions, datapacks and full Anvil/player/block-entity persistence remain open. See `FORENSIC-PARITY-AUDIT.md`.
 
-The final architecture is:
+## Ownership rules
 
-Minecraft client -> Grimholt protocol/runtime -> Grimholt region/world/entity simulation
+- Every mutable world, chunk, block-entity, player and entity state has one explicit owner.
+- The owner alone mutates its state. Cross-owner changes are messages/handoffs with ordering, failure and backpressure semantics.
+- Async work reads immutable snapshots and returns results to the owner before applying mutations.
+- Network threads validate and enqueue gameplay intent; they must not mutate arbitrary world state.
+- Queues and caches are bounded. Saturation must be visible and have deterministic rejection/backpressure behavior.
+- Startup and shutdown are explicit state transitions. All owned executors, sockets, tasks and file handles are closed.
+- Global systems (registries, time, weather, scoreboards) must have ownership and synchronization rules distinct from region-local state.
+- Plugin APIs document thread/region affinity and cannot expose implementation types.
 
-Grimholt must own:
+## Runtime layers and completion order
 
-- protocol and connection lifecycle,
-- configuration/login/play handling,
-- world and chunk state,
-- entity and player state,
-- gameplay ticking,
-- physics and interactions,
-- vanilla block/item/entity behavior,
-- persistence,
-- scheduling and region ownership,
-- plugin lifecycle and public API.
+1. Bootstrap/configuration/shutdown.
+2. Protocol framing and per-connection state machine.
+3. Login, authentication, encryption and compression.
+4. Configuration registry/data synchronization.
+5. Play packet surface and client synchronization.
+6. World/chunk lifecycle, storage and lighting.
+7. Player movement/physics and block interactions.
+8. Item components, inventory transactions and containers.
+9. Scheduled/random ticks, fluids, redstone and block entities.
+10. Entities, tracking, AI, damage, combat and projectiles.
+11. Dimensions, portals, villages, raids and bosses.
+12. Exact world generation, datapacks, commands, recipes, loot and advancements.
+13. Hardening, differential tests, real-client tests and networked benchmarks.
 
-An external Minestom Maven artifact must **not** be required at runtime in the final architecture.
+Do not jump to adaptive AI or capacity claims while correctness gates are failing.
 
-## Fork migration
+## Reference isolation
 
-The project is intentionally migrating in stages:
-
-1. establish Grimholt-owned kernel and public API;
-2. import/adopt the required Minestom source foundation into Grimholt;
-3. establish Grimholt package and ownership boundaries;
-4. move network/protocol ownership into Grimholt;
-5. move instance/chunk/world ownership into Grimholt;
-6. move entity/player simulation into Grimholt;
-7. make Grimholt scheduling/ticking authoritative;
-8. complete Grimholt-owned Minecraft parity;
-9. remove the external `net.minestom:minestom` dependency;
-10. maintain future updates as deliberate Grimholt fork integrations.
-
-## Current transitional boundary (2026-10-07)
-
-Today, Minestom still provides substantial low-level runtime functionality, including the live transport/connection path and instance substrate. Grimholt owns the higher-level kernel, API, world model abstractions and growing vanilla implementation.
-
-This is **not the final architecture**.
-
-The distinction is important:
-
-- **Current:** Grimholt is built on Minestom.
-- **Target:** Grimholt is a fork derived from Minestom, with Grimholt owning the resulting server runtime.
-- **Final:** No external Minestom server runtime is needed to run Grimholt.
-
-Minestom therefore remains an important upstream/source foundation, but it is not allowed to become the permanent authoritative implementation of Grimholt gameplay or server behavior.
-
-## Concurrency model
-
-The design must avoid a single giant global lock.
-
-State ownership must be explicit. Where state can be partitioned by world, chunk, player or subsystem, ownership should be partitioned as well.
-
-CPU-heavy work such as world generation, storage I/O and expensive calculations must be separated from latency-sensitive region execution and must have bounded queues/backpressure. World/chunk/entity state is owned by its current tick partition; cross-partition work must be explicitly handed off.
-
-The API must not force plugins to assume that every operation executes on one global server thread. Location-bound work belongs to the owner of that location; entity-bound work follows the entity; global work uses a global coordinator; blocking I/O is asynchronous.
-
-At startup Grimholt detects logical processor capacity and host memory. The runtime uses an 80% server resource budget for physical memory and reserves 20% for the operating system and safety margin. CPU capacity is used as scheduling input; actual scaling is validated with measurements rather than assumed.
-
-## Plugin safety
-
-A plugin must never receive unrestricted references to internal implementation objects.
-
-The API should expose capabilities, not implementation classes.
-
-## Performance rules
-
-Do not optimize from intuition.
-
-Every major subsystem should eventually have:
-- a functional test,
-- a regression benchmark where appropriate,
-- allocation awareness,
-- contention awareness,
-- a documented ownership model.
-
-The 500-1000 player target is treated as a workload requirement that drives architecture, not as a marketing number.
-
-## Dependency policy
-
-Forbidden runtime dependencies:
-- Bukkit
-- Spigot
-- Paper
-- Folia
-
-Minestom is currently an allowed **transitional source/runtime dependency**, but it is not an allowed permanent final runtime dependency.
-
-Every new dependency must have:
-- a concrete reason,
-- license compatibility,
-- maintenance assessment,
-- performance impact assessment,
-- security impact assessment.
-
-## Compatibility policy
-
-The targeted Minecraft version is the source of truth for protocol and vanilla behavior.
-
-Do not silently implement behavior from another Minecraft version merely because it is convenient.
-
-## Definition of done
-
-A feature is done only when:
-1. implementation exists,
-2. tests exist where meaningful,
-3. failure modes were reviewed,
-4. dependency boundaries were checked,
-5. concurrency implications were checked,
-6. the feature was re-reviewed after implementation.
+The exact Mojang reference is Minecraft Java 26.4 Snapshot 3, SHA-1 `2d89c95c030e635387448f332961074ce1adbb4b`. Reference generation and smoke tests must run in isolated temporary directories. Reference artifacts must not enter the standalone JAR.

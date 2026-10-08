@@ -1,538 +1,75 @@
-# Grimholt forensic Minecraft parity audit
+# Grimholt forensic repository and parity audit
 
-Date: 2026-10-07
-Target behavior: Minecraft Java Edition 26.4 Snapshot 3
-Repository: HazelTheSquirrel/Grimholt
-Branch: main
+- Audit baseline: 2026-10-09
+- Repository: `HazelTheSquirrel/Grimholt`
+- Audited ref: `test` at `fd4470f761574a25bf8756c1c9061925e146065b`
+- Target: Minecraft Java Edition 26.4 Snapshot 3
+- Reference SHA-1: `2d89c95c030e635387448f332961074ce1adbb4b`
 
-## Executive finding
+## Executive conclusion
 
-The current repository is an engineering foundation, not a complete Minecraft implementation. The existing vanilla package contains deterministic kernel primitives and a few 26.4 winter-mechanic models, but those primitives are not yet connected to Minestom's live world, chunk, entity, player, inventory or network lifecycle.
+Grimholt has meaningful server foundations but is **not feature-complete and not yet proven compatible with a real 26.4 Snapshot 3 client**. This audit is an evidence-based implementation backlog, not a claim that every listed subsystem has been re-tested during this documentation pass.
 
-A real "100% complete" claim requires every gameplay-visible subsystem below to be implemented, wired, and covered by executable tests. Compilation alone is not evidence.
+The repository tree contains a Java/Gradle server, public Grimholt API, server kernel and vanilla packages, unit tests, pinned reference JARs for 26.2 and 26.4, generated-reference tasks, a standalone-JAR task, dependency audit and CI. Current target is 26.4 Snapshot 3. The old 26.2 artifacts/docs must not be mistaken for the active target.
 
-## Status legend
+## Confirmed from repository/build configuration
 
-- COMPLETE: implemented, wired into runtime, and verified by executable tests.
-- PARTIAL: a primitive exists but is not complete or not runtime-integrated.
-- MISSING: no meaningful implementation exists.
-- BLOCKED: requires an upstream protocol/runtime capability that Grimholt cannot safely supply while Minestom remains unchanged.
+- Java 25 and Gradle 9.8.0 are configured.
+- The 26.4 Snapshot 3 JAR is checked in at `reference/minecraft/26.4/server.jar`; the build/CI pin its SHA-1.
+- The Gradle runtime dependency declaration contains SLF4J API/runtime implementation and tests; it does not declare `net.minestom:minestom`.
+- A dependency audit blocks selected Minestom/Bukkit/Spigot/Paper/Folia coordinates.
+- A standalone JAR task packages the application and runtime classpath dependencies.
+- CI checks the reference checksum, runs Java tests, boots the official reference server, assembles and uploads the standalone artifact.
+- Native Grimholt connection code has a strict handshake decoder and tests for valid status/login intent and malformed/trailing/mismatched inputs.
+- Resource-budget, persistence-path/atomic-file and other kernel tests have been added in prior commits.
 
-## 1. Runtime and protocol
+## Evidence limitations
 
-| Domain | Status | Required for completion |
-|---|---|---|
-| Handshake/status/login | PARTIAL | End-to-end 26.4 protocol verification |
-| Online authentication | PARTIAL | Real client/session verification |
-| Encryption/compression | PARTIAL | Protocol-path tests |
-| Configuration/play transition | PARTIAL | Full target-version packet/state coverage |
-| Registry synchronization | MISSING | Target-version registry bootstrap |
-| Packet validation/limits | PARTIAL | Complete packet matrix and fuzz/regression suite |
-| Disconnect/timeout semantics | PARTIAL | Full lifecycle coverage |
-| 26.4 protocol compatibility | BLOCKED by current Minestom 26.2 substrate | Consume a compatible Minestom release without modifying Minestom |
+The GitHub CI run associated with the audited head was in progress at audit time: test step had passed, while the Mojang reference smoke test was still running. Therefore this audit does not call that commit's entire CI green. Re-check the run linked from the commit before merging.
 
-## 2. World/chunk architecture
+This pass reviewed repository tree and key documentation/build configuration. It did not execute a local clean build, connect a live Minecraft client, run packet fuzzing, generate a full differential report, or benchmark a networked server. Those are explicitly required work items, not implied accomplishments.
 
-| Domain | Status | Required for completion |
-|---|---|---|
-| Region ownership primitive | PARTIAL | Bind ownership to live chunks/entities |
-| Cross-region handoff | PARTIAL | Runtime integration and saturation tests |
-| Chunk lifecycle | PARTIAL | Owned load/tick/unload pipeline |
-| Chunk persistence | PARTIAL | Complete round-trip and crash tests |
-| World time | PARTIAL | Runtime ticking and persistence |
-| Weather | MISSING | Rain/thunder/snow/weather rules |
-| World border | MISSING | Collision/damage/packet synchronization |
-| Simulation distance | MISSING | Correct activation/ticking semantics |
-| Dimension rules | MISSING | Overworld/Nether/End behavior |
+## Domain findings
 
-## 3. Blocks and block entities
+### 1. Protocol and client compatibility — PARTIAL
 
-Block behavior is currently only represented by a generic immutable BlockState. Completion requires the complete targeted-version block registry and behavior for every block family.
+Handshake validation is stricter, but a valid handshake is only the first protocol state. Required: status response/ping parity; all Login and Encryption/Compression paths; session verification; Configuration packets and registry NBT; cookies/resource-pack/transfer semantics where supported; Play packet coverage; packet size/rate limits; strict string/NBT/VarInt parsing; disconnect and timeout behavior; target-client tests.
 
-Required families include:
-- air/terrain/decorative blocks
-- slabs/stairs/walls/fences/gates/doors/trapdoors
-- pressure plates/buttons/levers
-- crops/plants/vines
-- fluids and fluid-containing blocks
-- redstone components
-- rails
-- pistons/observers
-- containers
-- signs
-- beds
-- portals
-- light/fire
-- falling blocks
-- snow/ice family including 26.4 Ice Caves content
-- every block entity type and its ticking/persistence/network behavior
+### 2. Player and world runtime — PARTIAL
 
-## 4. Physics and movement
+Grimholt-owned abstractions exist for player state, regions/world/chunks and packet serialization. Verify that the live socket/player/chunk/entity lifecycle uses them consistently, with no parallel state becoming authoritative. Required: real-client spawn, movement, teleport acknowledgements, chunk borders, tracking, reconnect and orderly disconnect.
 
-Missing/partial:
-- AABB collision
-- step-up and step-height rules
-- gravity/drag
-- jump
-- swimming
-- climbing
-- crawling/sneaking
-- sprinting
-- flying/creative
-- vehicles
-- fluids affecting movement
-- powder snow
-- ladders/vines/scaffolding
-- movement validation/anti-cheat semantics
-- knockback
-- fall damage
-- suffocation
-- fire/lava damage
-- portal travel
+### 3. Gameplay — INCOMPLETE
 
-## 5. Block update system
+A handful of domain models/engines do not equal vanilla mechanics. The work order must cover collision/physics; placement/breaking; scheduled/random ticks; fluids; redstone; block entities; item components and inventories; menus/crafting; entities/AI/pathfinding; damage/combat/projectiles; drops/loot; villagers/POIs/trading/raids; dimensions/portals/bosses; commands/gamerules/scoreboards.
 
-Required:
-- neighbor updates
-- scheduled ticks
-- random ticks
-- block state transitions
-- shape/support checks
-- block placement/breaking
-- block drops
-- tool rules
-- harvesting
-- block interaction
-- fluid scheduling
-- fire spread
-- crop/growth/decay
-- redstone update ordering
+### 4. Data and world generation — INCOMPLETE
 
-The existing scheduled-tick queue is only a kernel primitive.
+The generator can launch Mojang's data generator and write a manifest/tag index, but that does not prove all generated reports are consumed correctly by runtime systems. Required: complete registry/tag/component/recipe/loot/advancement/predicate/function/datapack support; exact seeded noise/biome/surface/carver/feature/structure generation; lighting; spawn placement; snapshot-specific content; differential tests.
 
-## 6. Fluids
+### 5. Persistence — PARTIAL / UNPROVEN
 
-Missing:
-- water source/flow
-- lava source/flow
-- fluid level propagation
-- falling fluid
-- water/lava interaction
-- fluid tick ordering
-- fluid collision and movement effects
-- fluid rendering/state synchronization
-- fluid persistence
+Atomic-file/path-safety primitives are useful but do not prove complete Anvil parity. Required: level metadata, chunks/sections/heightmaps/light, block entities, entities, player data, POI, raids, maps, statistics/advancements, version migration, atomicity across related files, corrupt-file recovery, interrupted-save tests and restart round trips.
 
-## 7. Redstone
+### 6. Concurrency and performance — PARTIAL
 
-Missing:
-- power propagation
-- dust shapes/power levels
-- torches
-- repeaters
-- comparators
-- levers/buttons/plates
-- observers
-- pistons/sticky pistons
-- target blocks
-- dispensers/droppers/hoppers
-- note blocks
-- update ordering
-- quasi-connectivity where applicable
-- chunk-boundary behavior
-- redstone stress tests
+Resource profiling and region/handoff abstractions exist. Required: explicit ownership for all mutable state, bounded queues/backpressure, queue-saturation behavior, deterministic cross-region ordering, shutdown cancellation/draining, races under join/quit/chunk unload, tick watchdog and observability. A logical world-model microbenchmark is not a 500–1000 player network benchmark.
 
-## 8. Items, components and inventories
+### 7. Plugin API and operations — FOUNDATION
 
-Missing:
-- complete item registry
-- ItemStack semantics
-- item components/data
-- durability
-- enchantments
-- attributes
-- food
-- potions
-- projectiles
-- tools/armor
-- pickup/drop
-- inventory synchronization
-- container menus
-- click/drag/shift-click/number-key interactions
-- crafting
-- recipe book
-- item entities
-- stack merging
-- item despawn
+Public API separation and plugin lifecycle foundations exist. Required: API versioning/compatibility, world/item/inventory/block/entity capabilities, permissions, region-aware scheduler contract, listener/task cleanup, plugin quotas/telemetry, classloader leak testing, configuration migration, structured logging and release operations. Plugins are trusted code, not a security sandbox.
 
-## 9. Crafting and containers
+## Prioritized blocker order
 
-Missing:
-- player crafting
-- crafting table
-- furnace/blast furnace/smoker
-- brewing stand
-- enchanting table
-- anvil
-- smithing
-- stonecutter
-- grindstone
-- loom
-- cartography
-- beacon
-- hopper/dispenser/dropper
-- shulker boxes
-- chests/barrels
-- villager trading
-- container locking/permissions
-- menu packets
+1. Keep CI green and establish reproducible baseline.
+2. Prove protocol/client compatibility through status → login → configuration → play with a real 26.4 client.
+3. Make the player/world/chunk lifecycle authoritative and end-to-end.
+4. Implement basic survival loop: movement/collision, block break/place, drops, inventory and persistence.
+5. Implement tick/neighbor/block-entity/fluid/redstone foundations.
+6. Implement items/containers/crafting and entity lifecycle/AI/combat.
+7. Implement dimensions, portals, villagers/raids and remaining vanilla systems.
+8. Complete generated data/datapack/command/registry semantics and exact world generation/lighting.
+9. Differential, fuzz, concurrency, crash-recovery and long-soak testing.
+10. Measure 50/100/250/500/750/1000-player networked workloads before any capacity claim.
 
-## 10. Entities
-
-Missing/partial:
-- complete entity registry
-- entity lifecycle
-- tracking
-- collision
-- passenger/vehicle relationships
-- attributes
-- AI goals
-- pathfinding
-- navigation
-- target selection
-- breeding
-- taming
-- despawn
-- persistence
-- loot
-- status effects
-- projectile simulation
-
-All Vanilla mob families must be covered, including passive, neutral, hostile, aquatic, flying, utility and boss entities.
-
-## 11. Combat and damage
-
-Missing:
-- damage sources/types
-- armor/toughness
-- enchantment modifiers
-- shields
-- invulnerability frames
-- critical hits
-- melee reach/rules
-- knockback
-- projectiles
-- explosions
-- fire
-- fall
-- drowning
-- freezing
-- suffocation
-- starvation
-- void
-- magic/effects
-- death/respawn
-- loot/xp
-
-## 12. 26.4 Snapshot 3 additions
-
-Partial only:
-- Ice Caves
-- Ice Crystals
-- Icicles
-- Frostbite
-- Freezing effect
-- Frostbite ice balls
-- icicle falling damage
-- snow on Packed Ice
-- snowball player knockback
-- new block sound-set registry
-- new pathfinding/gameplay tags
-- new worldgen noise/feature/placement data
-
-Existing FreezingState, IceBallImpact and IcicleImpact are models, not yet full live entity/block mechanics.
-
-## 13. Villages, villagers and raids
-
-Missing:
-- POI registry
-- villager brain
-- schedules
-- professions
-- gossip
-- reputation
-- trading
-- breeding
-- restocking
-- village detection
-- raid trigger
-- raid wave composition
-- raid spawn positioning
-- raid progress
-- victory/failure
-- Hero of the Village
-- patrols
-
-## 14. Dimensions, portals and bosses
-
-Missing:
-- Nether rules
-- End rules
-- portal creation
-- portal search/creation
-- portal cooldown
-- dimension transfer
-- respawn anchors
-- Ender Dragon
-- End crystals
-- Wither
-- boss bars
-- dimension-specific worldgen/rules
-
-## 15. World generation
-
-Missing/partial:
-- deterministic seed pipeline
-- noise settings
-- biome source
-- terrain shaping
-- aquifers
-- carvers
-- ores
-- vegetation
-- structures
-- structure sets
-- jigsaw structures
-- villages
-- strongholds
-- Nether terrain/structures
-- End terrain/islands
-- feature placement
-- heightmaps
-- surface rules
-- spawn placement
-- 26.4 Ice Cave noise/feature/placement data
-
-Anvil loading existing worlds is not equivalent to Vanilla world generation.
-
-## 16. Data, registries and datapacks
-
-Missing:
-- complete registries
-- tags
-- NBT
-- data components
-- recipes
-- loot tables
-- advancements
-- predicates
-- functions
-- schedules
-- structures
-- worldgen JSON
-- damage types
-- effects
-- enchantments
-- instruments/sounds
-- datapack loading/reload/error isolation
-- resource-pack metadata
-
-## 17. Commands and server state
-
-Partial:
-- simple command registration exists
-
-Missing:
-- Brigadier-like argument tree
-- typed arguments
-- suggestions
-- command feedback
-- permissions
-- command source context
-- selectors
-- execute
-- scoreboard
-- teams
-- bossbar
-- gamerules
-- difficulty
-- gamemode
-- teleport
-- give/item
-- summon
-- effect
-- data
-- function
-- reload
-- all target-version Vanilla commands
-
-## 18. Player state and gameplay systems
-
-Missing/partial:
-- hunger/saturation
-- health/absorption
-- XP/levels
-- effects
-- attributes
-- abilities
-- statistics
-- advancements
-- recipe unlocks
-- spawn/bed/respawn
-- death inventory/drop rules
-- spectator
-- adventure restrictions
-- scoreboard/team state
-- client settings/capabilities
-
-## 19. Persistence
-
-Partial:
-- Anvil loader is wired
-
-Missing:
-- complete chunk state round-trip
-- entity persistence
-- block entities
-- player data
-- level metadata
-- POI data
-- raids
-- maps
-- advancements/statistics
-- crash-safe multi-file commit strategy
-- migration/version handling
-- corruption recovery
-
-## 20. Plugin API
-
-Partial:
-- lifecycle, events, commands, scheduler and services exist
-
-Missing for a production-grade API:
-- permissions
-- region/entity scheduling semantics
-- inventory/item/block APIs
-- world/chunk APIs
-- event ownership/cleanup
-- API compatibility/versioning
-- classloader isolation hardening
-- plugin resource limits
-- reload semantics
-
-## 21. Observability/security
-
-Partial:
-- bounded scheduler
-- security limits
-- health/metrics primitives
-
-Missing:
-- packet abuse matrix
-- per-plugin quotas/metrics
-- tick watchdog
-- deadlock detection
-- memory leak tests
-- classloader leak tests
-- fuzzing
-- long-duration soak tests
-- dependency vulnerability automation
-- benchmark suite
-
-## 22. Definition of 100% completion
-
-Grimholt must not be declared complete until:
-1. Every required subsystem above is implemented and runtime-connected.
-2. Every subsystem has focused tests and regression coverage.
-3. A real target-version client can connect and exercise ordinary gameplay.
-4. World/chunk/entity state is owned by the region model without unsafe cross-thread mutation.
-5. Snapshot-specific content is verified against the official reference.
-6. Datapack/registry/command behavior is exercised.
-7. Persistence survives restart and failure injection.
-8. Adversarial concurrency tests pass.
-9. CI is green on main.
-10. Performance benchmarks exist for the project's stated workloads.
-11. Minestom remains unmodified and no Bukkit/Spigot/Paper/Folia runtime dependency exists.
-
-## Current hard blockers
-
-The largest current blocker is protocol/runtime version skew: the repository consumes Minestom 26.2 while the behavioral target is 26.4 Snapshot 3. Grimholt must not fake protocol compatibility or modify Minestom. The correct resolution is to consume a compatible Minestom release when available and keep the Vanilla implementation in Grimholt.
-
-This audit is a living checklist. New official snapshot behavior must be added before it can be considered complete.
-
-
----
-
-## 2026-10-07 forensic repository pass
-
-### Repository integrity
-
-- The repository is a standalone Git repository owned by HazelTheSquirrel; it is not marked as a GitHub fork.
-- No Bukkit, Spigot, Paper or Folia runtime API dependency is declared.
-- Minestom is currently the only Minecraft runtime foundation dependency.
-- The public API is Grimholt-owned rather than Minestom API based.
-- The current release artifact bundles runtime dependencies, so operators do not install a separate Minestom server.
-
-### Critical architectural finding
-
-**Grimholt is not yet an independent Minecraft server implementation in the same sense as a Paper/Folia-style fork.**
-
-The current process is:
-
-`Minecraft client -> Minestom networking/runtime -> Minestom InstanceContainer/AnvilLoader -> Grimholt API + Vanilla kernel`
-
-The Grimholt vanilla kernel owns a separate gameplay model and region ownership abstraction, but the live player/world transport is still created and started by `MinestomAdapter`. Player movement is received from Minestom's `PlayerMoveEvent`, and the overworld is a Minestom `InstanceContainer`.
-
-Therefore the current architecture is best described as:
-
-**"Grimholt server implementation on top of Minestom"**, not **"Grimholt fork of Minestom"** and not yet **"fully independent Minecraft server runtime"**.
-
-This is intentional at the present stage, but it is the main architectural boundary that must eventually be closed if Grimholt is to own the complete Minecraft runtime.
-
-### Duplicate/legacy cleanup performed
-
-The following unused legacy helpers were verified to have no source references in the current repository and were removed:
-
-- `VanillaPhysics.java` -> superseded by `VanillaPhysicsEngine.java`
-- `VanillaRedstone.java` -> superseded by `VanillaRedstoneEngine.java`
-- `VanillaWorldgen.java` -> placeholder random worldgen, not valid vanilla implementation
-- `VanillaTickEngine.java` -> not connected to the active region runtime
-
-No behavior was removed from the active `VanillaGameRuntime` by these deletions.
-
-### CI finding
-
-The red CI was caused by **Gradle Kotlin DSL syntax errors in the newly added Mojang data-generation regular expressions**, not by Java compilation or a gameplay test failure.
-
-The failure occurred in `build.gradle.kts` around lines 118-124 because JSON quotes were escaped for the wrong string-literal context.
-
-The build script was corrected to use Kotlin raw strings and an explicit `java.nio.file.Files` import.
-
-### Generated-data safety finding
-
-Filesystem-based generated data previously counted as available merely because the directory existed. Availability now requires both:
-
-- `manifest.properties`
-- `reports/blocks.json`
-
-This prevents a partially generated directory from silently activating incomplete vanilla data.
-
-### Benchmark status
-
-A repeatable microbenchmark entrypoint and Gradle task now exist:
-
-`gradle benchmark`
-
-Default workload:
-
-- 1,000 logical players
-- 50 logical regions
-- 20 measured iterations
-- region-local block read/write operations
-
-This is a **world-model/concurrency regression benchmark**, not yet a real networked 500-1000-player Minecraft server benchmark. A real client/network benchmark remains a later milestone after protocol, chunk, entity and world systems are fully wired.
-
-### Current conclusion
-
-The repository has a sound direction for a multithreaded Grimholt-owned gameplay kernel, but it is **not yet independent from Minestom at runtime**. The next architectural milestone is to turn Minestom into a replaceable transport/runtime adapter rather than the owner of the live Minecraft world/player simulation.
-
+The detailed, dependency-ordered work and release gates live in `MASTER-WORKPLAN.md`. Update this audit only when code/test evidence changes the status.

@@ -1,89 +1,38 @@
-# Grimholt Performance Architecture
+# Grimholt performance architecture and proof requirements
 
-## Target
+## Goal
 
-Grimholt is being engineered for high concurrency, with a target workload of **500–1000 simultaneous players** on suitable hardware. This is a measurable engineering target, never a universal hardware guarantee.
+The design target is 500–1000 concurrent players on a documented suitable hardware profile. This is an engineering target, not a capacity guarantee. No networked capacity evidence is currently established by the logical world-model microbenchmark.
 
-## Automatic hardware profile
+## Resource budget
 
-At startup Grimholt detects:
-- available logical processors/cores;
-- physical system memory where the JVM exposes it;
-- JVM maximum heap as a secondary constraint.
+- Plan to use at most 80% of detected physical memory for Grimholt.
+- Reserve 20% for the OS, native allocations and safety.
+- If physical memory cannot be detected, use JVM maximum heap as a fallback and report that limitation.
+- The launcher must set `-Xmx` consistently; a running JVM cannot safely resize its maximum heap.
+- Bound queues, caches, generation concurrency and background work.
 
-CPU capacity is a scheduling input. The architecture must avoid a hidden single-thread bottleneck and partition work by ownership instead of putting all world activity behind one global lock.
+## Work ownership
 
-## Memory policy
+Partition work by explicit region/world/entity ownership. Network, generation, storage and telemetry are separate work domains. No global lock should serialize the world. Cross-owner mutations use bounded queues with backpressure and metrics.
 
-Grimholt reserves **20% of physical system memory as a safety/system buffer**.
+## Required telemetry
 
-- Maximum planned Grimholt resource budget: **80%** of detected physical memory.
-- Reserved system/safety budget: **20%**.
-- Caches, worker queues and background systems must remain bounded by this policy.
-- The JVM cannot safely resize its maximum heap after startup, so the launcher/startup configuration must honor the same budget. Runtime code must not try to consume the reserved 20%.
+TPS; MSPT and jitter percentiles; CPU; heap/GC; player/entity/chunk counts; network throughput; chunk load/save latency; queue depth and wait time; rejected/backpressured work; plugin execution time; thread count and shutdown duration.
 
-If physical-memory detection is unavailable, Grimholt falls back to the JVM-reported maximum heap for budgeting and reports that limitation.
+## Benchmark plan
 
-## Multithreading model
-
-The long-term runtime is divided into owned work domains:
-1. region/world simulation;
-2. entity/player simulation;
-3. network processing;
-4. world generation;
-5. storage I/O;
-6. background calculations;
-7. monitoring/telemetry.
-
-Each domain has explicit ownership, bounded queues and backpressure. Cross-domain state changes are explicit handoffs.
-
-## Telemetry
-
-At minimum measure:
-- MSPT and tick jitter;
-- TPS;
-- CPU load;
-- heap usage and GC pressure;
-- active players;
-- entities;
-- loaded chunks;
-- queue depth and wait time;
-- chunk load/save latency;
-- network pressure;
-- plugin execution time;
-- backpressure events.
-
-## Adaptive runtime and KI
-
-The first adaptive layer is deterministic and rule-based. A later Grimholt KI/ML component may optimize safe runtime parameters, but it is never allowed to mutate arbitrary gameplay state.
-
-Required control path:
-```
-Telemetry
-  -> Decision Engine
-  -> Safety Limits
-  -> Runtime Controller
-  -> Audit / Rollback
-```
-
-Every automatic change must have:
-- a measurable trigger;
-- a bounded parameter range;
-- cooldown/hysteresis;
-- rollback;
-- audit logging.
-
-## Benchmark matrix
-
-Every major performance change is validated at:
-
-| Load | Required evidence |
+| Players | Minimum evidence |
 |---:|---|
-| 50 | startup, steady-state tick, memory |
-| 100 | same + chunk load |
-| 250 | same + entity load |
-| 500 | same + network load |
-| 750 | same + plugin stress |
-| 1000 | same + long soak |
+| 50 | Join/quit, steady-state ticks, memory and chunk loads |
+| 100 | Same plus chunk churn |
+| 250 | Entity density and mixed movement |
+| 500 | Network and chunk-load pressure |
+| 750 | Plugin/event and queue pressure |
+| 1000 | Long soak and failure/recovery behavior |
 
-Results must record CPU, physical memory, JVM settings, world size, view/simulation distance, entity density and plugin set.
+Record exact hardware, OS, JVM flags, world seed/size, view/simulation distances, entity density, workload scripts, client mix and commit SHA. Report p50/p95/p99 MSPT, TPS, GC pauses, memory, throughput, queue latency and errors.
+
+## Adaptive controller
+
+A future controller may tune only allow-listed bounded parameters using deterministic rules first. Required flow: telemetry → decision → safety limits → apply → audit/rollback. Every adjustment needs a trigger, range, cooldown/hysteresis and rollback. ML/AI must never mutate arbitrary gameplay state or be a prerequisite for correctness.
