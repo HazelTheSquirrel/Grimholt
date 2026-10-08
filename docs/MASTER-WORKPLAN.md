@@ -6,7 +6,7 @@
 >
 > **Repository rule:** For this fork migration, implementation work is performed on the `test` branch. `main` remains the stable baseline until a deliberate merge.
 >
-> **Project goal:** Build an independent Minecraft server implementation/distribution based on Minestom, with vanilla Minecraft compatibility for the targeted version and a first-class Grimholt Plugin API. Bukkit, Spigot, Paper and Folia are explicitly excluded.
+> **Project goal:** Build an independent Minecraft server implementation/distribution with a first-class Grimholt Plugin API. Grimholt owns its runtime and must not depend on Minestom or another server implementation. Mojang's pinned server JAR is a behavioral reference only. Bukkit, Spigot, Paper and Folia are explicitly excluded.
 
 ---
 
@@ -22,7 +22,7 @@ These rules apply to every phase.
 - [ ] No Folia dependency.
 - [ ] No compatibility layer that requires those APIs at runtime.
 - [x] External Minestom runtime dependency removed.
-- [x] Grimholt implementation classes own the runtime; Minestom is reference-only.
+- [x] Grimholt implementation classes own the runtime; no Minestom runtime artifact is required.
 - [ ] Plugins compile against Grimholt API, not against internal server classes.
 
 ### 0.2 Branch and repository rules
