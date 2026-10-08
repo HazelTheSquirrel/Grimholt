@@ -117,6 +117,8 @@ public final class Grimholt {
         throw new IllegalStateException("Grimholt lifecycle operation failed", f);
     }
 
+    int boundPort() { return network.boundPort(); }
+
     public LifecycleState state() { return lifecycle.state(); }
     public GrimholtConfig config() { return config; }
     public GrimholtServerImpl api() { return api; }
