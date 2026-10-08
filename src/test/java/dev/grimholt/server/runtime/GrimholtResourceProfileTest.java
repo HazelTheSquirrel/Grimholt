@@ -15,7 +15,7 @@ class GrimholtResourceProfileTest {
     }
 
     @Test
-    void memoryBudgetNeverExceedsDetectedPhysicalMemory() {
+    void memoryBudgetRetainsTwentyPercentReserve() {
         GrimholtResourceProfile profile = GrimholtResourceProfile.detect();
 
         if (profile.physicalMemoryDetected()) {
@@ -24,7 +24,10 @@ class GrimholtResourceProfileTest {
                     profile.serverMemoryBudgetBytes());
             assertTrue(profile.serverMemoryBudgetBytes() <= profile.physicalMemoryBytes());
         } else {
-            assertEquals(profile.jvmMaxHeapBytes(), profile.serverMemoryBudgetBytes());
+            assertEquals(
+                    Math.round(profile.jvmMaxHeapBytes() * GrimholtResourceProfile.SERVER_MEMORY_FRACTION),
+                    profile.serverMemoryBudgetBytes());
+            assertTrue(profile.serverMemoryBudgetBytes() <= profile.jvmMaxHeapBytes());
         }
     }
 
@@ -34,5 +37,7 @@ class GrimholtResourceProfileTest {
                 () -> new GrimholtResourceProfile(0, 1, 1, 1, true));
         assertThrows(IllegalArgumentException.class,
                 () -> new GrimholtResourceProfile(1, 1, 2, 1, true));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GrimholtResourceProfile(1, 0, 81, 100, false));
     }
 }
