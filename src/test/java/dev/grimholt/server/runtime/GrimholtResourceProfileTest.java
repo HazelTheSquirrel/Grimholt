@@ -32,6 +32,14 @@ class GrimholtResourceProfileTest {
     }
 
     @Test
+    void fallbackBudgetKeepsTwentyPercentJvmHeapReserve() {
+        assertEquals(800, GrimholtResourceProfile.calculateMemoryBudget(0, 1_000));
+        assertEquals(800, GrimholtResourceProfile.calculateMemoryBudget(1_000, 2_000));
+        assertThrows(IllegalArgumentException.class,
+                () -> GrimholtResourceProfile.calculateMemoryBudget(-1, 100));
+    }
+
+    @Test
     void rejectsInvalidProfiles() {
         assertThrows(IllegalArgumentException.class,
                 () -> new GrimholtResourceProfile(0, 1, 1, 1, true));
