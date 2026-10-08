@@ -31,8 +31,9 @@ public record GrimholtResourceProfile(
         if (serverMemoryBudgetBytes > physicalMemoryBytes && physicalMemoryBytes > 0) {
             throw new IllegalArgumentException("serverMemoryBudgetBytes exceeds physical memory");
         }
-        if (jvmMaxHeapBytes > 0 && serverMemoryBudgetBytes > jvmMaxHeapBytes && !physicalMemoryDetected) {
-            throw new IllegalArgumentException("fallback server budget exceeds the JVM maximum heap");
+        if (!physicalMemoryDetected && jvmMaxHeapBytes > 0
+                && serverMemoryBudgetBytes > calculateMemoryBudget(0, jvmMaxHeapBytes)) {
+            throw new IllegalArgumentException("fallback server budget exceeds the reserved JVM heap budget");
         }
     }
 
