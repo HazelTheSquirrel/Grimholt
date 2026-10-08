@@ -166,6 +166,9 @@ public final class VanillaProtocol26_2 {
             if (out.size() != expectedLength) {
                 throw new IOException("Zlib packet length mismatch");
             }
+            if (inflater.getRemaining() != 0) {
+                throw new IOException("Trailing data after compressed packet");
+            }
             return out.toByteArray();
         } catch (java.util.zip.DataFormatException e) {
             throw new IOException("Invalid zlib packet", e);
