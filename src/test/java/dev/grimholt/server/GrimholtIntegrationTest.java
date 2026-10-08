@@ -54,9 +54,9 @@ class GrimholtIntegrationTest {
             assertEquals(0, response.packetId(), "status response packet ID");
             ByteArrayInputStream payload = new ByteArrayInputStream(response.payload());
             String json = VanillaProtocolCodec.readString(payload, 32767);
-            assertTrue(json.contains("\\\"name\\\":\\\"26.4-snapshot-3\\\""),
+            assertTrue(json.contains("\"name\":\"26.4-snapshot-3\""),
                     "native Grimholt status response must advertise the pinned version: " + json);
-            assertTrue(json.contains("\\\"protocol\\\":" + VanillaProtocol26_2.PROTOCOL_VERSION),
+            assertTrue(json.contains("\"protocol\":" + VanillaProtocol26_2.PROTOCOL_VERSION),
                     "native Grimholt status response must advertise the pinned protocol: " + json);
         }
     }
