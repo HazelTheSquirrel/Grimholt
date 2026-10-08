@@ -61,23 +61,45 @@ public final class GrimholtNetworkServer implements AutoCloseable {
     private void acceptLoop() {
         Thread.ofVirtual().name("Grimholt-Acceptor").start(() -> {
             while (running) {
+                final Socket client;
                 try {
-                    Socket client = socket.accept();
-                    // Bound pre-authentication resource usage independently of the
-                    // configured player cap; the acceptor is the sole admission writer.
-                    if (connections.size() >= server.maxPlayers() + MAX_PENDING_CONNECTIONS) {
-                        client.close();
-                        continue;
+                    client = socket.accept();
+                } catch (IOException failure) {
+                    if (running) {
+                        // A listener failure is fatal; a per-client failure below is not.
                     }
-                    GrimholtConnection connection = new GrimholtConnection(
+                    break;
+                }
+
+                // Bound pre-authentication resource usage independently of the
+                // configured player cap; the acceptor is the sole admission writer.
+                if (connections.size() >= server.maxPlayers() + MAX_PENDING_CONNECTIONS) {
+                    closeQuietly(client);
+                    continue;
+                }
+
+                GrimholtConnection connection = null;
+                try {
+                    connection = new GrimholtConnection(
                             client, server, commands, packetCatalog, generatedData, kernel, onlineMode, connections::remove);
                     connections.add(connection);
-                    Thread.ofVirtual().name("Grimholt-Connection").start(connection::run);
+                    GrimholtConnection accepted = connection;
+                    Thread.ofVirtual().name("Grimholt-Connection").start(accepted::run);
                 } catch (IOException | RuntimeException failure) {
-                    if (running) break;
+                    if (connection != null) {
+                        connections.remove(connection);
+                        connection.close();
+                    } else {
+                        closeQuietly(client);
+                    }
+                    // Malformed/short-lived peers must never terminate the accept loop.
                 }
             }
         });
+    }
+
+    private static void closeQuietly(Socket socket) {
+        try { socket.close(); } catch (IOException ignored) {}
     }
 
     public int boundPort() { return socket == null ? -1 : socket.getLocalPort(); }
