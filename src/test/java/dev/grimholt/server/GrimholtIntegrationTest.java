@@ -9,7 +9,7 @@ import java.io.DataOutputStream;
 import java.net.Socket;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class GrimholtIntegrationTest {
     @TempDir Path tempDir;
@@ -33,7 +33,6 @@ class GrimholtIntegrationTest {
         } finally { server.stop(); }
         assertEquals(dev.grimholt.server.lifecycle.LifecycleState.STOPPED,server.state());
     }
-}
 
     private static void assertNativeStatusHandshake(Grimholt server) throws Exception {
         try (Socket socket = new Socket("127.0.0.1", server.boundPort())) {
@@ -61,4 +60,4 @@ class GrimholtIntegrationTest {
                     "native Grimholt status response must advertise the pinned protocol: " + json);
         }
     }
-
+}
