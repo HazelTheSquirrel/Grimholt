@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 
 public final class GrimholtNetworkServer implements AutoCloseable {
+    private static final int MAX_PENDING_CONNECTIONS = 64;
     private final GrimholtServerImpl server;
     private final GrimholtCommandDispatcher commands;
     private final VanillaServerKernel kernel;
@@ -62,6 +63,12 @@ public final class GrimholtNetworkServer implements AutoCloseable {
             while (running) {
                 try {
                     Socket client = socket.accept();
+                    // Bound pre-authentication resource usage independently of the
+                    // configured player cap; the acceptor is the sole admission writer.
+                    if (connections.size() >= server.maxPlayers() + MAX_PENDING_CONNECTIONS) {
+                        client.close();
+                        continue;
+                    }
                     GrimholtConnection connection = new GrimholtConnection(
                             client, server, commands, packetCatalog, generatedData, kernel, onlineMode, connections::remove);
                     connections.add(connection);
