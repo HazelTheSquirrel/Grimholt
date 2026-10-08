@@ -45,4 +45,21 @@ final class VanillaGeneratedDataTest {
         assertEquals("a\\b\"c", object.get("quote"));
         assertEquals("☃", object.get("unicode"));
     }
+    @Test
+    void generatedRegistryCatalogExposesAllTargetRegistryIds() {
+        VanillaGeneratedRegistryCatalog catalog =
+                VanillaGeneratedRegistryCatalog.load(new VanillaGeneratedData());
+
+        assertTrue(catalog.registryCount() > 10);
+        assertTrue(catalog.contains("minecraft:item", "minecraft:sulfur"));
+        assertTrue(catalog.contains("minecraft:entity_type", "minecraft:sulfur_cube"));
+        assertTrue(catalog.contains("minecraft:worldgen/biome", "minecraft:plains"));
+        assertTrue(catalog.contains("minecraft:damage_type", "minecraft:generic"));
+        assertTrue(catalog.protocolId("minecraft:item", "minecraft:sulfur").isPresent());
+        assertFalse(catalog.contains("minecraft:item", "grimholt:not_vanilla"));
+        assertTrue(catalog.entries("minecraft:item").contains("minecraft:sulfur"));
+        assertTrue(catalog.entries("minecraft:item").add("minecraft:mutable_test") == false,
+                "registry entry sets must be immutable");
+    }
+
 }
