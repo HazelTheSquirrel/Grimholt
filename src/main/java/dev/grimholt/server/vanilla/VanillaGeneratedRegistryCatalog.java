@@ -23,7 +23,8 @@ public final class VanillaGeneratedRegistryCatalog {
         Map<String, Map<String, Integer>> loaded = new TreeMap<>();
 
         for (var registry : root.entrySet()) {
-            if (!(registry.getKey() instanceof String registryId) || registryId.isBlank()) continue;
+            String registryId = registry.getKey();
+            if (registryId.isBlank()) continue;
             if (!(registry.getValue() instanceof Map<?, ?> registryValue)) continue;
             Object rawEntries = registryValue.get("entries");
             if (!(rawEntries instanceof Map<?, ?> entries)) continue;
