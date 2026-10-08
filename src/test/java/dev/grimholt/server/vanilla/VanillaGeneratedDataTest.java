@@ -58,8 +58,8 @@ final class VanillaGeneratedDataTest {
         assertTrue(catalog.protocolId("minecraft:item", "minecraft:sulfur").isPresent());
         assertFalse(catalog.contains("minecraft:item", "grimholt:not_vanilla"));
         assertTrue(catalog.entries("minecraft:item").contains("minecraft:sulfur"));
-        assertTrue(catalog.entries("minecraft:item").add("minecraft:mutable_test") == false,
-                "registry entry sets must be immutable");
+        assertThrows(UnsupportedOperationException.class,
+                () -> catalog.entries("minecraft:item").add("minecraft:mutable_test"));
     }
 
 }
