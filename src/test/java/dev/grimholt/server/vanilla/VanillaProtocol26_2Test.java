@@ -65,7 +65,6 @@ class VanillaProtocol26_2Test {
                 VanillaProtocol26_2.Direction.SERVERBOUND,
                 "minecraft:chat"));
     }
-}
     @Test
     void rejectsTrailingBytesAfterCompressedPacket() throws Exception {
         var frame = new VanillaProtocol26_2.Frame(3, new byte[]{1, 2, 3});
@@ -78,4 +77,4 @@ class VanillaProtocol26_2Test {
                 () -> VanillaProtocol26_2.decodeFrame(
                         new ByteArrayInputStream(withTrailingData), 1024, 1));
     }
-
+}
