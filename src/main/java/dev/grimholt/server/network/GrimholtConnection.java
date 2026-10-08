@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private static final AtomicInteger NEXT_ENTITY_ID = new AtomicInteger(1);
     private static final int LOGIN_COMPRESSION_THRESHOLD = 256;
+    private static final int PRE_PLAY_IDLE_TIMEOUT_MILLIS = 30_000;
     private final Socket socket;
     private final GrimholtServerImpl server;
     private final GrimholtCommandDispatcher commands;
@@ -59,7 +60,12 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     public void run() {
         try {
             socket.setTcpNoDelay(true);
-            while (!closing.get()) handle(transport.read());
+            while (!closing.get()) {
+                // Unauthenticated or configuring clients must not hold a socket
+                // forever. Once in PLAY, vanilla keepalive handling owns liveness.
+                socket.setSoTimeout(state == ConnectionState.PLAY ? 0 : PRE_PLAY_IDLE_TIMEOUT_MILLIS);
+                handle(transport.read());
+            }
         } catch (EOFException ignored) {
         } catch (IOException | RuntimeException ignored) {
         } finally {
