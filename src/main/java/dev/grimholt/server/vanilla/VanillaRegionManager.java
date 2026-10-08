@@ -52,7 +52,7 @@ public final class VanillaRegionManager implements AutoCloseable {
     public void tickAll() {
         for (VanillaRegionRuntime runtime : runtimes.values()) {
             try {
-                runtime.owner().execute(runtime::tick);
+                runtime.requestTick();
             } catch (java.util.concurrent.RejectedExecutionException ignored) {
                 // Region shutdown races are intentionally harmless.
             }
