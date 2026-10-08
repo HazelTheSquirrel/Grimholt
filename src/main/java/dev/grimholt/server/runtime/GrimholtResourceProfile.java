@@ -50,11 +50,17 @@ public record GrimholtResourceProfile(
         }
 
         long jvmMax = Math.max(0L, Runtime.getRuntime().maxMemory());
-        long budget = physical > 0
-                ? Math.round(physical * SERVER_MEMORY_FRACTION)
-                : Math.round(jvmMax * SERVER_MEMORY_FRACTION);
+        long budget = calculateMemoryBudget(physical, jvmMax);
 
         return new GrimholtResourceProfile(processors, physical, budget, jvmMax, physical > 0);
+    }
+
+    static long calculateMemoryBudget(long physicalMemoryBytes, long jvmMaxHeapBytes) {
+        if (physicalMemoryBytes < 0 || jvmMaxHeapBytes < 0) {
+            throw new IllegalArgumentException("memory values must not be negative");
+        }
+        long available = physicalMemoryBytes > 0 ? physicalMemoryBytes : jvmMaxHeapBytes;
+        return Math.round(available * SERVER_MEMORY_FRACTION);
     }
 
     public int workerParallelism() {
