@@ -22,13 +22,16 @@ public final class AtomicFileStore {
         Objects.requireNonNull(data, "data");
         Path target = resolve(relative);
         Path parent = target.getParent();
+        rejectSymlinkParents(parent);
         Files.createDirectories(parent);
         rejectSymlinkParents(parent);
 
         // Unique same-directory temporary files avoid writers corrupting one
         // another when saves overlap. Same-directory moves preserve atomicity
         // on file systems that support ATOMIC_MOVE.
-        Path temporary = Files.createTempFile(parent, target.getFileName().toString(), ".tmp");
+        String prefix = target.getFileName().toString();
+        if (prefix.length() < 3) prefix = (prefix + "___").substring(0, 3);
+        Path temporary = Files.createTempFile(parent, prefix, ".tmp");
         try {
             Files.write(temporary, data);
             try {
