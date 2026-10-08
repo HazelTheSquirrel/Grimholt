@@ -66,3 +66,16 @@ class VanillaProtocol26_2Test {
                 "minecraft:chat"));
     }
 }
+    @Test
+    void rejectsTrailingBytesAfterCompressedPacket() throws Exception {
+        var frame = new VanillaProtocol26_2.Frame(3, new byte[]{1, 2, 3});
+        byte[] encoded = VanillaProtocol26_2.encodeFrame(frame, 1, 1024);
+        byte[] withTrailingData = java.util.Arrays.copyOf(encoded, encoded.length + 1);
+        withTrailingData[0] = (byte) ((encoded[0] & 0xff) + 1);
+        withTrailingData[withTrailingData.length - 1] = 0x55;
+
+        assertThrows(java.io.IOException.class,
+                () -> VanillaProtocol26_2.decodeFrame(
+                        new ByteArrayInputStream(withTrailingData), 1024, 1));
+    }
+
