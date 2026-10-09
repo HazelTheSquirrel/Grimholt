@@ -212,7 +212,7 @@ public final class VanillaProtocol26_2 {
     public static void requireProtocol(int protocol) {
         if (protocol != PROTOCOL_VERSION) {
             throw new IllegalStateException(
-                    "Client protocol " + protocol + " is not Minecraft " + VanillaSnapshot26_2.VERSION +
+                    "Client protocol " + protocol + " is not Minecraft " + VanillaSnapshot.VERSION +
                     " (" + PROTOCOL_VERSION + ")");
         }
     }
