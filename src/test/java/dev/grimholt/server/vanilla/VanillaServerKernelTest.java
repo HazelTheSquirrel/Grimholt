@@ -87,8 +87,9 @@ class VanillaServerKernelTest {
     }
     @Test
     void productionKernelTicksRegionsThroughChronos() throws Exception {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
         try (ChronosRegionScheduler chronos = new ChronosRegionScheduler(2, 16, 10);
-             VanillaServerKernel kernel = new VanillaServerKernel(16, chronos, ignored -> fail("unexpected region failure"))) {
+             VanillaServerKernel kernel = new VanillaServerKernel(16, chronos, failure::set)) {
             kernel.start();
             UUID world = UUID.randomUUID();
             kernel.registerWorld(world);
@@ -102,6 +103,7 @@ class VanillaServerKernelTest {
 
             assertTrue(region.game().tickCount() > 0,
                     "production kernel should tick registered regions via Chronos");
+            assertNull(failure.get(), "region tick should not report failures");
             assertThrows(IllegalStateException.class, kernel::tick,
                     "Chronos mode must not allow the old global tickAll path");
         }
