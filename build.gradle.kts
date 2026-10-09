@@ -231,11 +231,73 @@ val generateVanilla26_4 by tasks.registering {
         out.resolve("reports/tag_files.json").toFile().writeText(
             "[" + tagFiles.joinToString(",") { "\"$it\"" } + "]\n"
         )
+
+        // A sorted content index makes the generated data auditable and allows
+        // CI to detect stale or nondeterministic reports without checking in
+        // thousands of generated JSON files.
+        val requiredReports = listOf(
+            "reports/blocks.json",
+            "reports/items.json",
+            "reports/registries.json",
+            "reports/packets.json",
+            "reports/tag_files.json"
+        )
+        requiredReports.forEach { relative ->
+            val file = out.resolve(relative)
+            check(Files.isRegularFile(file) && Files.size(file) > 2L) {
+                "Required 26.4-snapshot-3 report is missing or empty: $relative"
+            }
+        }
+        val reportIndex = out.resolve("reports/SHA256SUMS")
+        val digest = MessageDigest.getInstance("SHA-256")
+        val indexLines = Files.walk(out).use { stream ->
+            stream.filter(Files::isRegularFile)
+                .filter { it != reportIndex }
+                .sorted()
+                .map { file ->
+                    val hash = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file))
+                        .joinToString("") { "%02x".format(it) }
+                    "$hash  ${out.relativize(file).toString().replace('\\\\', '/')}"
+                }
+                .toList()
+        }
+        Files.writeString(reportIndex, indexLines.joinToString("\n", postfix = "\n"))
+    }
+}
+
+val verifyVanilla26_4Reports by tasks.registering {
+    group = "verification"
+    description = "Verify mandatory reports and the deterministic SHA-256 index from Mojang 26.4-snapshot-3."
+    dependsOn(generateVanilla26_4)
+    doLast {
+        val root = vanillaGeneratedDir.get().asFile.toPath()
+        val sums = root.resolve("reports/SHA256SUMS")
+        check(Files.isRegularFile(sums)) { "Generated report checksum index is missing" }
+        val lines = Files.readAllLines(sums)
+        check(lines.isNotEmpty()) { "Generated report checksum index is empty" }
+        check(lines == lines.sorted()) { "Generated report checksum index is not sorted/deterministic" }
+        val seen = HashSet<String>()
+        lines.forEach { line ->
+            val match = Regex("^([0-9a-f]{64})  (.+)$").matchEntire(line)
+                ?: error("Malformed generated report checksum line: $line")
+            val relative = match.groupValues[2]
+            check(seen.add(relative)) { "Duplicate path in generated report checksum index: $relative" }
+            val file = root.resolve(relative).normalize()
+            check(file.startsWith(root) && Files.isRegularFile(file)) { "Indexed report is missing or escapes data root: $relative" }
+            val actual = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file))
+                .joinToString("") { "%02x".format(it) }
+            check(actual == match.groupValues[1]) { "Generated report checksum mismatch: $relative" }
+        }
+        listOf("reports/blocks.json", "reports/items.json", "reports/registries.json",
+            "reports/packets.json", "reports/tag_files.json").forEach { relative ->
+            check(Files.size(root.resolve(relative)) > 2L) { "Required report is empty: $relative" }
+        }
+        println("Verified ${lines.size} deterministic generated files for ${VanillaSnapshot.VERSION}")
     }
 }
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(generateVanilla26_4)
+    dependsOn(verifyVanilla26_4Reports)
     from(vanillaGeneratedDir) { into("vanilla/26.4") }
 }
 
