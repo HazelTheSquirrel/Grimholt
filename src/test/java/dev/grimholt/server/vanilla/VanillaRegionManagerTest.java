@@ -34,6 +34,31 @@ class VanillaRegionManagerTest {
     }
 
     @Test
+    void newlyCreatedRegionChunksHaveAValidBootstrapSurface() {
+        ArrayDeque<Runnable> queue = new ArrayDeque<>();
+        VanillaRegionManager manager = new VanillaRegionManager(16, queue::add, failure -> fail(failure));
+        UUID world = UUID.randomUUID();
+        VanillaRegionRuntime runtime = manager.region(world, 0, 0);
+        AtomicReference<VanillaChunk> chunkRef = new AtomicReference<>();
+
+        runtime.owner().execute(() -> chunkRef.set(runtime.chunk(0, 0)));
+        queue.remove().run();
+
+        VanillaChunk chunk = chunkRef.get();
+        VanillaOverworldGenerator generator = new VanillaOverworldGenerator(0L);
+        int surface = generator.surfaceY(0, 0);
+        runtime.owner().execute(() -> {
+            assertTrue(chunk.loaded());
+            assertEquals("minecraft:grass_block", chunk.block(new BlockPos(0, surface, 0)).id());
+            assertEquals("minecraft:dirt", chunk.block(new BlockPos(0, surface - 1, 0)).id());
+            assertEquals("minecraft:bedrock",
+                    chunk.block(new BlockPos(0, VanillaChunk.MIN_SECTION_Y * 16, 0)).id());
+        });
+
+        manager.close();
+    }
+
+    @Test
     void crossOwnerWorkIsQueuedAndExecutedByTheRegionScheduler() {
         ArrayDeque<Runnable> queue = new ArrayDeque<>();
         VanillaRegionManager manager = new VanillaRegionManager(16, queue::add, throwable -> fail(throwable));
