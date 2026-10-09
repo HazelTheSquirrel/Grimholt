@@ -13,11 +13,19 @@ class VanillaGeneratedDataAuditTest {
         assertTrue(data.available(), "Exact generated 26.4 data must be on the test classpath");
 
         Map<String, Object> blocks = VanillaJson.object(VanillaJson.parse(data.require("reports/blocks.json")));
-        Map<String, Object> items = VanillaJson.object(VanillaJson.parse(data.require("reports/items.json")));
+        Optional<String> itemReport = data.read("reports/items.json");
         Map<String, Object> registries = VanillaJson.object(VanillaJson.parse(data.require("reports/registries.json")));
         Map<String, Object> packets = VanillaJson.object(VanillaJson.parse(data.require("reports/packets.json")));
         assertFalse(blocks.isEmpty(), "Block report must not be empty");
-        assertFalse(items.isEmpty(), "Item report must not be empty");
+        if (itemReport.isPresent()) {
+            assertFalse(VanillaJson.object(VanillaJson.parse(itemReport.get())).isEmpty(),
+                    "Optional item report must not be empty when emitted");
+        }
+        Object itemRegistryValue = registries.get("minecraft:item");
+        assertNotNull(itemRegistryValue, "Generated registries must include the item registry");
+        Map<String, Object> itemRegistry = VanillaJson.object(itemRegistryValue);
+        assertTrue(itemRegistry.get("entries") instanceof Map<?, ?> entries && !entries.isEmpty(),
+                "Generated item registry must not be empty");
         assertFalse(registries.isEmpty(), "Registry report must not be empty");
         assertFalse(packets.isEmpty(), "Packet report must not be empty");
 
