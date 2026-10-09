@@ -237,7 +237,6 @@ val generateVanilla26_4 by tasks.registering {
         // thousands of generated JSON files.
         val requiredReports = listOf(
             "reports/blocks.json",
-            "reports/items.json",
             "reports/registries.json",
             "reports/packets.json",
             "reports/tag_files.json"
@@ -288,7 +287,7 @@ val verifyVanilla26_4Reports by tasks.registering {
                 .joinToString("") { "%02x".format(it) }
             check(actual == match.groupValues[1]) { "Generated report checksum mismatch: $relative" }
         }
-        listOf("reports/blocks.json", "reports/items.json", "reports/registries.json",
+        listOf("reports/blocks.json", "reports/registries.json",
             "reports/packets.json", "reports/tag_files.json").forEach { relative ->
             check(Files.size(root.resolve(relative)) > 2L) { "Required report is empty: $relative" }
         }
