@@ -21,6 +21,7 @@ public final class OwnedRegion implements AutoCloseable {
     private final int maxHandoffs;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean drainScheduled = new AtomicBoolean();
+    private final Object executionLock = new Object();
     private final AtomicInteger failureCount = new AtomicInteger();
     private final Consumer<Runnable> nextTickExecutor;
     private final Consumer<Throwable> failureHandler;
@@ -66,29 +67,35 @@ public final class OwnedRegion implements AutoCloseable {
     }
 
     public void tick() {
-        if (closed.get()) {
-            drainScheduled.set(false);
-            return;
-        }
-        ownership.run(() -> {
-            for (;;) {
-                Runnable task;
-                synchronized (handoffs) {
-                    task = handoffs.poll();
-                }
-                if (task == null) break;
-                try {
-                    task.run();
-                } catch (Throwable failure) {
-                    failureCount.incrementAndGet();
-                    try {
-                        failureHandler.accept(failure);
-                    } catch (Throwable handlerFailure) {
-                        failureCount.incrementAndGet();
-                    }
-                }
+        tick(() -> {});
+    }
+
+    /**
+     * Drains queued cross-thread work and then runs the region simulation under
+     * the same exclusive ownership scope. The lock serializes this path with
+     * independently scheduled handoff drains; the logical owner remains the
+     * region, not whichever worker happens to execute it.
+     */
+    public void tick(Runnable regionTick) {
+        Objects.requireNonNull(regionTick, "regionTick");
+        synchronized (executionLock) {
+            if (closed.get()) {
+                drainScheduled.set(false);
+                return;
             }
-        });
+            ownership.run(() -> {
+                for (;;) {
+                    Runnable task;
+                    synchronized (handoffs) {
+                        task = handoffs.poll();
+                    }
+                    if (task == null) break;
+                    runGuarded(task);
+                }
+                runGuarded(regionTick);
+            });
+        }
+
         boolean reschedule;
         synchronized (handoffs) {
             reschedule = !handoffs.isEmpty() && !closed.get();
@@ -101,6 +108,19 @@ public final class OwnedRegion implements AutoCloseable {
                 drainScheduled.set(false);
                 synchronized (handoffs) { handoffs.clear(); }
                 throw failure;
+            }
+        }
+    }
+
+    private void runGuarded(Runnable action) {
+        try {
+            action.run();
+        } catch (Throwable failure) {
+            failureCount.incrementAndGet();
+            try {
+                failureHandler.accept(failure);
+            } catch (Throwable handlerFailure) {
+                failureCount.incrementAndGet();
             }
         }
     }
