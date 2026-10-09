@@ -171,6 +171,17 @@ public final class ChronosRegionScheduler implements AutoCloseable {
         }
     }
 
+    /**
+     * Submits bounded region-owned handoff work to the same worker pool used by
+     * Chronos ticks. Rejection is deliberately propagated to the caller so a
+     * full queue cannot silently lose a world mutation.
+     */
+    public void execute(Runnable task) {
+        Objects.requireNonNull(task, "task");
+        if (closed.get()) throw new RejectedExecutionException("Chronos is closed");
+        workers.execute(task);
+    }
+
     public int workerCount() { return workers.getCorePoolSize(); }
     public int activeWorkers() { return workers.getActiveCount(); }
     public int queuedTasks() { return workers.getQueue().size(); }
