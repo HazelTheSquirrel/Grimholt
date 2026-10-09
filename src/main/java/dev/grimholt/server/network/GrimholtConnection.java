@@ -322,6 +322,18 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                         GrimholtPlayProtocol.DEFAULT_VIEW_DISTANCE,
                         GrimholtPlayProtocol.DEFAULT_SIMULATION_DISTANCE,
                         0L, position, false))));
+
+        // The client must know the chunk cache origin and radius before any
+        // asynchronous region worker can write chunk data to the socket.
+        int chunkX = Math.floorDiv((int) Math.floor(position.x()), 16);
+        int chunkZ = Math.floorDiv((int) Math.floor(position.z()), 16);
+        send(VanillaProtocol.State.PLAY, "minecraft:set_chunk_cache_center", out -> {
+            VanillaProtocol.writeVarInt(out, chunkX);
+            VanillaProtocol.writeVarInt(out, chunkZ);
+        });
+        send(VanillaProtocol.State.PLAY, "minecraft:set_chunk_cache_radius",
+                out -> VanillaProtocol.writeVarInt(out, 2));
+
         send(VanillaProtocol.State.PLAY, "minecraft:player_info_update",
                 out -> out.write(playProtocol.playerInfoAdd(uuid, username)));
         send(VanillaProtocol.State.PLAY, "minecraft:commands",
