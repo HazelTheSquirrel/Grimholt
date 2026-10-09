@@ -41,20 +41,6 @@ public final class VanillaConfigurationSync {
             "minecraft:sulfur_cube_archetype"
     );
 
-    private static final Set<String> REQUIRED_REGISTRIES = Set.of(
-            "minecraft:worldgen/biome",
-            "minecraft:chat_type",
-            "minecraft:trim_pattern",
-            "minecraft:trim_material",
-            "minecraft:dimension_type",
-            "minecraft:damage_type",
-            "minecraft:banner_pattern",
-            "minecraft:enchantment",
-            "minecraft:jukebox_song",
-            "minecraft:instrument",
-            "minecraft:painting_variant"
-    );
-
     private final VanillaGeneratedData generated;
 
     public VanillaConfigurationSync(VanillaGeneratedData generated) {
@@ -247,54 +233,33 @@ public final class VanillaConfigurationSync {
      * future data-pack layer.
      */
     public List<byte[]> registryDataPackets() {
-        // Never silently send finish_configuration when the generated registry
-        // report is unavailable: that creates a superficially successful login
-        // sequence which the vanilla client cannot complete.
+        // Dynamic registry values live in data-pack resources. reports/registries.json
+        // describes registry types, so use the generated resource index instead.
         generated.requireAvailable();
         Map<String,Object> root = VanillaJson.object(
-                VanillaJson.parse(generated.require("reports/registries.json")));
+                VanillaJson.parse(generated.require("reports/registry_entries.json")));
         List<byte[]> packets = new ArrayList<>();
         List<String> missing = new ArrayList<>();
 
         for (String registryId : SYNCHRONIZED_REGISTRIES) {
             Object raw = root.get(registryId);
-            if (!(raw instanceof Map<?,?> rawMap)) {
-                if (REQUIRED_REGISTRIES.contains(registryId)) {
-                    missing.add(registryId + " (registry absent from report)");
-                }
+            if (!(raw instanceof List<?> entries)) {
+                missing.add(registryId + " (registry absent from generated data-pack index)");
                 continue;
             }
-            Object entriesValue = rawMap.get("entries");
-            if (!(entriesValue instanceof Map<?,?> entries)) {
-                if (REQUIRED_REGISTRIES.contains(registryId)) {
-                    missing.add(registryId + " (entries absent from report)");
-                }
-                continue;
-            }
-
+            List<String> names = entries.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .sorted()
+                    .toList();
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 VanillaProtocolCodec.writeIdentifier(out, registryId);
-                // The wire order defines the client's numeric registry IDs. Never
-                // alphabetically sort registry keys: preserve Mojang's protocol_id order.
-                List<Map.Entry<String, Integer>> orderedEntries = new ArrayList<>();
-                for (var entry : entries.entrySet()) {
-                    if (!(entry.getKey() instanceof String name)
-                            || !(entry.getValue() instanceof Map<?, ?> metadata)
-                            || !(metadata.get("protocol_id") instanceof Number protocolId)) {
-                        continue;
-                    }
-                    orderedEntries.add(Map.entry(name, protocolId.intValue()));
-                }
-                orderedEntries.sort(Map.Entry.comparingByValue());
-
-                // Empty dynamic registries are valid: send their registry ID
-                // and a zero entry count rather than treating them as missing data.
-                VanillaProtocol26_2.writeVarInt(out, orderedEntries.size());
-                for (var entry : orderedEntries) {
-                    VanillaProtocolCodec.writeIdentifier(out, entry.getKey());
-                    // The negotiated minecraft:core pack supplies the canonical vanilla
-                    // registry values on the client; this entry only establishes ordering.
+                VanillaProtocol26_2.writeVarInt(out, names.size());
+                for (String name : names) {
+                    VanillaProtocolCodec.writeIdentifier(out, name);
+                    // The exact minecraft:core pack was negotiated before this method
+                    // is called, so the client can reuse the canonical registry element.
                     VanillaProtocolCodec.writeBoolean(out, false);
                 }
                 packets.add(out.toByteArray());
@@ -303,17 +268,11 @@ public final class VanillaConfigurationSync {
             }
         }
 
-        // The report is authoritative for this snapshot. A registry name carried
-        // forward in the source list may legitimately be absent in a later snapshot;
-        // skip only those absent entries and fail if the resulting set is implausibly small.
-        if (packets.size() < 10) {
+        if (!missing.isEmpty() || packets.size() < 10) {
             throw new IllegalStateException(
-                    "Only " + packets.size() + " Minecraft 26.4 registry-data packets could be built. "
-                    + "Missing/malformed expected registries: " + String.join(", ", missing)
-                    + ". Check the pinned reports/registries.json against Snapshot 3.");
-        }
-        if (packets.stream().allMatch(packet -> packet.length == 0)) {
-            throw new IllegalStateException("Registry-data encoder produced only empty packets.");
+                    "Incomplete Minecraft 26.4 registry-data index; packets=" + packets.size()
+                    + ", missing=" + String.join(", ", missing)
+                    + ". Verify reports/registry_entries.json against the pinned Snapshot 3 data.");
         }
         return List.copyOf(packets);
     }
