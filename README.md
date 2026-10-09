@@ -1,6 +1,6 @@
 # Grimholt
 
-Grimholt is an independently maintained Minecraft Java server fork in active development, with Minestom's source architecture as its upstream foundation. The pinned behavior/protocol reference is **Minecraft Java Edition 26.4 Snapshot 3**.
+Grimholt is an independent Minecraft Java server runtime and simulation engine under active development. It owns its networking, protocol, world model, gameplay runtime and scheduling kernel; it does not depend on another Minecraft server implementation at runtime. The pinned behavior/protocol reference is **Minecraft Java Edition 26.4 Snapshot 3**.
 
 - Reference JAR: `reference/minecraft/26.4/server.jar`
 - SHA-1: `2d89c95c030e635387448f332961074ce1adbb4b`
@@ -8,9 +8,11 @@ Grimholt is an independently maintained Minecraft Java server fork in active dev
 - Active engineering branch: `test`
 - Standalone artifact: `gradle assemble` → `build/libs/*-standalone.jar`
 
-## Honest project status
+## Engineering direction: Chronos
 
-The current `test` branch still contains the pre-fork Grimholt implementation and does not yet vendor Minestom's full source tree. The target is a source-level fork: Minestom code will live in Grimholt's repository, be compiled and changed here, and never be used as an external runtime dependency. See [`UPSTREAM.md`](UPSTREAM.md) for the pinned upstream provenance and fork rules.
+The core architectural bet is region-parallel simulation: each mutable region has one logical writer, independent regions run concurrently, cross-region changes use bounded handoffs, and overload is measured rather than hidden behind stale queues. The first Chronos dispatch primitive is checked in, but production integration and end-to-end parallel world simulation are still open work. See [the Chronos architecture](docs/CHRONOS.md).
+
+## Honest project status
 
 **Grimholt is not yet a complete or client-verified Minecraft server.** A protocol handshake test, successful compilation, or successful boot of Mojang's reference server does not prove Grimholt client interoperability, gameplay parity, world generation parity, or complete persistence. The outstanding work and release gates are tracked in [the completion work order](docs/MASTER-WORKPLAN.md) and [the forensic audit](docs/FORENSIC-PARITY-AUDIT.md).
 
@@ -31,7 +33,6 @@ The CI pipeline verifies the pinned reference checksum, runs tests, boots the Mo
 - [Forensic parity audit](docs/FORENSIC-PARITY-AUDIT.md)
 - [Compatibility evidence matrix](docs/COMPATIBILITY.md)
 - [Architecture and ownership](docs/ARCHITECTURE.md)
-- [Fork migration](docs/FORK-MIGRATION.md)
 - [Build instructions](docs/BUILD.md)
 - [Public plugin API](docs/API.md)
 - [Dependency policy](docs/DEPENDENCY-POLICY.md)
@@ -42,10 +43,10 @@ The CI pipeline verifies the pinned reference checksum, runs tests, boots the Mo
 
 ## Non-negotiable rules
 
-1. Grimholt must own and build its runtime from source in this repository; Minestom is an upstream source base, never an external runtime dependency.
+1. Grimholt owns and builds its runtime from source in this repository; no external Minecraft server implementation is required at runtime.
 2. The Mojang JAR is a pinned reference/test input only and must never be bundled as Grimholt's implementation.
 3. A feature is complete only when runtime wiring and executable tests demonstrate it.
 4. Every concurrency-sensitive system needs an ownership contract, adversarial tests and bounded queues/backpressure.
 5. Do not claim 500–1000-player capacity until repeatable networked workload benchmarks demonstrate it.
 6. Keep the `test` branch as the active implementation line; do not silently change `main`.
-7. Preserve upstream license/NOTICE attribution and mark modified upstream files as required by Apache-2.0.
+7. Chronos must preserve observable game semantics; throughput gains that break movement, combat, ordering or persistence do not count as improvements.
