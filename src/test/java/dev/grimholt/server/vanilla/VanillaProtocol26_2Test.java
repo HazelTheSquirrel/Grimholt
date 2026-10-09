@@ -113,6 +113,33 @@ class VanillaProtocol26_2Test {
                 VanillaProtocol26_2.decodeHandshake(new VanillaProtocol26_2.Frame(0, out.toByteArray())));
     }
 
+    @Test
+    void rejectsVarIntOverflowAndOverlongEncoding() {
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(
+                        new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, 0x10})));
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(
+                        new byte[]{(byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80})));
+    }
+
+    @Test
+    void rejectsNegativePacketIdAndVarLongOverflow() {
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocol26_2.decodeFrame(new ByteArrayInputStream(
+                        new byte[]{5, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, 0x0f}), 1024));
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocolCodec.readVarLong(new ByteArrayInputStream(new byte[]{
+                        (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80,
+                        (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, 0x02})));
+    }
+
+    @Test
+    void rejectsMalformedUtf8RatherThanReplacingIt() {
+        assertThrows(java.io.IOException.class, () ->
+                VanillaProtocolCodec.readString(new ByteArrayInputStream(new byte[]{1, (byte) 0xff}), 32));
+    }
+
     private static VanillaProtocol26_2.Frame handshake(int nextState) throws Exception {
         var out = new ByteArrayOutputStream();
         VanillaProtocol26_2.writeVarInt(out, VanillaProtocol26_2.PROTOCOL_VERSION);
