@@ -275,7 +275,7 @@ val verifyVanilla26_4Reports by tasks.registering {
         check(Files.isRegularFile(sums)) { "Generated report checksum index is missing" }
         val lines = Files.readAllLines(sums)
         check(lines.isNotEmpty()) { "Generated report checksum index is empty" }
-        check(lines == lines.sorted()) { "Generated report checksum index is not sorted/deterministic" }
+        check(lines.map { it.substringAfter("  ") } == lines.map { it.substringAfter("  ") }.sorted()) { "Generated report checksum index is not sorted/deterministic" }
         val seen = HashSet<String>()
         lines.forEach { line ->
             val match = Regex("^([0-9a-f]{64})  (.+)$").matchEntire(line)
@@ -292,7 +292,7 @@ val verifyVanilla26_4Reports by tasks.registering {
             "reports/packets.json", "reports/tag_files.json").forEach { relative ->
             check(Files.size(root.resolve(relative)) > 2L) { "Required report is empty: $relative" }
         }
-        println("Verified ${lines.size} deterministic generated files for ${VanillaSnapshot.VERSION}")
+        println("Verified ${lines.size} deterministic generated files for 26.4-snapshot-3")
     }
 }
 
