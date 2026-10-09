@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import dev.grimholt.server.runtime.ChronosRegionScheduler;
 
 /**
  * Grimholt-owned Minecraft gameplay kernel.
@@ -28,6 +29,20 @@ public final class VanillaServerKernel implements AutoCloseable {
                 maxHandoffs,
                 Objects.requireNonNull(scheduler, "scheduler"),
                 failureHandler);
+    }
+
+    /** Constructs the production kernel with Grimholt's bounded Chronos worker pool. */
+    public VanillaServerKernel(int maxHandoffs,
+                               ChronosRegionScheduler chronos,
+                               Consumer<Throwable> failureHandler) {
+        this.failureHandler = Objects.requireNonNull(failureHandler, "failureHandler");
+        this.regions = new VanillaRegionManager(maxHandoffs,
+                Objects.requireNonNull(chronos, "chronos"), this.failureHandler);
+    }
+
+    /** Starts automatic ticking for a Chronos-backed region manager. */
+    public void startRegionTicks() {
+        regions.startChronos();
     }
 
     public synchronized void start() {
