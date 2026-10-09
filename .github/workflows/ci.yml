@@ -25,7 +25,7 @@ jobs:
           java-version: "25"
           cache: maven
       - name: Verify and package
-        run: mvn --batch-mode --no-transfer-progress clean verify
+        run: mvn --batch-mode --no-transfer-progress -U clean verify
       - name: Upload runnable server JAR
         if: success()
         uses: actions/upload-artifact@v4
