@@ -18,6 +18,14 @@ class VanillaNbtTest {
     }
 
     @Test
+    void roundTripsEmptyEndTypeList() {
+        VanillaNbt.Tag root = VanillaNbt.compound(Map.of(
+                "empty", VanillaNbt.list(VanillaNbt.END, java.util.List.of())
+        ));
+        assertEquals(root, VanillaNbt.read(VanillaNbt.write(root)));
+    }
+
+    @Test
     void rejectsTruncatedByteArrays() {
         byte[] truncated = {10, 0, 0, 7, 0, 0, 0, 0, 0, 2, 42};
         assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(truncated));
