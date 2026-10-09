@@ -61,17 +61,19 @@
 - [x] Review project Markdown and target metadata; 26.2-named source/test classes are legacy-labelled, not the active target.
 - **Exit gate:** CI green, artifact launches, checksum/dependency gates pass, inventory reviewed.
 
-## 4. Phase B — Source-fork bootstrap
+## 4. Phase B — Chronos region-parallel simulation
 
-**Goal:** make Minestom source a first-party, auditable part of Grimholt without a published Minestom runtime dependency.
+**Goal:** turn region ownership into real, measurable parallel simulation without breaking Minecraft-visible behavior.
 
-- [ ] Import all required upstream source/resources/build metadata at the exact revision in `UPSTREAM.md`.
-- [ ] Preserve Apache-2.0 license, copyright notices and upstream `NOTICE` content where present; add prominent modification notices to changed upstream files.
-- [ ] Reconcile Gradle/toolchain settings with Java 25 and the repository's supported target.
-- [ ] Compile upstream code from this repository and run upstream tests that are compatible with Grimholt CI.
-- [ ] Build and inspect a standalone artifact proving no external Minestom server artifact is packaged or required.
-- [ ] Record upstream import commit, file counts, test results and known deviations.
-- **Exit gate:** clean CI build of the checked-in source fork, licensing metadata retained, no external Minestom runtime dependency.
+- [x] Add a bounded region-dispatch primitive with one in-flight tick per region.
+- [x] Add tests for independent-region parallelism, busy-region coalescing, failure isolation and invalid configuration.
+- [ ] Integrate Chronos with the real region lifecycle as the only region-tick dispatch path.
+- [ ] Remove duplicate scheduling paths only after ownership and shutdown tests pass.
+- [ ] Define causal, ordered, bounded cross-region intents for entity migration, block updates, combat and player movement.
+- [ ] Add deterministic replay/state-fingerprint tests for cross-region interactions and shutdown races.
+- [ ] Benchmark 1, 100, 500 and 1,000 players with p50/p95/p99 tick time, missed deadlines, queue depth, allocation, GC and CPU utilization.
+- [ ] Validate real-client behavior and compare supported gameplay against the pinned vanilla reference.
+- **Exit gate:** integration tests pass, no same-region concurrent mutation, reproducible benchmark results are published, and no capacity claim is made without sustained-load evidence.
 
 ## 5. Phase B — Protocol and real-client connectivity
 
