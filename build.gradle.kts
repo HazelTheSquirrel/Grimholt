@@ -276,7 +276,7 @@ val generateVanilla26_4 by tasks.registering {
                 Files.walk(registryRoot).use { stream ->
                     stream.filter(Files::isRegularFile)
                         .filter { it.fileName.toString().endsWith(".json") }
-                        .map { registryRoot.relativize(it).toString().replace('\\\\', '/').removeSuffix(".json") }
+                        .map { registryRoot.relativize(it).toString().replace('\\', '/').removeSuffix(".json") }
                         .map { "minecraft:" + it }
                         .sorted()
                         .toList()
@@ -284,9 +284,9 @@ val generateVanilla26_4 by tasks.registering {
             }
         }
         out.resolve("reports/registry_entries.json").toFile().writeText(
-            "{\\n" + registryEntryIndex.entries.joinToString(",\\n") { (registry, entries) ->
-                "  \\"$registry\\": [" + entries.joinToString(", ") { "\\"$it\\"" } + "]"
-            } + "\\n}\\n"
+            "{\n" + registryEntryIndex.entries.joinToString(",\n") { (registry, entries) ->
+                "  \"$registry\": [" + entries.joinToString(", ") { "\"$it\"" } + "]"
+            } + "\n}\n"
         )
 
         // A sorted content index makes the generated data auditable and allows
