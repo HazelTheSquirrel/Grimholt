@@ -35,7 +35,6 @@ public final class VanillaChunkWireCodec {
 
         for (int sectionY = VanillaChunk.MIN_SECTION_Y; sectionY <= VanillaChunk.MAX_SECTION_Y; sectionY++) {
             int nonAir = 0;
-            int fluid = 0;
             int[] states = new int[4096];
             Map<Integer, Integer> paletteIndex = new LinkedHashMap<>();
             for (int ly = 0; ly < 16; ly++) {
@@ -45,15 +44,15 @@ public final class VanillaChunkWireCodec {
                                 chunk.chunkZ() * 16 + lz);
                         BlockState state = chunk.block(pos);
                         int id = chunk.worldModel().blockRegistry().stateId(state);
-                        int index = paletteIndex.computeIfAbsent(id, ignored -> paletteIndex.size());
-                        states[(ly << 8) | (lz << 4) | lx] = index;
+                        paletteIndex.computeIfAbsent(id, ignored -> paletteIndex.size());
+                        states[(ly << 8) | (lz << 4) | lx] = id;
                         if (id != air) nonAir++;
-                        if (!chunk.fluid(pos).isEmpty()) fluid++;
                     }
                 }
             }
+            // Chunk sections contain only the non-air count followed by the two
+            // paletted containers. An extra fluid-count short corrupts every section.
             sectionOut.writeShort(nonAir);
-            sectionOut.writeShort(fluid);
             writePalettedContainer(sectionOut, paletteIndex, states);
             writeSinglePalette(sectionOut, 0); // plains biome
         }
@@ -66,8 +65,10 @@ public final class VanillaChunkWireCodec {
     }
 
     private VanillaNbt.Tag heightmaps(VanillaChunk chunk) {
-        long[] surface = new long[36];
-        long[] motion = new long[36];
+        // Heightmaps use padded values-per-long packing (7 nine-bit values per long),
+        // not a continuous bit stream crossing long boundaries.
+        long[] surface = new long[(256 + 64 / 9 - 1) / (64 / 9)];
+        long[] motion = new long[surface.length];
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
                 int height = 0;
@@ -79,8 +80,8 @@ public final class VanillaChunkWireCodec {
                     }
                 }
                 int value = Math.max(0, Math.min(511, height + 64));
-                setPacked(surface, (z * 16 + x) * 9, value, 9);
-                setPacked(motion, (z * 16 + x) * 9, value, 9);
+                setPadded(surface, z * 16 + x, value, 9);
+                setPadded(motion, z * 16 + x, value, 9);
             }
         }
         return VanillaNbt.compound(Map.of(
@@ -88,13 +89,11 @@ public final class VanillaChunkWireCodec {
                 "WORLD_SURFACE", new VanillaNbt.Tag(VanillaNbt.LONG_ARRAY, surface)));
     }
 
-    private static void setPacked(long[] data, int bitIndex, int value, int bits) {
-        int word = bitIndex >>> 6;
-        int offset = bitIndex & 63;
+    private static void setPadded(long[] data, int index, int value, int bits) {
+        int valuesPerLong = 64 / bits;
+        int word = index / valuesPerLong;
+        int offset = (index % valuesPerLong) * bits;
         data[word] |= ((long) value & ((1L << bits) - 1)) << offset;
-        if (offset + bits > 64) {
-            data[word + 1] |= ((long) value & ((1L << (offset + bits - 64)) - 1)) >>> (64 - offset);
-        }
     }
 
     private void writePalettedContainer(DataOutputStream out, Map<Integer,Integer> palette, int[] values) throws IOException {
@@ -102,36 +101,65 @@ public final class VanillaChunkWireCodec {
             writeSinglePalette(out, palette.keySet().iterator().next());
             return;
         }
-        int bits = Math.max(4, 32 - Integer.numberOfLeadingZeros(palette.size() - 1));
-        bits = Math.min(bits, 8);
-        out.writeByte(bits);
-        VanillaProtocol26_2.writeVarInt(out, palette.size());
-        for (int globalId : palette.keySet()) VanillaProtocol26_2.writeVarInt(out, globalId);
-        int valuesPerLong = 64 / bits;
+
+        // Local palettes are capped at eight bits for blocks. Larger palettes use
+        // the global block-state registry and carry raw state IDs, with no palette list.
+        int localBits = Math.max(4, 32 - Integer.numberOfLeadingZeros(palette.size() - 1));
+        if (localBits <= 8) {
+            out.writeByte(localBits);
+            VanillaProtocol26_2.writeVarInt(out, palette.size());
+            for (int globalId : palette.keySet()) VanillaProtocol26_2.writeVarInt(out, globalId);
+            int valuesPerLong = 64 / localBits;
+            int longCount = (values.length + valuesPerLong - 1) / valuesPerLong;
+            VanillaProtocol26_2.writeVarInt(out, longCount);
+            for (int base = 0; base < values.length; base += valuesPerLong) {
+                long packed = 0;
+                for (int i = 0; i < valuesPerLong && base + i < values.length; i++) {
+                    int localId = palette.get(values[base + i]);
+                    packed |= ((long) localId) << (i * localBits);
+                }
+                out.writeLong(packed);
+            }
+            return;
+        }
+
+        int maxStateId = palette.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int globalBits = Math.max(9, 32 - Integer.numberOfLeadingZeros(maxStateId));
+        out.writeByte(globalBits);
+        int valuesPerLong = 64 / globalBits;
         int longCount = (values.length + valuesPerLong - 1) / valuesPerLong;
         VanillaProtocol26_2.writeVarInt(out, longCount);
         for (int base = 0; base < values.length; base += valuesPerLong) {
             long packed = 0;
-            for (int i = 0; i < valuesPerLong && base + i < values.length; i++)
-                packed |= ((long) values[base + i]) << (i * bits);
+            for (int i = 0; i < valuesPerLong && base + i < values.length; i++) {
+                packed |= ((long) values[base + i]) << (i * globalBits);
+            }
             out.writeLong(packed);
         }
     }
 
     private void writeSinglePalette(DataOutputStream out, int value) throws IOException {
+        // A zero-bit single-value palette has no packed-long array length field.
         out.writeByte(0);
         VanillaProtocol26_2.writeVarInt(out, value);
-        VanillaProtocol26_2.writeVarInt(out, 0); // zero packed-data longs for a single-value palette
     }
 
     private void writeLightData(DataOutputStream out) throws IOException {
-        out.writeBoolean(false);
-        writeBitSet(out, (1L << LIGHT_SECTION_COUNT) - 1);
-        writeBitSet(out, 0);
-        writeBitSet(out, (1L << LIGHT_SECTION_COUNT) - 1);
-        writeBitSet(out, (1L << LIGHT_SECTION_COUNT) - 1);
-        VanillaProtocol26_2.writeVarInt(out, 0);
-        VanillaProtocol26_2.writeVarInt(out, 0);
+        long allSections = (1L << LIGHT_SECTION_COUNT) - 1;
+        out.writeBoolean(false); // trustEdges
+        writeBitSet(out, allSections); // sky light arrays are supplied for every light section
+        writeBitSet(out, 0); // no block light arrays
+        writeBitSet(out, 0); // no empty sky sections
+        writeBitSet(out, allSections); // all block-light sections are explicitly empty
+
+        VanillaProtocol26_2.writeVarInt(out, LIGHT_SECTION_COUNT);
+        byte[] fullSky = new byte[2048];
+        Arrays.fill(fullSky, (byte) 0xff);
+        for (int i = 0; i < LIGHT_SECTION_COUNT; i++) {
+            VanillaProtocol26_2.writeVarInt(out, fullSky.length);
+            out.write(fullSky);
+        }
+        VanillaProtocol26_2.writeVarInt(out, 0); // no block-light arrays
     }
 
     private void writeBitSet(DataOutputStream out, long bits) throws IOException {
