@@ -10,7 +10,7 @@ Grimholt is an independent Minecraft Java server runtime and simulation engine u
 
 ## Engineering direction: Chronos
 
-The core architectural bet is region-parallel simulation: each mutable region has one logical writer, independent regions run concurrently, cross-region changes use bounded handoffs, and overload is measured rather than hidden behind stale queues. The first Chronos dispatch primitive is checked in, but production integration and end-to-end parallel world simulation are still open work. See [the Chronos architecture](docs/CHRONOS.md).
+The core architectural bet is region-parallel simulation: each mutable region has one logical writer, independent regions run concurrently, cross-region changes use bounded handoffs, and overload is measured rather than hidden behind stale queues. Chronos is wired into the production kernel and drives registered regions automatically. Full cross-region causal semantics, parity validation, and measured high-player capacity remain open work. See [the Chronos architecture](docs/CHRONOS.md).
 
 ## Honest project status
 
