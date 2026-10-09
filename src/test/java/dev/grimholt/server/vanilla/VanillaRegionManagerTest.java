@@ -106,12 +106,13 @@ class VanillaRegionManagerTest {
         VanillaRegionManager manager = new VanillaRegionManager(16, queue::add, throwable -> fail(throwable));
         VanillaRegionRuntime runtime = manager.region(UUID.randomUUID(), 0, 0);
 
-        runtime.owner().execute(() -> fail("handoff should not execute before the region tick"));
+        java.util.concurrent.atomic.AtomicInteger handoffCount = new java.util.concurrent.atomic.AtomicInteger();
+        runtime.owner().execute(handoffCount::incrementAndGet);
         assertEquals(1, queue.size());
-        // Run the scheduled owner drain with the gameplay tick attached to the same ownership scope.
-        queue.remove().run();
+        // The region tick drains queued work and mutates gameplay state in one ownership scope.
         runtime.tickOwned();
 
+        assertEquals(1, handoffCount.get());
         assertEquals(1L, runtime.game().tickCount());
         manager.close();
     }
