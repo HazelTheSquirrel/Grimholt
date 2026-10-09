@@ -32,6 +32,14 @@ class VanillaNbtTest {
     }
 
     @Test
+    void rejectsNegativeCollectionLengthsBeforeAllocation() {
+        byte[] negativeByteArrayLength = {10, 0, 0, 7, 0, 0, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
+        byte[] negativeListLength = {10, 0, 0, 9, 0, 0, 3, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
+        assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(negativeByteArrayLength));
+        assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(negativeListLength));
+    }
+
+    @Test
     void rejectsTrailingBytesAfterRoot() {
         byte[] trailing = {10, 0, 0, 0, 99};
         assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(trailing));
@@ -47,5 +55,14 @@ class VanillaNbtTest {
     void rejectsUnknownTagTypes() {
         byte[] unknownRootType = {13, 0, 0};
         assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(unknownRootType));
+    }
+
+    @Test
+    void rejectsExcessiveNesting() {
+        VanillaNbt.Tag nested = VanillaNbt.integer(1);
+        for (int i = 0; i < 70; i++) {
+            nested = VanillaNbt.compound(Map.of("nested", nested));
+        }
+        assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(VanillaNbt.write(nested)));
     }
 }
