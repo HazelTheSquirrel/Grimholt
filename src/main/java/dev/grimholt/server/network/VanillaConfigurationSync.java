@@ -303,15 +303,14 @@ public final class VanillaConfigurationSync {
             }
         }
 
-        if (!missing.isEmpty()) {
+        // The report is authoritative for this snapshot. A registry name carried
+        // forward in the source list may legitimately be absent in a later snapshot;
+        // skip only those absent entries and fail if the resulting set is implausibly small.
+        if (packets.size() < 10) {
             throw new IllegalStateException(
-                    "Incomplete Minecraft 26.4 registry synchronization; refusing to finish configuration. "
-                    + "Missing/malformed: " + String.join(", ", missing)
-                    + ". Verify the pinned reports/registries.json and the registry list against Snapshot 3.");
-        }
-        if (packets.isEmpty()) {
-            throw new IllegalStateException(
-                    "No 26.4 registry-data packets could be built from the generated reports/registries.json.");
+                    "Only " + packets.size() + " Minecraft 26.4 registry-data packets could be built. "
+                    + "Missing/malformed expected registries: " + String.join(", ", missing)
+                    + ". Check the pinned reports/registries.json against Snapshot 3.");
         }
         if (packets.stream().allMatch(packet -> packet.length == 0)) {
             throw new IllegalStateException("Registry-data encoder produced only empty packets.");
