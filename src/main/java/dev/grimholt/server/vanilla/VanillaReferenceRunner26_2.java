@@ -15,7 +15,7 @@ public final class VanillaReferenceRunner26_2 {
     private final Path workingDirectory;
 
     public VanillaReferenceRunner26_2(Path jar, Path workingDirectory) {
-        this.jar = VanillaSnapshot26_2.requireReference(jar).jar();
+        this.jar = VanillaSnapshot.requireReference(jar).jar();
         verifySha1(this.jar);
         this.workingDirectory = Objects.requireNonNull(workingDirectory);
     }
