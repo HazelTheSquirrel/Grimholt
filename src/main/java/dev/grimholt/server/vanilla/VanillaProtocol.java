@@ -12,7 +12,7 @@ import java.util.zip.Inflater;
  * <p>Packet IDs/codecs remain data-driven from Mojang's generated packet report.
  * This class owns framing, VarInts and the optional zlib packet-compression layer.</p>
  */
-public final class VanillaProtocol {
+public class VanillaProtocol {
     public static final int PROTOCOL_VERSION = VanillaSnapshot.PROTOCOL;
     public static final int MAX_VARINT_BYTES = 5;
 
