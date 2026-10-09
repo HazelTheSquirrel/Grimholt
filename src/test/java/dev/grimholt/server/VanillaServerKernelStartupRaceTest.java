@@ -100,9 +100,9 @@ class VanillaServerKernelStartupRaceTest {
             assertEquals(0, response.packetId(), "status response packet ID");
             String json = VanillaProtocolCodec.readString(
                     new ByteArrayInputStream(response.payload()), 32767);
-            assertTrue(json.contains("\\\"name\\\":\\\"26.4-snapshot-3\\\""),
+            assertTrue(json.contains("\\"name\\":\\"26.4-snapshot-3\\""),
                     "status must return the pinned protocol version: " + json);
-            assertTrue(json.contains("\\\"protocol\\\":" + VanillaProtocol26_2.PROTOCOL_VERSION),
+            assertTrue(json.contains("\\"protocol\\":" + VanillaProtocol26_2.PROTOCOL_VERSION),
                     "status must return the pinned protocol number: " + json);
         }
     }
