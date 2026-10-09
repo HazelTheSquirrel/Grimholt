@@ -51,8 +51,10 @@ public final class Grimholt {
         Grimholt server = new Grimholt();
         CountDownLatch stopped = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.err.println("Grimholt shutdown hook entered; lifecycle=" + server.state());
             try {
                 server.stop();
+                System.err.println("Grimholt shutdown hook completed; lifecycle=" + server.state());
             } finally {
                 stopped.countDown();
             }
