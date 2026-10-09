@@ -114,7 +114,7 @@ public final class VanillaRegionManager implements AutoCloseable {
         ChronosRegionScheduler.Registration registration = tickRegistrations.remove(owner);
         if (registration != null) registration.close();
         VanillaRegionRuntime runtime = runtimes.remove(owner);
-        if (runtime != null) runtime.close();
+        if (runtime != null) runtime.forceClose();
         regions.closeRegion(worldId, regionX, regionZ);
     }
 
