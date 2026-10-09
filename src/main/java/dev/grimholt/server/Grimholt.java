@@ -102,10 +102,15 @@ public final class Grimholt {
         Logging.stopping();
         Throwable failure = null;
         try { plugins.disableAll(); } catch (Throwable x) { failure = x; }
+        Logging.shutdownStage("plugins");
         try { regionTicks.close(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
+        Logging.shutdownStage("region tick engine");
         try { network.close(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
+        Logging.shutdownStage("network");
         try { vanillaKernel.stop(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
+        Logging.shutdownStage("vanilla kernel");
         scheduler.close();
+        Logging.shutdownStage("scheduler");
         lifecycle.stopped();
         Logging.stopped();
         if (failure != null) { Logging.failure(failure); throwUnchecked(failure); }
