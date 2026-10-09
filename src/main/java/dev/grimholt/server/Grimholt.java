@@ -14,6 +14,7 @@ import dev.grimholt.server.vanilla.VanillaServerKernel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 public final class Grimholt {
     private static final UUID OVERWORLD_ID =
@@ -48,8 +49,25 @@ public final class Grimholt {
     public static void main(String[] args) {
         Path configPath = args.length == 0 ? Path.of("grimholt.properties") : Path.of(args[0]);
         Grimholt server = new Grimholt();
-        Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "Grimholt-Shutdown"));
+        CountDownLatch stopped = new CountDownLatch(1);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                server.stop();
+            } finally {
+                stopped.countDown();
+            }
+        }, "Grimholt-Shutdown"));
         server.start(configPath);
+        // Region workers, the tick clock and the socket acceptor are daemon
+        // threads. Keep the server process alive until an OS shutdown signal
+        // invokes the hook; otherwise main() would return and stop a healthy
+        // standalone server immediately after its ready message.
+        try {
+            stopped.await();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            server.stop();
+        }
     }
 
     public synchronized void start(Path configPath) {
