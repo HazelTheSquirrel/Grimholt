@@ -22,6 +22,9 @@ public final class Grimholt {
 
     private final Lifecycle lifecycle = new Lifecycle();
     private final GrimholtResourceProfile resources = GrimholtResourceProfile.detect();
+    private final ChronosRegionScheduler chronos = new ChronosRegionScheduler(
+            Math.max(1, resources.workerParallelism()),
+            Math.max(16, Math.min(4096, resources.workerParallelism() * 4)));
     private final ConfigLoader configLoader = new ConfigLoader();
     private final DefaultEventBus events = new DefaultEventBus();
     private final DefaultServiceRegistry services = new DefaultServiceRegistry();
@@ -31,10 +34,10 @@ public final class Grimholt {
     private final MetricsRegistry metrics = new MetricsRegistry();
     private final SecurityLimits limits = SecurityLimits.defaults();
     private final VanillaServerKernel vanillaKernel =
-            new VanillaServerKernel(1024, scheduler::run, failure -> Logging.failure(failure));
+            new VanillaServerKernel(1024, chronos, failure -> Logging.failure(failure));
     private final GrimholtNetworkServer network = new GrimholtNetworkServer(api, commands, vanillaKernel);
     private final GrimholtRegionTickEngine regionTicks =
-            new GrimholtRegionTickEngine(vanillaKernel, resources);
+            new GrimholtRegionTickEngine(vanillaKernel, resources, chronos);
     private final PluginBoundary plugins = new PluginBoundary(api, scheduler, events, services);
     private GrimholtConfig config;
 
