@@ -41,6 +41,15 @@ java -Dgrimholt.host=127.0.0.1 -Dgrimholt.port=25566 -jar target/grimholt-minest
 
 The current world is intentionally a small flat bootstrap world. Persistent world storage, gameplay systems, observability, load tests, and production hardening are subsequent implementation stages; the bootstrap is not a claim that those systems are already complete.
 
-## CI
+## CI and downloadable JAR
 
-Every push and pull request runs `mvn clean verify` on Java 25.
+Every push and pull request runs `mvn clean verify` on Java 25. If verification and packaging succeed, CI uploads the runnable, dependency-inclusive JAR as a GitHub Actions artifact named `grimholt-minestom-<commit-sha>` (retained for 30 days).
+
+To download it:
+
+1. Open the [Actions runs](https://github.com/HazelTheSquirrel/Grimholt/actions).
+2. Select the successful **CI** run for the commit you want.
+3. In the run's **Artifacts** section, download `grimholt-minestom-<commit-sha>`.
+4. Extract the ZIP; it contains the runnable `.jar`.
+
+The artifact is uploaded only after `mvn clean verify` succeeds. A failed or cancelled build will not publish a JAR artifact.
