@@ -57,6 +57,15 @@ public final class VanillaRegionRuntime implements AutoCloseable {
     public void tick(){owner.assertOwner();game.tick();for(VanillaChunk c:chunks.values())c.tick();}
 
     /**
+     * Executes the complete gameplay tick through the region's single-owner
+     * boundary. Chronos uses this entry point so handoffs and world mutation
+     * cannot overlap on separate worker threads.
+     */
+    public void tickOwned() {
+        owner.tick(this::tick);
+    }
+
+    /**
      * Request one region tick without allowing a slow region to accumulate an
      * unbounded backlog of obsolete tick tasks. A pending tick is coalesced;
      * the region's owner still serializes the actual mutation.
