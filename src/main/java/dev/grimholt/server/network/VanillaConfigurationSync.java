@@ -263,10 +263,8 @@ public final class VanillaConfigurationSync {
                 }
                 orderedEntries.sort(Map.Entry.comparingByValue());
 
-                if (orderedEntries.isEmpty()) {
-                    missing.add(registryId + " (no entries with protocol_id)");
-                    continue;
-                }
+                // Empty dynamic registries are valid: send their registry ID
+                // and a zero entry count rather than treating them as missing data.
                 VanillaProtocol26_2.writeVarInt(out, orderedEntries.size());
                 for (var entry : orderedEntries) {
                     VanillaProtocolCodec.writeIdentifier(out, entry.getKey());
