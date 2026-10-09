@@ -402,10 +402,17 @@ val standaloneSmoke by tasks.registering {
             System.getProperty("java.home"), "bin",
             if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
         )
-        val process = ProcessBuilder(
+        val launcher = ProcessBuilder(
             javaExecutable.toString(), "-Xms128M", "-Xmx512M", "-jar",
             artifact.toAbsolutePath().toString(), config.toAbsolutePath().toString()
-        ).directory(work.toFile()).redirectErrorStream(true).start()
+        ).directory(work.toFile()).redirectErrorStream(true)
+        // JVM option environment variables can silently inject -Xrs (reduced
+        // signal usage), which makes SIGTERM terminate the child without running
+        // Java shutdown hooks. Keep signal semantics deterministic in this test.
+        launcher.environment().remove("JAVA_TOOL_OPTIONS")
+        launcher.environment().remove("JDK_JAVA_OPTIONS")
+        launcher.environment().remove("_JAVA_OPTIONS")
+        val process = launcher.start()
         val output = StringBuilder()
         val reader = Thread {
             try {
@@ -448,8 +455,13 @@ val standaloneSmoke by tasks.registering {
             "Standalone process did not enter its managed lifetime wait; likely stale or incorrect entry-point bytecode. Output:\n$output"
         }
         synchronized(output) {
+            check(output.contains("Grimholt shutdown hook entered")) {
+                "JVM exited without entering Grimholt's shutdown hook (exit=${process.exitValue()}). " +
+                    "Check signal handling / injected JVM options. Output:\n$output"
+            }
             check(output.contains("Grimholt stopped")) {
-                "Grimholt process exited without confirming graceful shutdown. Output:\n$output"
+                "Grimholt shutdown hook ran but server lifecycle did not confirm graceful shutdown " +
+                    "(exit=${process.exitValue()}). Output:\n$output"
             }
         }
         println("Grimholt standalone smoke passed: ready state and graceful shutdown confirmed.")
