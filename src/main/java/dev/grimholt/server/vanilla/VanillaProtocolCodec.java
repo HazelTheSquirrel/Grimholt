@@ -8,7 +8,7 @@ import java.nio.charset.CodingErrorAction;
 import java.util.Map;
 import java.util.UUID;
 
-/** Wire primitives owned by Grimholt for the Minecraft 26.2 protocol. */
+/** Wire primitives owned by Grimholt for Minecraft 26.4-snapshot-3. */
 public final class VanillaProtocolCodec {
     private VanillaProtocolCodec() {}
 
