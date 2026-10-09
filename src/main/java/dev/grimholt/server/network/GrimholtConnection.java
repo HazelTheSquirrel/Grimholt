@@ -241,7 +241,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         if (name.contains("known_packs")) {
             Set<String> knownPacks = configuration.readKnownPacks(frame.payload());
             Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
-                    "client known-packs response: " + knownPacks.size() + " pack(s)");
+                    "client known-packs response: " + knownPacks);
+            configuration.requireCompatibleKnownPacks(knownPacks);
             List<byte[]> registryPackets = configuration.registryDataPackets();
             Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
                     "sending " + registryPackets.size() + " registry-data packet(s)");
