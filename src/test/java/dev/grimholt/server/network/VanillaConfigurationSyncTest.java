@@ -25,6 +25,44 @@ final class VanillaConfigurationSyncTest {
         List<byte[]> packets = sync.registryDataPackets();
 
         assertTrue(packets.size() >= 20, "Expected the Snapshot 3 dynamic registry set");
+        List<String> actualOrder = packets.stream().map(bytes -> {
+            try {
+                return VanillaProtocolCodec.readIdentifier(new ByteArrayInputStream(bytes));
+            } catch (IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        }).toList();
+        assertEquals(List.of(
+                "minecraft:chat_type",
+                "minecraft:worldgen/biome",
+                "minecraft:dialog",
+                "minecraft:damage_type",
+                "minecraft:trim_material",
+                "minecraft:trim_pattern",
+                "minecraft:banner_pattern",
+                "minecraft:enchantment",
+                "minecraft:painting_variant",
+                "minecraft:jukebox_song",
+                "minecraft:instrument",
+                "minecraft:wolf_variant",
+                "minecraft:wolf_sound_variant",
+                "minecraft:cat_variant",
+                "minecraft:cat_sound_variant",
+                "minecraft:chicken_variant",
+                "minecraft:chicken_sound_variant",
+                "minecraft:cow_variant",
+                "minecraft:cow_sound_variant",
+                "minecraft:frog_variant",
+                "minecraft:pig_variant",
+                "minecraft:pig_sound_variant",
+                "minecraft:zombie_nautilus_variant",
+                "minecraft:world_clock",
+                "minecraft:timeline",
+                "minecraft:dimension_type",
+                "minecraft:sulfur_cube_archetype",
+                "minecraft:test_environment",
+                "minecraft:test_instance"
+        ), actualOrder, "Configuration registries must follow the vanilla protocol sequence");
         for (byte[] bytes : packets) {
             ByteArrayInputStream in = new ByteArrayInputStream(bytes);
             String registryId = VanillaProtocolCodec.readIdentifier(in);
