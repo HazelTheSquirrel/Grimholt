@@ -93,4 +93,26 @@ class OwnedRegionTest {
         }
     }
 
+    @Test
+    void rejectedDrainSchedulingPreservesAcceptedHandoffsForNextTick() {
+        var attempts = new AtomicInteger();
+        var region = new OwnedRegion(new RegionKey(java.util.UUID.randomUUID(), 0, 0), 4, task -> {
+            if (attempts.getAndIncrement() == 0) {
+                throw new java.util.concurrent.RejectedExecutionException("temporary saturation");
+            }
+            task.run();
+        });
+        var value = new AtomicInteger();
+        try {
+            // Saturation is observable, but must not discard accepted state mutations.
+            region.execute(value::incrementAndGet);
+            assertEquals(1, region.pendingHandoffs());
+            assertEquals(1, region.drainSchedulingFailures());
+            region.tick();
+            assertEquals(1, value.get());
+            assertEquals(0, region.pendingHandoffs());
+        } finally {
+            region.close();
+        }
+    }
 }
