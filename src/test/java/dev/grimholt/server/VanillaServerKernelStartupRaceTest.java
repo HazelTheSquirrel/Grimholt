@@ -1,6 +1,7 @@
 package dev.grimholt.server;
 
 import dev.grimholt.server.lifecycle.LifecycleState;
+import dev.grimholt.server.config.GrimholtConfig;
 import dev.grimholt.server.vanilla.VanillaProtocol26_2;
 import dev.grimholt.server.vanilla.VanillaProtocolCodec;
 import org.junit.jupiter.api.Test;
@@ -77,6 +78,22 @@ class VanillaServerKernelStartupRaceTest {
         } finally {
             server.stop();
         }
+    }
+
+
+    @Test
+    void networkRefusesToBindBeforeKernelAndWorldBootstrap() {
+        Grimholt server = new Grimholt();
+        GrimholtConfig config = new GrimholtConfig(
+                2, "127.0.0.1", 0, false, 1000, 2, 10, 10,
+                tempDir.resolve("world").toString());
+
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class, () -> server.network().start(config));
+
+        assertTrue(failure.getMessage().contains("Vanilla kernel must be running"));
+        assertEquals(-1, server.network().boundPort(),
+                "a failed bootstrap must not leave a listening socket behind");
     }
 
     private static void assertStatusHandshake(Grimholt server) throws Exception {
