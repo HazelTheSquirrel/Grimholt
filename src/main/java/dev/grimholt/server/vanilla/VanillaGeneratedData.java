@@ -44,7 +44,7 @@ public final class VanillaGeneratedData {
     public void requireAvailable() {
         if (!available()) {
             throw new IllegalStateException(
-                "Exact 26.4 generated data is missing. Run generateVanilla26_2 " +
+                "Exact 26.4 generated data is missing. Run generateVanilla26_4 " +
                 "or set GRIMHOLT_VANILLA_DATA to its generated directory.");
         }
     }
