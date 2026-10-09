@@ -37,6 +37,8 @@ jobs:
         run: gradle --no-daemon --no-configuration-cache clean test
       - name: Vanilla 26.4 snapshot 3 reference smoke test
         run: gradle --no-daemon --no-configuration-cache vanillaReferenceSmoke26_4
+      - name: Verify deterministic 26.4 generated reports
+        run: gradle --no-daemon --no-configuration-cache verifyVanilla26_4Reports
       - name: Assemble
         run: gradle --no-daemon --no-configuration-cache assemble
       - name: Smoke-test the actual Grimholt standalone JAR
