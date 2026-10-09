@@ -310,6 +310,82 @@ val vanillaReferenceSmoke26_4 by tasks.registering {
 
 
 /*
+ * Smoke-test the actual Grimholt distribution, not just the Mojang reference.
+ * The temporary working directory prevents local configs/plugins/worlds from
+ * masking missing runtime inputs. Port 0 avoids collisions on CI runners.
+ */
+val standaloneSmoke by tasks.registering {
+    group = "verification"
+    description = "Launch the built Grimholt standalone JAR and verify ready + graceful shutdown."
+    dependsOn(standaloneJar)
+    notCompatibleWithConfigurationCache("The smoke test launches and manages an external JVM process.")
+    doLast {
+        val artifact = standaloneJar.get().archiveFile.get().asFile.toPath()
+        check(Files.isRegularFile(artifact)) { "Standalone artifact missing: $artifact" }
+        val work = layout.buildDirectory.dir("standalone-smoke").get().asFile.toPath()
+        if (Files.exists(work)) work.toFile().deleteRecursively()
+        Files.createDirectories(work)
+        val world = work.resolve("world").toAbsolutePath().toString().replace("\\", "/")
+        val config = work.resolve("grimholt.properties")
+        Files.writeString(config,
+            "config-version=2\n" +
+            "bind-address=127.0.0.1\n" +
+            "port=0\n" +
+            "online-mode=false\n" +
+            "max-players=10\n" +
+            "dispatcher-threads=2\n" +
+            "view-distance=4\n" +
+            "simulation-distance=4\n" +
+            "world-directory=$world\n")
+        val javaExecutable = Path.of(
+            System.getProperty("java.home"), "bin",
+            if (System.getProperty("os.name").lowercase().contains("win")) "java.exe" else "java"
+        )
+        val process = ProcessBuilder(
+            javaExecutable.toString(), "-Xms128M", "-Xmx512M", "-jar",
+            artifact.toAbsolutePath().toString(), config.toAbsolutePath().toString()
+        ).directory(work.toFile()).redirectErrorStream(true).start()
+        val output = StringBuilder()
+        val reader = Thread {
+            process.inputStream.bufferedReader().useLines { lines ->
+                lines.forEach { line -> synchronized(output) { output.append(line).append('\n') } }
+            }
+        }
+        reader.isDaemon = true
+        reader.start()
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(45)
+        var ready = false
+        while (System.nanoTime() < deadline && process.isAlive) {
+            synchronized(output) {
+                if (output.contains("Grimholt is running")) ready = true
+            }
+            if (ready) break
+            Thread.sleep(100)
+        }
+        if (!ready) {
+            process.destroyForcibly()
+            process.waitFor(10, TimeUnit.SECONDS)
+            reader.join(2000)
+            error("Grimholt standalone JAR did not reach ready state. Output:\n$output")
+        }
+        process.destroy()
+        if (!process.waitFor(15, TimeUnit.SECONDS)) {
+            process.destroyForcibly()
+            process.waitFor(10, TimeUnit.SECONDS)
+        }
+        reader.join(5000)
+        check(!process.isAlive) { "Grimholt standalone JAR did not terminate. Output:\n$output" }
+        synchronized(output) {
+            check(output.contains("Grimholt stopped")) {
+                "Grimholt process exited without confirming graceful shutdown. Output:\n$output"
+            }
+        }
+        println("Grimholt standalone smoke passed: ready state and graceful shutdown confirmed.")
+    }
+}
+
+
+/*
  * Release baseline integrity gate. This complements dependency resolution by
  * checking source imports and the actual self-contained artifact.
  */
