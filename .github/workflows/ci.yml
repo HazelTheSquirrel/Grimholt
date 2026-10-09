@@ -26,11 +26,11 @@ jobs:
           cache: maven
       - name: Verify and package
         run: mvn --batch-mode --no-transfer-progress clean verify
-      - name: Upload runnable server JAR
+      - name: Upload runnable foundation JAR
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: grimholt-minestom-${{ github.sha }}
-          path: target/grimholt-minestom-*.jar
+          name: grimholt-server-${{ github.sha }}
+          path: target/grimholt-server-*.jar
           if-no-files-found: error
           retention-days: 30

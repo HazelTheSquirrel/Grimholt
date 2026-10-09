@@ -1,55 +1,51 @@
-# Grimholt Minestom
+# Grimholt Server
 
-Grimholt is being rebuilt on Minestom with Java 25. The repository starts from a deliberately small, testable foundation rather than carrying forward the previous server implementation.
+Grimholt is an independent Minecraft server implementation in Java 25. The repository is being rebuilt around its own runtime, protocol, session, world, simulation, and storage boundaries. It does not embed or wrap another Minecraft server implementation.
+
+## Status
+
+This commit establishes the first independent core primitives and concurrency rules. **It is not yet a playable Minecraft server**: the Minecraft wire protocol, login/session flow, chunk streaming, gameplay simulation, and persistence are not implemented in this foundation stage. The bootstrap reports the detected runtime profile and exits; it does not open a game listener.
 
 ## Requirements
 
 - JDK 25
 - Maven 3.9+
-- A Minecraft client compatible with the Minestom release selected in `pom.xml`
 
 ## Build and run
 
-```bash
-mvn clean verify
-java -jar target/grimholt-minestom-0.1.0-SNAPSHOT.jar
-```
+    mvn --batch-mode clean verify
+    java -jar target/grimholt-server-0.1.0-SNAPSHOT.jar
 
-The distributable JAR includes runtime dependencies. The default listener is `0.0.0.0:25565`.
+The packaged JAR is a runnable foundation diagnostic, not yet a production game server.
 
-Configure the listener with system properties or environment variables:
+## Architecture
 
-| Setting | System property | Environment variable | Default |
-|---|---|---|---|
-| Bind address | `grimholt.host` | `GRIMHOLT_HOST` | `0.0.0.0` |
-| Port | `grimholt.port` | `GRIMHOLT_PORT` | `25565` |
+- **Transport:** socket lifecycle, packet framing, compression/encryption, and backpressure. This is a future module; no game listener is enabled yet.
+- **Protocol:** version-specific codecs and explicit protocol-state transitions.
+- **Session:** identity, login lifecycle, connection ownership, and ordered outbound delivery.
+- **World:** primitive coordinate keys, chunk/block storage contracts, chunk lifecycle, and persistence boundaries.
+- **Simulation:** authoritative game rules, driven by region ownership rather than shared mutable world state.
+- **Runtime:** lifecycle, hardware-aware capacity defaults, bounded work queues, scheduling, and observability.
+- **Storage:** asynchronous persistence and recovery.
+- **Observability:** queue saturation, queue wait, allocation rate, and p50/p95/p99 simulation latency.
 
-Example:
+### Concurrency rules
 
-```bash
-java -Dgrimholt.host=127.0.0.1 -Dgrimholt.port=25566 -jar target/grimholt-minestom-0.1.0-SNAPSHOT.jar
-```
+1. Network workers will do bounded I/O and decoding only; gameplay work is routed to a bounded owner queue.
+2. A mutable world region has one writer at a time. Cross-region changes are explicit messages.
+3. Queue saturation is a visible result. Expensive work is never run on the submitting thread as a fallback.
+4. Background work must have bounded concurrency and bounded queued work.
+5. Allocation pooling is introduced only when profiling demonstrates a benefit.
+6. Shutdown closes admission first, then drains or rejects queued work according to each subsystem's contract.
 
-## Architecture principles
+## Performance target
 
-- **Minestom owns game networking, ticking, instances, and entity scheduling.** Do not create a competing main tick loop.
-- **CPU and heap detection is advisory capacity planning** for Grimholt-owned background work; it does not override Minestom's internal pools.
-- **Background work is bounded.** Queue saturation rejects work explicitly instead of running expensive work on a caller thread or silently growing memory usage.
-- **Hot-path optimization is evidence-driven.** Profile allocations and tick cost before introducing pooling or custom data layouts.
-- **Lifecycle is explicit.** Initialize registries and the world before binding the listening socket; shut Minestom down cleanly.
-- **No Bukkit, Spigot, Paper, Purpur, or NMS dependencies.**
+The design target is 500+ concurrent players in one world, but no capacity claim is made until repeatable load tests measure throughput, memory, queue wait, and p50/p95/p99 simulation latency on documented hardware.
 
-The current world is intentionally a small flat bootstrap world. Persistent world storage, gameplay systems, observability, load tests, and production hardening are subsequent implementation stages; the bootstrap is not a claim that those systems are already complete.
+## Build artifacts
 
-## CI and downloadable JAR
+A successful CI verification uploads the runnable foundation JAR as grimholt-server-<commit-sha> for 30 days. Open https://github.com/HazelTheSquirrel/Grimholt/actions, choose a successful CI run, and download its artifact ZIP.
 
-Every push and pull request runs `mvn clean verify` on Java 25. If verification and packaging succeed, CI uploads the runnable, dependency-inclusive JAR as a GitHub Actions artifact named `grimholt-minestom-<commit-sha>` (retained for 30 days).
+## Independent implementation and dependencies
 
-To download it:
-
-1. Open the [Actions runs](https://github.com/HazelTheSquirrel/Grimholt/actions).
-2. Select the successful **CI** run for the commit you want.
-3. In the run's **Artifacts** section, download `grimholt-minestom-<commit-sha>`.
-4. Extract the ZIP; it contains the runnable `.jar`.
-
-The artifact is uploaded only after `mvn clean verify` succeeds. A failed or cancelled build will not publish a JAR artifact.
+Core packages must not depend on third-party server runtimes. Dependencies and licenses are tracked explicitly; protocol behavior is implemented from documented wire specifications and independent tests rather than copied server source.
