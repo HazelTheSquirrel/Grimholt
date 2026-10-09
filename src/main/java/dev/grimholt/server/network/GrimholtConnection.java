@@ -116,7 +116,12 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         } else if (frame.packetId() == 1) {
             if (frame.payload().length != Long.BYTES) throw new IOException("Ping packet must contain exactly 8 bytes");
             long payload = new DataInputStream(new ByteArrayInputStream(frame.payload())).readLong();
-            send(VanillaProtocol.State.STATUS, "minecraft:pong",
+            String pongPacket = List.of("minecraft:pong_response", "minecraft:pong").stream()
+                    .filter(candidate -> catalog.id(VanillaProtocol.State.STATUS,
+                            VanillaProtocol.Direction.CLIENTBOUND, candidate).isPresent())
+                    .findFirst()
+                    .orElseThrow(() -> new IOException("26.4 status pong packet is missing from Mojang packet catalog"));
+            send(VanillaProtocol.State.STATUS, pongPacket,
                     out -> new DataOutputStream(out).writeLong(payload));
         } else throw new IOException("Unknown status packet: " + frame.packetId());
     }
