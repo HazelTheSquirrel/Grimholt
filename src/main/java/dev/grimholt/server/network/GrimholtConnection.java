@@ -73,7 +73,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         }
     }
 
-    private void handle(VanillaProtocol26_2.Frame frame) throws IOException {
+    private void handle(VanillaProtocol.Frame frame) throws IOException {
         switch (state) {
             case HANDSHAKE -> handleHandshake(frame);
             case STATUS -> handleStatus(frame);
@@ -84,28 +84,28 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         }
     }
 
-    private void handleHandshake(VanillaProtocol26_2.Frame frame) throws IOException {
-        VanillaProtocol26_2.Handshake handshake = VanillaProtocol26_2.decodeHandshake(frame);
+    private void handleHandshake(VanillaProtocol.Frame frame) throws IOException {
+        VanillaProtocol.Handshake handshake = VanillaProtocol.decodeHandshake(frame);
         state = handshake.nextState() == 1 ? ConnectionState.STATUS : ConnectionState.LOGIN;
     }
 
-    private void handleStatus(VanillaProtocol26_2.Frame frame) throws IOException {
+    private void handleStatus(VanillaProtocol.Frame frame) throws IOException {
         if (frame.packetId() == 0) {
             if (frame.payload().length != 0) throw new IOException("Status request packet must be empty");
             String json = "{\"version\":{\"name\":\"" + VanillaSnapshot26_2.VERSION + "\",\"protocol\":" + VanillaSnapshot26_2.PROTOCOL +
                     "},\"players\":{\"max\":" + server.maxPlayers() + ",\"online\":" + server.players().size() +
                     "},\"description\":{\"text\":\"Grimholt\"}}";
-            send(VanillaProtocol26_2.State.STATUS, "minecraft:status_response",
+            send(VanillaProtocol.State.STATUS, "minecraft:status_response",
                     out -> VanillaProtocolCodec.writeString(out, json, 32767));
         } else if (frame.packetId() == 1) {
             if (frame.payload().length != Long.BYTES) throw new IOException("Ping packet must contain exactly 8 bytes");
             long payload = new DataInputStream(new ByteArrayInputStream(frame.payload())).readLong();
-            send(VanillaProtocol26_2.State.STATUS, "minecraft:pong",
+            send(VanillaProtocol.State.STATUS, "minecraft:pong",
                     out -> new DataOutputStream(out).writeLong(payload));
         } else throw new IOException("Unknown status packet: " + frame.packetId());
     }
 
-    private void handleLogin(VanillaProtocol26_2.Frame frame) throws IOException {
+    private void handleLogin(VanillaProtocol.Frame frame) throws IOException {
         if (frame.packetId() == 0) {
             ByteArrayInputStream in = new ByteArrayInputStream(frame.payload());
             username = VanillaProtocolCodec.readString(in, 16);
@@ -130,8 +130,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             return;
         }
 
-        String name = packetName(VanillaProtocol26_2.State.LOGIN,
-                VanillaProtocol26_2.Direction.SERVERBOUND, frame.packetId()).orElse("");
+        String name = packetName(VanillaProtocol.State.LOGIN,
+                VanillaProtocol.Direction.SERVERBOUND, frame.packetId()).orElse("");
         if (name.equals("minecraft:key") || name.contains("encryption_response")) {
             if (!onlineMode || authenticated) throw new IOException("Unexpected encryption response");
             handleEncryptionResponse(frame.payload());
@@ -148,7 +148,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     }
 
     private void sendEncryptionRequest() throws IOException {
-        send(VanillaProtocol26_2.State.LOGIN, "minecraft:hello", out -> {
+        send(VanillaProtocol.State.LOGIN, "minecraft:hello", out -> {
             VanillaProtocolCodec.writeString(out, "", 20);
             VanillaProtocolCodec.writeByteArray(out, authentication.publicKey(), 1024);
             VanillaProtocolCodec.writeByteArray(out, authentication.verifyToken(), 16);
@@ -182,10 +182,10 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     private void sendLoginSuccess() throws IOException {
         UUID sessionId = UUID.randomUUID();
-        send(VanillaProtocol26_2.State.LOGIN, "minecraft:login_finished", out -> {
+        send(VanillaProtocol.State.LOGIN, "minecraft:login_finished", out -> {
             VanillaProtocolCodec.writeUuid(out, uuid);
             VanillaProtocolCodec.writeString(out, username, 16);
-            VanillaProtocol26_2.writeVarInt(out, 0); // profile properties
+            VanillaProtocol.writeVarInt(out, 0); // profile properties
             VanillaProtocolCodec.writeUuid(out, sessionId); // session id
         });
     }
@@ -193,7 +193,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private void enableLoginCompression() throws IOException {
         String compressionPacket = null;
         for (String candidate : new String[] {"minecraft:login_compression", "minecraft:set_compression"}) {
-            if (catalog.id(VanillaProtocol26_2.State.LOGIN, VanillaProtocol26_2.Direction.CLIENTBOUND, candidate).isPresent()) {
+            if (catalog.id(VanillaProtocol.State.LOGIN, VanillaProtocol.Direction.CLIENTBOUND, candidate).isPresent()) {
                 compressionPacket = candidate;
                 break;
             }
@@ -202,40 +202,40 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             throw new IOException("Minecraft 26.4 login compression packet is missing from Mojang packet catalog");
         }
         final String packet = compressionPacket;
-        send(VanillaProtocol26_2.State.LOGIN, packet,
-                out -> VanillaProtocol26_2.writeVarInt(out, LOGIN_COMPRESSION_THRESHOLD));
+        send(VanillaProtocol.State.LOGIN, packet,
+                out -> VanillaProtocol.writeVarInt(out, LOGIN_COMPRESSION_THRESHOLD));
         transport.enableCompression(LOGIN_COMPRESSION_THRESHOLD);
     }
 
     private void sendConfigurationStart() throws IOException {
-        send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:select_known_packs",
+        send(VanillaProtocol.State.CONFIGURATION, "minecraft:select_known_packs",
                 out -> out.write(configuration.selectKnownPacks()));
     }
 
-    private void handleConfiguration(VanillaProtocol26_2.Frame frame) throws IOException {
-        String name = packetName(VanillaProtocol26_2.State.CONFIGURATION,
-                VanillaProtocol26_2.Direction.SERVERBOUND, frame.packetId()).orElse("");
+    private void handleConfiguration(VanillaProtocol.Frame frame) throws IOException {
+        String name = packetName(VanillaProtocol.State.CONFIGURATION,
+                VanillaProtocol.Direction.SERVERBOUND, frame.packetId()).orElse("");
         if (name.contains("known_packs")) {
             configuration.readKnownPacks(frame.payload());
             for (byte[] registry : configuration.registryDataPackets()) {
-                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:registry_data",
+                send(VanillaProtocol.State.CONFIGURATION, "minecraft:registry_data",
                         out -> out.write(registry));
             }
-            if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
-                    VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:update_enabled_features").isPresent()) {
-                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:update_enabled_features", out -> {
-                    VanillaProtocol26_2.writeVarInt(out, 1);
+            if (catalog.id(VanillaProtocol.State.CONFIGURATION,
+                    VanillaProtocol.Direction.CLIENTBOUND, "minecraft:update_enabled_features").isPresent()) {
+                send(VanillaProtocol.State.CONFIGURATION, "minecraft:update_enabled_features", out -> {
+                    VanillaProtocol.writeVarInt(out, 1);
                     VanillaProtocolCodec.writeIdentifier(out, "minecraft:vanilla");
                 });
             }
             for (byte[] tags : configuration.updateTagsPackets()) {
-                if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
-                        VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:update_tags").isPresent()) {
-                    send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:update_tags",
+                if (catalog.id(VanillaProtocol.State.CONFIGURATION,
+                        VanillaProtocol.Direction.CLIENTBOUND, "minecraft:update_tags").isPresent()) {
+                    send(VanillaProtocol.State.CONFIGURATION, "minecraft:update_tags",
                             out -> out.write(tags));
                 }
             }
-            send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:finish_configuration", out -> {});
+            send(VanillaProtocol.State.CONFIGURATION, "minecraft:finish_configuration", out -> {});
             return;
         }
         if (name.equals("minecraft:finish_configuration") || name.contains("acknowledge_finish_configuration")) {
@@ -256,20 +256,20 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
         if (name.equals("minecraft:keep_alive")) {
             long id = new DataInputStream(new ByteArrayInputStream(frame.payload())).readLong();
-            if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
-                    VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:keep_alive").isPresent()) {
-                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:keep_alive",
+            if (catalog.id(VanillaProtocol.State.CONFIGURATION,
+                    VanillaProtocol.Direction.CLIENTBOUND, "minecraft:keep_alive").isPresent()) {
+                send(VanillaProtocol.State.CONFIGURATION, "minecraft:keep_alive",
                         out -> new DataOutputStream(out).writeLong(id));
             }
             return;
         }
 
         if (name.equals("minecraft:pong")) {
-            int id = VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(frame.payload()));
-            if (catalog.id(VanillaProtocol26_2.State.CONFIGURATION,
-                    VanillaProtocol26_2.Direction.CLIENTBOUND, "minecraft:ping").isPresent()) {
-                send(VanillaProtocol26_2.State.CONFIGURATION, "minecraft:ping",
-                        out -> VanillaProtocol26_2.writeVarInt(out, id));
+            int id = VanillaProtocol.readVarInt(new ByteArrayInputStream(frame.payload()));
+            if (catalog.id(VanillaProtocol.State.CONFIGURATION,
+                    VanillaProtocol.Direction.CLIENTBOUND, "minecraft:ping").isPresent()) {
+                send(VanillaProtocol.State.CONFIGURATION, "minecraft:ping",
+                        out -> VanillaProtocol.writeVarInt(out, id));
             }
             return;
         }
@@ -284,24 +284,24 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                 position.yaw(), position.pitch(), false);
         server.playerConnected(uuid, username, this);
 
-        send(VanillaProtocol26_2.State.PLAY, "minecraft:login",
+        send(VanillaProtocol.State.PLAY, "minecraft:login",
                 out -> out.write(playProtocol.login(new GrimholtPlayProtocol.Bootstrap(
                         entityId, "minecraft:overworld", server.maxPlayers(),
                         GrimholtPlayProtocol.DEFAULT_VIEW_DISTANCE,
                         GrimholtPlayProtocol.DEFAULT_SIMULATION_DISTANCE,
                         0L, position, false))));
-        send(VanillaProtocol26_2.State.PLAY, "minecraft:player_info_update",
+        send(VanillaProtocol.State.PLAY, "minecraft:player_info_update",
                 out -> out.write(playProtocol.playerInfoAdd(uuid, username)));
-        send(VanillaProtocol26_2.State.PLAY, "minecraft:commands",
+        send(VanillaProtocol.State.PLAY, "minecraft:commands",
                 out -> out.write(commandTreeWire.encode(commands)));
-        send(VanillaProtocol26_2.State.PLAY, "minecraft:game_event",
+        send(VanillaProtocol.State.PLAY, "minecraft:game_event",
                 out -> out.write(playProtocol.startWaitingForChunks()));
-        send(VanillaProtocol26_2.State.PLAY, "minecraft:set_default_spawn_position",
+        send(VanillaProtocol.State.PLAY, "minecraft:set_default_spawn_position",
                 out -> out.write(playProtocol.defaultSpawn(position)));
 
         int teleport = nextTeleportId.getAndIncrement();
         pendingTeleportId = teleport;
-        send(VanillaProtocol26_2.State.PLAY, "minecraft:player_position",
+        send(VanillaProtocol.State.PLAY, "minecraft:player_position",
                 out -> out.write(playProtocol.synchronizePosition(teleport, position)));
         sendInitialInventory();
         streamInitialChunks();
@@ -311,12 +311,12 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         for (int slot = 0; slot < inventory.size(); slot++) {
             final int inventorySlot = slot;
             sendBestEffortPlay("minecraft:set_player_inventory", out -> {
-                VanillaProtocol26_2.writeVarInt(out, inventorySlot);
-                VanillaProtocol26_2.writeVarInt(out, 0); // empty ItemStack
+                VanillaProtocol.writeVarInt(out, inventorySlot);
+                VanillaProtocol.writeVarInt(out, 0); // empty ItemStack
             });
         }
         sendBestEffortPlay("minecraft:set_held_slot",
-                out -> VanillaProtocol26_2.writeVarInt(out, inventory.selectedHotbarSlot()));
+                out -> VanillaProtocol.writeVarInt(out, inventory.selectedHotbarSlot()));
     }
 
     private UUID overworldId() {
@@ -340,34 +340,34 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         }
     }
 
-    private void handlePlay(VanillaProtocol26_2.Frame frame) throws IOException {
-        String name = packetName(VanillaProtocol26_2.State.PLAY,
-                VanillaProtocol26_2.Direction.SERVERBOUND, frame.packetId()).orElse("");
+    private void handlePlay(VanillaProtocol.Frame frame) throws IOException {
+        String name = packetName(VanillaProtocol.State.PLAY,
+                VanillaProtocol.Direction.SERVERBOUND, frame.packetId()).orElse("");
 
         if (name.contains("confirm_teleportation")) {
-            int teleport = VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(frame.payload()));
+            int teleport = VanillaProtocol.readVarInt(new ByteArrayInputStream(frame.payload()));
             if (teleport == pendingTeleportId) pendingTeleportId = -1;
             return;
         }
 
         if (name.contains("set_carried_item")) {
-            int slot = VanillaProtocol26_2.readVarInt(new ByteArrayInputStream(frame.payload()));
+            int slot = VanillaProtocol.readVarInt(new ByteArrayInputStream(frame.payload()));
             inventory.selectedHotbarSlot(slot);
             sendBestEffortPlay("minecraft:set_held_slot",
-                    out -> VanillaProtocol26_2.writeVarInt(out, inventory.selectedHotbarSlot()));
+                    out -> VanillaProtocol.writeVarInt(out, inventory.selectedHotbarSlot()));
             return;
         }
 
         if (name.contains("keep_alive")) {
             long id = new DataInputStream(new ByteArrayInputStream(frame.payload())).readLong();
-            send(VanillaProtocol26_2.State.PLAY, "minecraft:keep_alive",
+            send(VanillaProtocol.State.PLAY, "minecraft:keep_alive",
                     out -> new DataOutputStream(out).writeLong(id));
             return;
         }
 
         if (name.contains("ping_request")) {
             int id = new DataInputStream(new ByteArrayInputStream(frame.payload())).readInt();
-            send(VanillaProtocol26_2.State.PLAY, "minecraft:pong_response",
+            send(VanillaProtocol.State.PLAY, "minecraft:pong_response",
                     out -> new DataOutputStream(out).writeLong(id));
             return;
         }
@@ -428,7 +428,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     }
 
     private void closeWithLoginDisconnect(String reason) throws IOException {
-        send(VanillaProtocol26_2.State.LOGIN, "minecraft:disconnect",
+        send(VanillaProtocol.State.LOGIN, "minecraft:disconnect",
                 out -> VanillaProtocolCodec.writeString(out, "{\"text\":" + quote(reason) + "}", 32767));
         close();
     }
@@ -437,20 +437,20 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
-    private void send(VanillaProtocol26_2.State state, String packet, IOEncoder encoder) throws IOException {
-        int id = catalog.requireId(state, VanillaProtocol26_2.Direction.CLIENTBOUND, packet);
+    private void send(VanillaProtocol.State state, String packet, IOEncoder encoder) throws IOException {
+        int id = catalog.requireId(state, VanillaProtocol.Direction.CLIENTBOUND, packet);
         ByteArrayOutputStream payload = new ByteArrayOutputStream();
         encoder.write(payload);
-        transport.write(new VanillaProtocol26_2.Frame(id, payload.toByteArray()));
+        transport.write(new VanillaProtocol.Frame(id, payload.toByteArray()));
     }
 
     private void sendBestEffortPlay(String packet, IOEncoder encoder) {
-        try { send(VanillaProtocol26_2.State.PLAY, packet, encoder); }
+        try { send(VanillaProtocol.State.PLAY, packet, encoder); }
         catch (IOException | RuntimeException ignored) {}
     }
 
-    private Optional<String> packetName(VanillaProtocol26_2.State state,
-                                         VanillaProtocol26_2.Direction direction, int id) {
+    private Optional<String> packetName(VanillaProtocol.State state,
+                                         VanillaProtocol.Direction direction, int id) {
         return catalog.names(state, direction).stream()
                 .filter(name -> catalog.id(state, direction, name).orElse(-1) == id)
                 .findFirst();
