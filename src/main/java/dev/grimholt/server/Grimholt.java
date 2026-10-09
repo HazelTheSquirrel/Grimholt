@@ -102,12 +102,13 @@ public final class Grimholt {
         try {
             config = configLoader.load(configPath);
             api.configureLimits(config.maxPlayers());
-            Logging.startup(config.bindAddress(), config.port());
             vanillaKernel.start();
             vanillaKernel.registerWorld(OVERWORLD_ID);
             api.addWorld(OVERWORLD_ID, "minecraft:overworld");
+            Logging.vanillaKernelReady(vanillaKernel.worldCount());
             plugins.start();
             plugins.discover(Path.of("plugins"));
+            Logging.startup(config.bindAddress(), config.port());
             network.start(config);
             regionTicks.start();
             plugins.loadAll();
