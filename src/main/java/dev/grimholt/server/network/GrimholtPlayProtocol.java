@@ -1,14 +1,14 @@
 package dev.grimholt.server.network;
 
 import dev.grimholt.api.Position;
-import dev.grimholt.server.vanilla.VanillaProtocol26_2;
+import dev.grimholt.server.vanilla.VanillaProtocol;
 import dev.grimholt.server.vanilla.VanillaProtocolCodec;
 import java.io.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Native 26.2 clientbound PLAY bootstrap and movement packet codecs. */
+/** Native 26.4 Snapshot 3 clientbound PLAY bootstrap and movement packet codecs. */
 public final class GrimholtPlayProtocol {
     public static final int DEFAULT_VIEW_DISTANCE = 8;
     public static final int DEFAULT_SIMULATION_DISTANCE = 8;
@@ -24,16 +24,16 @@ public final class GrimholtPlayProtocol {
             DataOutputStream data = new DataOutputStream(out);
             data.writeInt(bootstrap.entityId());
             data.writeBoolean(false);
-            VanillaProtocol26_2.writeVarInt(data, 1);
+            VanillaProtocol.writeVarInt(data, 1);
             VanillaProtocolCodec.writeIdentifier(data, bootstrap.dimension());
-            VanillaProtocol26_2.writeVarInt(data, bootstrap.maxPlayers());
-            VanillaProtocol26_2.writeVarInt(data, bootstrap.viewDistance());
-            VanillaProtocol26_2.writeVarInt(data, bootstrap.simulationDistance());
+            VanillaProtocol.writeVarInt(data, bootstrap.maxPlayers());
+            VanillaProtocol.writeVarInt(data, bootstrap.viewDistance());
+            VanillaProtocol.writeVarInt(data, bootstrap.simulationDistance());
             data.writeBoolean(false);
             data.writeBoolean(true);
             data.writeBoolean(false);
 
-            VanillaProtocol26_2.writeVarInt(data, 0); // dimension type: overworld
+            VanillaProtocol.writeVarInt(data, 0); // dimension type: overworld
             VanillaProtocolCodec.writeIdentifier(data, bootstrap.dimension());
             data.writeLong(bootstrap.seed());
             data.writeByte(0);  // survival
@@ -41,8 +41,8 @@ public final class GrimholtPlayProtocol {
             data.writeBoolean(false);
             data.writeBoolean(false);
             data.writeBoolean(false); // no last-death location
-            VanillaProtocol26_2.writeVarInt(data, 0); // portal cooldown
-            VanillaProtocol26_2.writeVarInt(data, 63); // sea level
+            VanillaProtocol.writeVarInt(data, 0); // portal cooldown
+            VanillaProtocol.writeVarInt(data, 63); // sea level
             data.writeBoolean(bootstrap.onlineMode());
             data.writeBoolean(false); // secure chat not enforced
             return out.toByteArray();
@@ -67,7 +67,7 @@ public final class GrimholtPlayProtocol {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             DataOutputStream data = new DataOutputStream(out);
-            VanillaProtocol26_2.writeVarInt(data, teleportId);
+            VanillaProtocol.writeVarInt(data, teleportId);
             data.writeDouble(position.x());
             data.writeDouble(position.y());
             data.writeDouble(position.z());
@@ -104,15 +104,15 @@ public final class GrimholtPlayProtocol {
             // ADD_PLAYER, UPDATE_GAME_MODE, UPDATE_LISTED, UPDATE_LATENCY,
             // UPDATE_DISPLAY_NAME, UPDATE_LIST_ORDER and UPDATE_HAT.
             data.writeByte(0x01 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80);
-            VanillaProtocol26_2.writeVarInt(data, 1);
+            VanillaProtocol.writeVarInt(data, 1);
             VanillaProtocolCodec.writeUuid(data, uuid);
             VanillaProtocolCodec.writeString(data, username, 16);
-            VanillaProtocol26_2.writeVarInt(data, 0); // properties
-            VanillaProtocol26_2.writeVarInt(data, 0); // game mode survival
+            VanillaProtocol.writeVarInt(data, 0); // properties
+            VanillaProtocol.writeVarInt(data, 0); // game mode survival
             data.writeBoolean(true); // listed
-            VanillaProtocol26_2.writeVarInt(data, 0); // latency
+            VanillaProtocol.writeVarInt(data, 0); // latency
             data.writeBoolean(false); // no display name
-            VanillaProtocol26_2.writeVarInt(data, 0); // priority
+            VanillaProtocol.writeVarInt(data, 0); // priority
             data.writeBoolean(true); // hat
             return out.toByteArray();
         } catch (IOException e) {
