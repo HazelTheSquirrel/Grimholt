@@ -10,5 +10,6 @@ public final class Logging {
     public static void started() { LOGGER.info("Grimholt is running"); }
     public static void stopping() { LOGGER.info("Stopping Grimholt"); }
     public static void stopped() { LOGGER.info("Grimholt stopped"); }
+    public static void shutdownStage(String stage) { LOGGER.info(() -> "Shutdown stage complete: " + stage); }
     public static void failure(Throwable throwable) { LOGGER.log(Level.SEVERE, "Grimholt startup/shutdown failure", throwable); }
 }
