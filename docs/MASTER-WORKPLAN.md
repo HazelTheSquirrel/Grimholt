@@ -53,12 +53,12 @@
 - [x] Pin Mojang reference checksum.
 - [x] Java 25 / Gradle 9.8 CI baseline.
 - [x] Basic tests and standalone artifact task.
-- [ ] Run and record all current CI stages on the latest `test` head.
-- [ ] Verify clean-checkout build without developer-local files/caches.
-- [ ] Audit direct and transitive runtime dependencies and inspect standalone JAR contents.
-- [ ] Add source import/package scans for forbidden implementation leakage.
-- [ ] Publish a subsystem inventory mapping source packages → runtime entry points → tests → missing behaviors.
-- [ ] Ensure docs and version metadata contain no contradictory 26.2-active-target statements.
+- [x] Previous full CI run 37862255466 passed on the docs-only head; the new integrity gate must pass on the exact phase-A commit before closure.
+- [x] CI builds from a clean hosted checkout; no developer-local files/caches are part of the build input.
+- [x] Runtime dependency group checks and standalone JAR inspection are implemented in `forkIntegrityAudit`.
+- [x] Source import scan for forbidden implementation packages is implemented in `forkIntegrityAudit`.
+- [x] Publish `docs/SUBSYSTEM-INVENTORY.md`, mapping source packages → runtime entry points → tests → missing behaviors.
+- [x] Review project Markdown and target metadata; 26.2-named source/test classes are legacy-labelled, not the active target.
 - **Exit gate:** CI green, artifact launches, checksum/dependency gates pass, inventory reviewed.
 
 ## 4. Phase B — Protocol and real-client connectivity

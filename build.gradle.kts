@@ -90,12 +90,9 @@ tasks.register("dependencyAudit") {
     description = "Fail if a forbidden server API appears in the runtime dependency graph."
 
     doLast {
-        val forbidden = setOf(
-            "net.minestom:minestom",
-            "org.bukkit:bukkit",
-            "org.spigotmc:spigot-api",
-            "io.papermc.paper:paper-api",
-            "dev.folia:folia-api"
+        val forbiddenGroups = listOf(
+            "net.minestom", "org.bukkit", "org.spigotmc", "io.papermc.paper",
+            "dev.folia", "org.purpurmc", "com.velocitypowered"
         )
 
         val resolved = configurations.runtimeClasspath.get().resolvedConfiguration.resolvedArtifacts
@@ -103,11 +100,12 @@ tasks.register("dependencyAudit") {
             .toSet()
 
         val violations = resolved.filter { coordinate ->
-            forbidden.any { coordinate == it || coordinate.startsWith("$it:") }
+            val group = coordinate.substringBefore(':')
+            forbiddenGroups.any { group == it || group.startsWith(it + ".") }
         }.sorted()
 
         check(violations.isEmpty()) {
-            "Forbidden Minecraft server API dependency detected: ${violations.joinToString()}"
+            "Forbidden Minecraft server implementation/API dependency detected: " + violations.joinToString()
         }
     }
 }
@@ -306,5 +304,64 @@ val vanillaReferenceSmoke26_4 by tasks.registering {
         }
         reader.join(5000)
         check(!process.isAlive) { "Minecraft 26.4-snapshot-3 reference server did not terminate. Output:\n$output" }
+    }
+}
+
+
+/*
+ * Release baseline integrity gate. This complements dependency resolution by
+ * checking source imports and the actual self-contained artifact.
+ */
+val forkIntegrityAudit by tasks.registering {
+    group = "verification"
+    description = "Audit forbidden server implementation imports and standalone JAR contents."
+    dependsOn("dependencyAudit", standaloneJar)
+
+    doLast {
+        val forbiddenRoots = listOf(
+            "net.minestom", "org.bukkit", "org.spigotmc", "io.papermc.paper",
+            "dev.folia", "org.purpurmc", "com.velocitypowered"
+        )
+        val importPattern = Regex("^\\s*import\\s+(?:static\\s+)?(" +
+            forbiddenRoots.joinToString("|") { Regex.escape(it) } + ")(?:\\.|;)")
+        val sourceRoot = layout.projectDirectory.dir("src/main/java").asFile.toPath()
+        val sourceViolations = Files.walk(sourceRoot).use { paths ->
+            paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".java") }
+                .flatMap { file ->
+                    Files.readAllLines(file).withIndex()
+                        .filter { (_, line) -> importPattern.containsMatchIn(line) }
+                        .map { (lineNumber, line) ->
+                            file.toString() + ":" + (lineNumber + 1) + ": " + line.trim()
+                        }.stream()
+                }.toList()
+        }
+        check(sourceViolations.isEmpty()) {
+            "Forbidden Minecraft implementation imports found:\\n" + sourceViolations.joinToString("\\n")
+        }
+
+        val artifact = standaloneJar.get().archiveFile.get().asFile.toPath()
+        check(Files.isRegularFile(artifact)) { "Standalone artifact missing: " + artifact }
+        java.util.zip.ZipFile(artifact.toFile()).use { zip ->
+            val entries = zip.entries().asSequence().map { it.name }.toList()
+            val forbiddenPrefixes = forbiddenRoots.map { it.replace('.', '/') + "/" }
+            val forbiddenEntries = entries.filter { entry ->
+                forbiddenPrefixes.any { entry.startsWith(it) } ||
+                    entry.startsWith("reference/minecraft/") ||
+                    entry.endsWith("/server.jar")
+            }
+            check(forbiddenEntries.isEmpty()) {
+                "Standalone artifact contains forbidden implementation/reference entries: " + forbiddenEntries.joinToString()
+            }
+            check("dev/grimholt/server/Grimholt.class" in entries) {
+                "Standalone artifact does not contain Grimholt's application entry point"
+            }
+            val manifest = zip.getEntry("META-INF/MANIFEST.MF")
+            check(manifest != null) { "Standalone artifact has no manifest" }
+            val manifestText = zip.getInputStream(manifest).bufferedReader(Charsets.UTF_8).use { it.readText() }
+            check(Regex("""(?m)^Main-Class: dev\.grimholt\.server\.Grimholt\s*$""").containsMatchIn(manifestText)) {
+                "Standalone artifact manifest does not name the Grimholt entry point"
+            }
+        }
+        println("Fork integrity audit passed: source imports, runtime graph and standalone JAR contents.")
     }
 }
