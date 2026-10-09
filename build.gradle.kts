@@ -37,6 +37,10 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.test {
     useJUnitPlatform()
     maxHeapSize = "2g"
+    testLogging {
+        events("failed")
+        showStandardStreams = true
+    }
 }
 
 tasks.register<JavaExec>("benchmark") {
