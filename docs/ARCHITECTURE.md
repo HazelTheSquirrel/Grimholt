@@ -18,6 +18,8 @@ Grimholt is an independent runtime, not an adapter over another Minecraft server
 
 The current branch contains native Grimholt-owned components for resource profiling, region/world abstractions, player state, protocol framing/packet codecs, command-tree support, authentication primitives, persistence helpers and selected gameplay models. Chronos now exists as a bounded region-dispatch primitive, but is not yet the production tick engine. Its next milestone is integration with the region lifecycle as the single tick-dispatch path.
 
+Chronos is now wired into the production tick lifecycle: registered regions are dispatched automatically through the bounded worker pool, and each tick drains region handoffs under the same exclusive ownership scope. The old global tick path is retained only for compatibility managers and is rejected in Chronos mode. This is scheduling integration, not proof of complete gameplay correctness or 1,000-player capacity.
+
 These components do **not** establish complete runtime ownership or parity. Many protocol packets and codecs are incomplete; real client interoperability is not yet evidenced; world generation, lighting, item/inventory behavior, redstone/fluids, entity AI, dimensions, datapacks and full Anvil/player/block-entity persistence remain open. See FORENSIC-PARITY-AUDIT.md and CHRONOS.md.
 
 ## Ownership rules
