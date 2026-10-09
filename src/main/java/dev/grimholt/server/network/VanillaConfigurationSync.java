@@ -54,7 +54,7 @@ public final class VanillaConfigurationSync {
             VanillaProtocol26_2.writeVarInt(out, 1);
             VanillaProtocolCodec.writeString(out, "minecraft", 32767);
             VanillaProtocolCodec.writeString(out, "core", 32767);
-            VanillaProtocolCodec.writeString(out, VanillaSnapshot26_2.VERSION, 32767);
+            VanillaProtocolCodec.writeString(out, VanillaSnapshot.VERSION, 32767);
             return out.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
