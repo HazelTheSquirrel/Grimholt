@@ -408,8 +408,12 @@ val standaloneSmoke by tasks.registering {
         ).directory(work.toFile()).redirectErrorStream(true).start()
         val output = StringBuilder()
         val reader = Thread {
-            process.inputStream.bufferedReader().useLines { lines ->
-                lines.forEach { line -> synchronized(output) { output.append(line).append('\n') } }
+            try {
+                process.inputStream.bufferedReader().useLines { lines ->
+                    lines.forEach { line -> synchronized(output) { output.append(line).append('\n') } }
+                }
+            } catch (_: java.io.IOException) {
+                // Process teardown may close the pipe while the reader is blocked.
             }
         }
         reader.isDaemon = true
@@ -440,6 +444,9 @@ val standaloneSmoke by tasks.registering {
         }
         reader.join(5000)
         check(!process.isAlive) { "Grimholt standalone JAR did not terminate. Output:\n$output" }
+        check(output.contains("Grimholt main waiting for shutdown signal")) {
+            "Standalone process did not enter its managed lifetime wait; likely stale or incorrect entry-point bytecode. Output:\n$output"
+        }
         synchronized(output) {
             check(output.contains("Grimholt stopped")) {
                 "Grimholt process exited without confirming graceful shutdown. Output:\n$output"
