@@ -23,6 +23,7 @@ public final class OwnedRegion implements AutoCloseable {
     private final AtomicBoolean drainScheduled = new AtomicBoolean();
     private final Object executionLock = new Object();
     private final AtomicInteger failureCount = new AtomicInteger();
+    private final AtomicInteger drainSchedulingFailures = new AtomicInteger();
     private final Consumer<Runnable> nextTickExecutor;
     private final Consumer<Throwable> failureHandler;
 
@@ -48,6 +49,7 @@ public final class OwnedRegion implements AutoCloseable {
     public void assertOwner() { ownership.assertOwner(); }
     public int pendingHandoffs() { synchronized (handoffs) { return handoffs.size(); } }
     public int failureCount() { return failureCount.get(); }
+    public int drainSchedulingFailures() { return drainSchedulingFailures.get(); }
 
     public void execute(Runnable action) {
         Objects.requireNonNull(action, "action");
@@ -105,9 +107,10 @@ public final class OwnedRegion implements AutoCloseable {
             try {
                 nextTickExecutor.accept(this::tick);
             } catch (RuntimeException | Error failure) {
+                // The action is already accepted. Preserve it so the next regular
+                // region tick can drain it after transient worker-queue saturation.
+                drainSchedulingFailures.incrementAndGet();
                 drainScheduled.set(false);
-                synchronized (handoffs) { handoffs.clear(); }
-                throw failure;
             }
         }
     }
@@ -130,9 +133,10 @@ public final class OwnedRegion implements AutoCloseable {
         try {
             nextTickExecutor.accept(this::tick);
         } catch (RuntimeException | Error failure) {
+            // Never discard accepted mutations on transient executor saturation.
+            // Automatic Chronos ticks provide another drain opportunity.
+            drainSchedulingFailures.incrementAndGet();
             drainScheduled.set(false);
-            synchronized (handoffs) { handoffs.clear(); }
-            throw failure;
         }
     }
 
