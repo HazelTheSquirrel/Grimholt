@@ -80,4 +80,40 @@ class VanillaRegionManagerTest {
 
         manager.close();
     }
+    @Test
+    void chronosOwnsAutomaticRegionTickLifecycle() throws Exception {
+        try (var chronos = new dev.grimholt.server.runtime.ChronosRegionScheduler(2, 16, 10);
+             var manager = new VanillaRegionManager(16, chronos, throwable -> fail(throwable))) {
+            UUID world = UUID.randomUUID();
+            VanillaRegionRuntime runtime = manager.region(world, 0, 0);
+            manager.startChronos();
+
+            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(2);
+            while (runtime.game().tickCount() == 0 && System.nanoTime() < deadline) {
+                Thread.sleep(5);
+            }
+
+            assertTrue(runtime.game().tickCount() > 0,
+                    "Chronos should tick registered regions without an external tickAll loop");
+            assertThrows(IllegalStateException.class, manager::tickAll,
+                    "a Chronos-backed manager must not be double-driven by tickAll");
+        }
+    }
+
+    @Test
+    void ownedTickDrainsHandoffsAndRunsGameplayUnderTheSameOwnerScope() {
+        ArrayDeque<Runnable> queue = new ArrayDeque<>();
+        VanillaRegionManager manager = new VanillaRegionManager(16, queue::add, throwable -> fail(throwable));
+        VanillaRegionRuntime runtime = manager.region(UUID.randomUUID(), 0, 0);
+
+        runtime.owner().execute(() -> fail("handoff should not execute before the region tick"));
+        assertEquals(1, queue.size());
+        // Run the scheduled owner drain with the gameplay tick attached to the same ownership scope.
+        queue.remove().run();
+        runtime.tickOwned();
+
+        assertEquals(1L, runtime.game().tickCount());
+        manager.close();
+    }
+
 }
