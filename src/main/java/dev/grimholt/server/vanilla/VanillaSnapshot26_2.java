@@ -4,21 +4,19 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * Exact target contract for Minecraft Java Edition 26.4-snapshot-3.
- *
- * <p>The values are pinned to the Mojang server.jar supplied by the official
- * manifest/object URL. Generated data must come from that exact reference.</p>
+ * @deprecated Historical class name retained for source compatibility only.
+ * The target is Minecraft 26.4-snapshot-3; new code must use {@link VanillaSnapshot}.
  */
+@Deprecated(forRemoval = false)
 public final class VanillaSnapshot26_2 {
-    public static final String VERSION = "26.4-snapshot-3";
-    public static final int PROTOCOL = 1_073_742_165;
-    public static final int WORLD_DATA_VERSION = 5_122;
-    public static final String DATA_PACK_VERSION = "123.0";
-    public static final String RESOURCE_PACK_VERSION = "100.0";
-    public static final int JAVA_MAJOR = 25;
-    public static final String SERVER_SHA1 = "2d89c95c030e635387448f332961074ce1adbb4b";
-    public static final String SERVER_URL =
-            "https://piston-data.mojang.com/v1/objects/2d89c95c030e635387448f332961074ce1adbb4b/server.jar";
+    public static final String VERSION = VanillaSnapshot.VERSION;
+    public static final int PROTOCOL = VanillaSnapshot.PROTOCOL;
+    public static final int WORLD_DATA_VERSION = VanillaSnapshot.WORLD_DATA_VERSION;
+    public static final String DATA_PACK_VERSION = VanillaSnapshot.DATA_PACK_VERSION;
+    public static final String RESOURCE_PACK_VERSION = VanillaSnapshot.RESOURCE_PACK_VERSION;
+    public static final int JAVA_MAJOR = VanillaSnapshot.JAVA_MAJOR;
+    public static final String SERVER_SHA1 = VanillaSnapshot.SERVER_SHA1;
+    public static final String SERVER_URL = VanillaSnapshot.SERVER_URL;
 
     private VanillaSnapshot26_2() {}
 
