@@ -118,8 +118,9 @@ public final class Grimholt {
         } catch (Throwable failure) {
             lifecycle.failed();
             try { plugins.disableAll(); } catch (Throwable x) { failure.addSuppressed(x); }
-            try { regionTicks.close(); } catch (Throwable x) { failure.addSuppressed(x); }
+            // Stop ingress and sessions before shutting down the region workers they may use.
             try { network.close(); } catch (Throwable x) { failure.addSuppressed(x); }
+            try { regionTicks.close(); } catch (Throwable x) { failure.addSuppressed(x); }
             try { vanillaKernel.stop(); } catch (Throwable x) { failure.addSuppressed(x); }
             scheduler.close();
             Logging.failure(failure);
@@ -134,9 +135,9 @@ public final class Grimholt {
             if (s == LifecycleState.FAILED) {
                 try { plugins.disableAll(); }
                 finally {
-                    try { regionTicks.close(); }
+                    try { network.close(); }
                     finally {
-                        try { network.close(); }
+                        try { regionTicks.close(); }
                         finally { try { vanillaKernel.stop(); } finally { scheduler.close(); } }
                     }
                 }
@@ -149,10 +150,10 @@ public final class Grimholt {
         Logging.shutdownStage("begin plugins");
         try { plugins.disableAll(); } catch (Throwable x) { failure = x; }
         Logging.shutdownStage("plugins");
-        try { regionTicks.close(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
-        Logging.shutdownStage("region tick engine");
         try { network.close(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
         Logging.shutdownStage("network");
+        try { regionTicks.close(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
+        Logging.shutdownStage("region tick engine");
         try { vanillaKernel.stop(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
         Logging.shutdownStage("vanilla kernel");
         scheduler.close();
