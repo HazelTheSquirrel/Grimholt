@@ -9,7 +9,7 @@ import java.security.*;
 import java.util.UUID;
 import javax.crypto.Cipher;
 
-/** Grimholt-owned 26.2 online-mode authentication primitives. */
+/** Grimholt-owned Minecraft 26.4 Snapshot 3 online-mode authentication primitives. */
 public final class GrimholtOnlineAuthentication {
     private static final URI HAS_JOINED = URI.create("https://sessionserver.mojang.com/session/minecraft/hasJoined");
     private final KeyPair keyPair;
@@ -60,9 +60,19 @@ public final class GrimholtOnlineAuthentication {
             String body = response.body();
             String name = jsonString(body, "name");
             String id = jsonString(body, "id");
-            if (name == null || id == null || !name.equalsIgnoreCase(username))
-                throw new IOException("Mojang session response did not verify username");
-            return new AuthenticatedProfile(name, parseUuid(id));
+            if (name == null || id == null || !name.equalsIgnoreCase(username)) {
+                // Do not log or include the full response: it can contain profile properties.
+                throw new IOException("Mojang session response did not verify username "
+                        + "(namePresent=" + (name != null)
+                        + ", idPresent=" + (id != null)
+                        + ", usernameMatched=" + (name != null && name.equalsIgnoreCase(username))
+                        + ", responseBytes=" + body.getBytes(StandardCharsets.UTF_8).length + ")");
+            }
+            try {
+                return new AuthenticatedProfile(name, parseUuid(id));
+            } catch (IllegalArgumentException malformedUuid) {
+                throw new IOException("Mojang session response contained an invalid profile UUID", malformedUuid);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Mojang session verification interrupted", e);
