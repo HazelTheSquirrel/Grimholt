@@ -30,10 +30,28 @@ public final class VanillaNbt {
         }
     }
 
+    private static final int MAX_INPUT_BYTES = 64 * 1024 * 1024;
+    private static final int MAX_DEPTH = 64;
+    private static final int MAX_TAGS = 1_000_000;
+    private static final int MAX_COLLECTION_LENGTH = 1_000_000;
+
+    private static final class DecodeBudget {
+        private int tags;
+        void tag(int depth) throws IOException {
+            if (depth > MAX_DEPTH) throw new IOException("NBT nesting exceeds " + MAX_DEPTH);
+            if (++tags > MAX_TAGS) throw new IOException("NBT tag count exceeds " + MAX_TAGS);
+        }
+    }
+
     public static Tag read(byte[] bytes) {
         requireNonNull(bytes, "bytes");
+        if (bytes.length > MAX_INPUT_BYTES) throw new IllegalArgumentException("NBT input exceeds " + MAX_INPUT_BYTES + " bytes");
         try {
-            return readTag(new DataInputStream(new ByteArrayInputStream(bytes)));
+            DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
+            Tag root = readTag(in, new DecodeBudget(), 0);
+            if (root.type() != COMPOUND) throw new IOException("NBT root must be a compound");
+            if (in.available() != 0) throw new IOException("Trailing bytes after root NBT compound");
+            return root;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -100,14 +118,16 @@ public final class VanillaNbt {
         }
     }
 
-    private static Tag readTag(DataInputStream in) throws IOException {
+    private static Tag readTag(DataInputStream in, DecodeBudget budget, int depth) throws IOException {
         byte type = in.readByte();
         if (type == END) return new Tag(END, null);
+        validateType(type);
         readUtf(in); // Root/compound entry names are structural; callers receive the value tree.
-        return new Tag(type, readPayload(in, type));
+        return new Tag(type, readPayload(in, type, budget, depth));
     }
 
-    private static Object readPayload(DataInputStream in, byte type) throws IOException {
+    private static Object readPayload(DataInputStream in, byte type, DecodeBudget budget, int depth) throws IOException {
+        budget.tag(depth);
         return switch (type) {
             case BYTE -> in.readByte();
             case SHORT -> in.readShort();
@@ -117,15 +137,18 @@ public final class VanillaNbt {
             case DOUBLE -> in.readDouble();
             case BYTE_ARRAY -> {
                 int length = checkedLength(in.readInt());
-                yield in.readNBytes(length);
+                byte[] values = in.readNBytes(length);
+                if (values.length != length) throw new EOFException("Truncated NBT byte array");
+                yield values;
             }
             case STRING -> readUtf(in);
             case LIST -> {
                 byte elementType = in.readByte();
-                if (elementType == END) throw new IOException("TAG_End is invalid as a list element type");
+                validateType(elementType);
                 int length = checkedLength(in.readInt());
+                if (elementType == END && length != 0) throw new IOException("TAG_End list must be empty");
                 List<Tag> values = new ArrayList<>(length);
-                for (int i = 0; i < length; i++) values.add(new Tag(elementType, readPayload(in, elementType)));
+                for (int i = 0; i < length; i++) values.add(new Tag(elementType, readPayload(in, elementType, budget, depth + 1)));
                 yield new ListValue(elementType, List.copyOf(values));
             }
             case COMPOUND -> {
@@ -133,8 +156,9 @@ public final class VanillaNbt {
                 while (true) {
                     byte entryType = in.readByte();
                     if (entryType == END) break;
+                    validateType(entryType);
                     String name = readUtf(in);
-                    values.put(name, new Tag(entryType, readPayload(in, entryType)));
+                    values.put(name, new Tag(entryType, readPayload(in, entryType, budget, depth + 1)));
                 }
                 yield Map.copyOf(values);
             }
@@ -155,8 +179,12 @@ public final class VanillaNbt {
     }
 
     private static int checkedLength(int length) throws IOException {
-        if (length < 0 || length > 16_777_216) throw new IOException("Invalid NBT array/list length: " + length);
+        if (length < 0 || length > MAX_COLLECTION_LENGTH) throw new IOException("Invalid NBT array/list length: " + length);
         return length;
+    }
+
+    private static void validateType(byte type) throws IOException {
+        if (type < END || type > LONG_ARRAY) throw new IOException("Unknown NBT tag type " + type);
     }
 
     private static void writeUtf(DataOutputStream out, String value) throws IOException {
@@ -170,6 +198,13 @@ public final class VanillaNbt {
         int length = in.readUnsignedShort();
         byte[] bytes = in.readNBytes(length);
         if (bytes.length != length) throw new EOFException("Truncated NBT UTF-8 string");
-        return new String(bytes, StandardCharsets.UTF_8);
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                    .decode(java.nio.ByteBuffer.wrap(bytes)).toString();
+        } catch (java.nio.charset.CharacterCodingException malformed) {
+            throw new UTFDataFormatException("Malformed UTF-8 in NBT string");
+        }
     }
 }
