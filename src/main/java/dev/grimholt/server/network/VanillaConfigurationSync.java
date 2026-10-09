@@ -180,22 +180,23 @@ public final class VanillaConfigurationSync {
         int slash = rest.indexOf('/');
         if (slash < 0) return null;
         return switch (rest.substring(0, slash)) {
-            case "blocks" -> "minecraft:block";
-            case "items" -> "minecraft:item";
-            case "fluids" -> "minecraft:fluid";
-            case "entity_types" -> "minecraft:entity_type";
-            case "game_events" -> "minecraft:game_event";
+            // Mojang's data-pack directories use singular registry names.
+            case "block", "blocks" -> "minecraft:block";
+            case "item", "items" -> "minecraft:item";
+            case "fluid", "fluids" -> "minecraft:fluid";
+            case "entity_type", "entity_types" -> "minecraft:entity_type";
+            case "game_event", "game_events" -> "minecraft:game_event";
             default -> null;
         };
     }
 
     private static String registryPath(String registry) {
         return switch (registry) {
-            case "minecraft:block" -> "blocks";
-            case "minecraft:item" -> "items";
-            case "minecraft:fluid" -> "fluids";
-            case "minecraft:entity_type" -> "entity_types";
-            case "minecraft:game_event" -> "game_events";
+            case "minecraft:block" -> "block";
+            case "minecraft:item" -> "item";
+            case "minecraft:fluid" -> "fluid";
+            case "minecraft:entity_type" -> "entity_type";
+            case "minecraft:game_event" -> "game_event";
             default -> "";
         };
     }
@@ -232,16 +233,28 @@ public final class VanillaConfigurationSync {
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 VanillaProtocolCodec.writeIdentifier(out, registryId);
-                List<String> names = entries.keySet().stream()
-                        .filter(String.class::isInstance)
-                        .map(String.class::cast)
-                        .filter(name -> name.startsWith("minecraft:"))
-                        .sorted()
-                        .toList();
+                // The wire order defines the client's numeric registry IDs. Never
+                // alphabetically sort registry keys: preserve Mojang's protocol_id order.
+                List<Map.Entry<String, Integer>> orderedEntries = new ArrayList<>();
+                for (var entry : entries.entrySet()) {
+                    if (!(entry.getKey() instanceof String name)
+                            || !(entry.getValue() instanceof Map<?, ?> metadata)
+                            || !(metadata.get("protocol_id") instanceof Number protocolId)) {
+                        continue;
+                    }
+                    orderedEntries.add(Map.entry(name, protocolId.intValue()));
+                }
+                orderedEntries.sort(Map.Entry.comparingByValue());
 
-                VanillaProtocol26_2.writeVarInt(out, names.size());
-                for (String name : names) {
-                    VanillaProtocolCodec.writeIdentifier(out, name);
+                if (orderedEntries.isEmpty()) {
+                    missing.add(registryId + " (no entries with protocol_id)");
+                    continue;
+                }
+                VanillaProtocol26_2.writeVarInt(out, orderedEntries.size());
+                for (var entry : orderedEntries) {
+                    VanillaProtocolCodec.writeIdentifier(out, entry.getKey());
+                    // The negotiated minecraft:core pack supplies the canonical vanilla
+                    // registry values on the client; this entry only establishes ordering.
                     VanillaProtocolCodec.writeBoolean(out, false);
                 }
                 packets.add(out.toByteArray());
@@ -250,12 +263,15 @@ public final class VanillaConfigurationSync {
             }
         }
 
+        if (!missing.isEmpty()) {
+            throw new IllegalStateException(
+                    "Incomplete Minecraft 26.4 registry synchronization; refusing to finish configuration. "
+                    + "Missing/malformed: " + String.join(", ", missing)
+                    + ". Verify the pinned reports/registries.json and the registry list against Snapshot 3.");
+        }
         if (packets.isEmpty()) {
             throw new IllegalStateException(
-                    "No 26.4 registry-data packets could be built. Checked "
-                    + SYNCHRONIZED_REGISTRIES.size() + " expected registries; missing/mismatched: "
-                    + String.join(", ", missing)
-                    + ". Check the generated reports/registries.json and the embedded vanilla/26.4 data.");
+                    "No 26.4 registry-data packets could be built from the generated reports/registries.json.");
         }
         if (packets.stream().allMatch(packet -> packet.length == 0)) {
             throw new IllegalStateException("Registry-data encoder produced only empty packets.");
