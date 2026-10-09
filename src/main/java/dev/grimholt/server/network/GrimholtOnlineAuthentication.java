@@ -72,12 +72,47 @@ public final class GrimholtOnlineAuthentication {
     public record AuthenticatedProfile(String username, UUID uuid) {}
 
     private static String jsonString(String json, String key) {
-        String marker = "\"" + key + "\":\"";
-        int start = json.indexOf(marker);
-        if (start < 0) return null;
-        start += marker.length();
-        int end = json.indexOf('"', start);
-        return end < 0 ? null : json.substring(start, end);
+        // JSON whitespace is insignificant; do not assume Mojang returns compact JSON.
+        int field = json.indexOf("\"" + key + "\"");
+        if (field < 0) return null;
+        int colon = json.indexOf(':', field + key.length() + 2);
+        if (colon < 0) return null;
+        int cursor = colon + 1;
+        while (cursor < json.length() && Character.isWhitespace(json.charAt(cursor))) cursor++;
+        if (cursor >= json.length() || json.charAt(cursor++) != '"') return null;
+
+        StringBuilder value = new StringBuilder();
+        while (cursor < json.length()) {
+            char ch = json.charAt(cursor++);
+            if (ch == '"') return value.toString();
+            if (ch != '\\') {
+                value.append(ch);
+                continue;
+            }
+            if (cursor >= json.length()) return null;
+            char escaped = json.charAt(cursor++);
+            switch (escaped) {
+                case '"' -> value.append('"');
+                case '\\' -> value.append('\\');
+                case '/' -> value.append('/');
+                case 'b' -> value.append('\b');
+                case 'f' -> value.append('\f');
+                case 'n' -> value.append('\n');
+                case 'r' -> value.append('\r');
+                case 't' -> value.append('\t');
+                case 'u' -> {
+                    if (cursor + 4 > json.length()) return null;
+                    try {
+                        value.append((char) Integer.parseInt(json.substring(cursor, cursor + 4), 16));
+                    } catch (NumberFormatException invalidEscape) {
+                        return null;
+                    }
+                    cursor += 4;
+                }
+                default -> { return null; }
+            }
+        }
+        return null;
     }
 
     private static UUID parseUuid(String id) {
