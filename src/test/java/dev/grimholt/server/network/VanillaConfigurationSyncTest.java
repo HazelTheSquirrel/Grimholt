@@ -22,9 +22,16 @@ final class VanillaConfigurationSyncTest {
     void registryPacketsPreserveMojangProtocolIdsAndAreComplete() throws Exception {
         VanillaGeneratedData generated = new VanillaGeneratedData();
         VanillaConfigurationSync sync = new VanillaConfigurationSync(generated);
-        List<byte[]> packets = sync.registryDataPackets();
         Map<String, Object> report = VanillaJson.object(
                 VanillaJson.parse(generated.require("reports/registries.json")));
+        List<byte[]> packets;
+        try {
+            packets = sync.registryDataPackets();
+        } catch (IllegalStateException failure) {
+            System.err.println("REGISTRY_SYNC_DIAGNOSTIC: " + failure.getMessage());
+            System.err.println("REGISTRY_REPORT_KEYS: " + report.keySet());
+            throw failure;
+        }
 
         assertTrue(packets.size() >= 20, "Expected the Snapshot 3 dynamic registry set");
         for (byte[] bytes : packets) {
