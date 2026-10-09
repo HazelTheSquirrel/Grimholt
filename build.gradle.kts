@@ -406,12 +406,6 @@ val standaloneSmoke by tasks.registering {
             javaExecutable.toString(), "-Xms128M", "-Xmx512M", "-jar",
             artifact.toAbsolutePath().toString(), config.toAbsolutePath().toString()
         ).directory(work.toFile()).redirectErrorStream(true)
-        // JVM option environment variables can silently inject -Xrs (reduced
-        // signal usage), which makes SIGTERM terminate the child without running
-        // Java shutdown hooks. Keep signal semantics deterministic in this test.
-        launcher.environment().remove("JAVA_TOOL_OPTIONS")
-        launcher.environment().remove("JDK_JAVA_OPTIONS")
-        launcher.environment().remove("_JAVA_OPTIONS")
         val process = launcher.start()
         val output = StringBuilder()
         val reader = Thread {
@@ -440,11 +434,13 @@ val standaloneSmoke by tasks.registering {
             reader.join(2000)
             error("Grimholt standalone JAR did not reach ready state. Output:\n$output")
         }
-        // The readiness line is emitted at the end of start(); allow main() to
-        // return before requesting JVM shutdown, avoiding a race with its
-        // synchronized startup lifecycle method.
+        // Use Grimholt's explicit console command rather than depending on
+        // SIGTERM handling, which varies across JVM launchers and CI hosts.
         Thread.sleep(500)
-        process.destroy()
+        process.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+            writer.write("stop\n")
+            writer.flush()
+        }
         if (!process.waitFor(15, TimeUnit.SECONDS)) {
             process.destroyForcibly()
             process.waitFor(10, TimeUnit.SECONDS)
