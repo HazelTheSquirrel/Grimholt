@@ -36,6 +36,8 @@ public final class ChronosRegionScheduler implements AutoCloseable {
     private final AtomicBoolean started = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicLong epochs = new AtomicLong();
+    private final AtomicLong nextDeadlineNanos = new AtomicLong();
+    private final LongAdder missedClockPeriods = new LongAdder();
     private final LongAdder submittedTicks = new LongAdder();
     private final LongAdder completedTicks = new LongAdder();
     private final LongAdder skippedBusyTicks = new LongAdder();
@@ -89,7 +91,38 @@ public final class ChronosRegionScheduler implements AutoCloseable {
     public void start() {
         if (closed.get()) throw new IllegalStateException("Chronos is closed");
         if (!started.compareAndSet(false, true)) return;
-        clock.scheduleAtFixedRate(this::dispatchEpoch, 0L, tickMillis, TimeUnit.MILLISECONDS);
+        long now = System.nanoTime();
+        nextDeadlineNanos.set(now);
+        scheduleClock(0L);
+    }
+
+    /**
+     * Runs one epoch and schedules the next absolute deadline. If dispatch itself
+     * falls behind, expired periods are counted and skipped instead of replayed
+     * immediately as a catch-up burst.
+     */
+    private void runClock() {
+        if (closed.get()) return;
+        long period = TimeUnit.MILLISECONDS.toNanos(tickMillis);
+        long deadline = nextDeadlineNanos.get();
+        long now = System.nanoTime();
+        if (now > deadline) {
+            long missed = (now - deadline) / period;
+            if (missed > 0) {
+                missedClockPeriods.add(missed);
+                deadline += missed * period;
+            }
+        }
+        dispatchEpoch();
+        long next = deadline + period;
+        nextDeadlineNanos.set(next);
+        scheduleClock(Math.max(0L, next - System.nanoTime()));
+    }
+
+    private void scheduleClock(long delayNanos) {
+        if (!closed.get()) {
+            clock.schedule(this::runClock, delayNanos, TimeUnit.NANOSECONDS);
+        }
     }
 
     /** Manual dispatch hook for deterministic tests and controlled server orchestration. */
@@ -148,7 +181,7 @@ public final class ChronosRegionScheduler implements AutoCloseable {
         return new Metrics(epochs.get(), regions.size(), workerCount(), activeWorkers(),
                 queuedTasks(), submittedTicks.sum(), completedTicks.sum(),
                 skippedBusyTicks.sum(), rejectedTicks.sum(), failedTicks.sum(),
-                totalTickNanos.sum());
+                missedClockPeriods.sum(), totalTickNanos.sum());
     }
 
     public RegionMetrics metrics(String regionId) {
@@ -185,7 +218,8 @@ public final class ChronosRegionScheduler implements AutoCloseable {
 
     public record Metrics(long epoch, int regions, int workers, int activeWorkers, int queuedTasks,
                           long submittedTicks, long completedTicks, long skippedBusyTicks,
-                          long rejectedTicks, long failedTicks, long totalTickNanos) {}
+                          long rejectedTicks, long failedTicks, long missedClockPeriods,
+                          long totalTickNanos) {}
 
     public record RegionMetrics(String regionId, long completedTicks, long skippedBusyTicks,
                                 long rejectedTicks, long failedTicks, long lastDurationNanos,
