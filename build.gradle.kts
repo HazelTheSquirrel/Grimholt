@@ -5,6 +5,7 @@ import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+import java.util.zip.ZipFile
 
 plugins {
     java
@@ -341,7 +342,7 @@ val forkIntegrityAudit by tasks.registering {
 
         val artifact = standaloneJar.get().archiveFile.get().asFile.toPath()
         check(Files.isRegularFile(artifact)) { "Standalone artifact missing: " + artifact }
-        java.util.zip.ZipFile(artifact.toFile()).use { zip ->
+        ZipFile(artifact.toFile()).use { zip ->
             val entries = zip.entries().asSequence().map { it.name }.toList()
             val forbiddenPrefixes = forbiddenRoots.map { it.replace('.', '/') + "/" }
             val forbiddenEntries = entries.filter { entry ->
