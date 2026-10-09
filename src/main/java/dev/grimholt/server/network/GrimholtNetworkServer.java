@@ -4,6 +4,7 @@ import dev.grimholt.server.api.GrimholtServerImpl;
 import dev.grimholt.server.command.GrimholtCommandDispatcher;
 import dev.grimholt.server.config.GrimholtConfig;
 import dev.grimholt.server.vanilla.*;
+import dev.grimholt.server.logging.Logging;
 import java.io.IOException;
 import java.net.*;
 import java.util.Set;
@@ -65,9 +66,7 @@ public final class GrimholtNetworkServer implements AutoCloseable {
                 try {
                     client = socket.accept();
                 } catch (IOException failure) {
-                    if (running) {
-                        // A listener failure is fatal; a per-client failure below is not.
-                    }
+                    if (running) Logging.networkFailure(failure);
                     break;
                 }
 
@@ -86,6 +85,7 @@ public final class GrimholtNetworkServer implements AutoCloseable {
                     GrimholtConnection accepted = connection;
                     Thread.ofVirtual().name("Grimholt-Connection").start(accepted::run);
                 } catch (IOException | RuntimeException failure) {
+                    Logging.connectionFailure(String.valueOf(client.getRemoteSocketAddress()), "ACCEPT", failure);
                     if (connection != null) {
                         connections.remove(connection);
                         connection.close();

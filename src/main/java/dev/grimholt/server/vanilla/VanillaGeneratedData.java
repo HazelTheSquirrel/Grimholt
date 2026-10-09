@@ -29,16 +29,43 @@ public final class VanillaGeneratedData {
     }
 
     public boolean available() {
-        if (filesystemRoot != null && Files.isDirectory(filesystemRoot)) {
-            return Files.isRegularFile(filesystemRoot.resolve("manifest.properties"))
-                && Files.isRegularFile(filesystemRoot.resolve("reports/blocks.json"));
-        }
-        try (InputStream manifest = classLoader.getResourceAsStream(ROOT + "/manifest.properties");
-             InputStream blocks = classLoader.getResourceAsStream(ROOT + "/reports/blocks.json")) {
-            return manifest != null && blocks != null;
-        } catch (IOException e) {
+        try {
+            Properties manifest = new Properties();
+            try (InputStream in = open("manifest.properties")) {
+                if (in == null) return false;
+                manifest.load(in);
+            }
+            if (!VanillaSnapshot.VERSION.equals(manifest.getProperty("version"))
+                    || !Integer.toString(VanillaSnapshot.PROTOCOL).equals(manifest.getProperty("protocol"))
+                    || !Integer.toString(VanillaSnapshot.WORLD_DATA_VERSION).equals(manifest.getProperty("worldDataVersion"))
+                    || !VanillaSnapshot.DATA_PACK_VERSION.equals(manifest.getProperty("dataPackVersion"))
+                    || !VanillaSnapshot.RESOURCE_PACK_VERSION.equals(manifest.getProperty("resourcePackVersion"))
+                    || !Integer.toString(VanillaSnapshot.JAVA_MAJOR).equals(manifest.getProperty("javaMajor"))
+                    || !VanillaSnapshot.SERVER_SHA1.equals(manifest.getProperty("serverSha1"))
+                    || !"reference/minecraft/26.4/server.jar".equals(manifest.getProperty("serverPath"))) {
+                return false;
+            }
+            for (String required : List.of("reports/blocks.json", "reports/items.json",
+                    "reports/registries.json", "reports/packets.json", "reports/tag_files.json",
+                    "reports/SHA256SUMS")) {
+                try (InputStream in = open(required)) {
+                    if (in == null || in.read() == -1) return false;
+                }
+            }
+            return true;
+        } catch (IOException | RuntimeException e) {
             return false;
         }
+    }
+
+    private InputStream open(String relativePath) throws IOException {
+        if (filesystemRoot != null) {
+            Path root = filesystemRoot.toAbsolutePath().normalize();
+            Path path = root.resolve(relativePath).normalize();
+            if (!path.startsWith(root)) throw new IllegalArgumentException("Path escapes data root");
+            return Files.isRegularFile(path) ? Files.newInputStream(path) : null;
+        }
+        return classLoader.getResourceAsStream(ROOT + "/" + relativePath);
     }
 
     public void requireAvailable() {
@@ -52,8 +79,9 @@ public final class VanillaGeneratedData {
     public Optional<String> read(String relativePath) {
         Objects.requireNonNull(relativePath, "relativePath");
         if (filesystemRoot != null) {
-            Path p = filesystemRoot.resolve(relativePath).normalize();
-            if (!p.startsWith(filesystemRoot.normalize())) throw new IllegalArgumentException("Path escapes data root");
+            Path root = filesystemRoot.toAbsolutePath().normalize();
+            Path p = root.resolve(relativePath).normalize();
+            if (!p.startsWith(root)) throw new IllegalArgumentException("Path escapes data root");
             try {
                 if (Files.isRegularFile(p)) return Optional.of(Files.readString(p, StandardCharsets.UTF_8));
             } catch (IOException e) {

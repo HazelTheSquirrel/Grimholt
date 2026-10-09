@@ -4,6 +4,7 @@ import dev.grimholt.api.*;
 import dev.grimholt.server.api.GrimholtServerImpl;
 import dev.grimholt.server.command.GrimholtCommandDispatcher;
 import dev.grimholt.server.vanilla.*;
+import dev.grimholt.server.logging.Logging;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +60,9 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     }
 
     public void run() {
+        String remote = String.valueOf(socket.getRemoteSocketAddress());
+        Logging.connectionOpened(remote);
+        String closeReason = "peer disconnected";
         try {
             socket.setTcpNoDelay(true);
             while (!closing.get()) {
@@ -72,8 +76,15 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                 handle(frame);
             }
         } catch (EOFException ignored) {
-        } catch (IOException | RuntimeException ignored) {
+            closeReason = "peer disconnected";
+        } catch (java.net.SocketTimeoutException timeout) {
+            closeReason = "idle timeout";
+            Logging.connectionFailure(remote, state.name(), timeout);
+        } catch (IOException | RuntimeException failure) {
+            closeReason = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
+            Logging.connectionFailure(remote, state.name(), failure);
         } finally {
+            Logging.connectionClosed(remote, state.name(), closeReason);
             close();
         }
     }
@@ -402,7 +413,9 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             try {
                 String command = VanillaProtocolCodec.readString(new ByteArrayInputStream(frame.payload()), 32767);
                 commands.execute(this, command);
-            } catch (IOException ignored) {}
+            } catch (IOException failure) {
+                Logging.connectionFailure(String.valueOf(socket.getRemoteSocketAddress()), state.name(), failure);
+            }
         }
     }
 
@@ -427,7 +440,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                         out -> VanillaProtocolCodec.writeString(out, "{\"text\":" + quote(reason) + "}", 32767));
                 close();
             } else close();
-        } catch (IOException ignored) {
+        } catch (IOException failure) {
+            Logging.connectionFailure(String.valueOf(socket.getRemoteSocketAddress()), state.name(), failure);
             close();
         }
     }
@@ -451,7 +465,9 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     private void sendBestEffortPlay(String packet, IOEncoder encoder) {
         try { send(VanillaProtocol.State.PLAY, packet, encoder); }
-        catch (IOException | RuntimeException ignored) {}
+        catch (IOException | RuntimeException failure) {
+            Logging.connectionFailure(String.valueOf(socket.getRemoteSocketAddress()), state.name(), failure);
+        }
     }
 
     private Optional<String> packetName(VanillaProtocol.State state,
