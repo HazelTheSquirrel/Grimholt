@@ -7,6 +7,9 @@ public final class Logging {
     private static final Logger LOGGER = Logger.getLogger("Grimholt");
     private Logging() { }
     public static void startup(String address, int port) { LOGGER.info(() -> "Starting Grimholt on " + address + ":" + port); }
+    public static void vanillaKernelReady(int worldCount) {
+        LOGGER.info(() -> "Vanilla kernel ready, world registered (worlds=" + worldCount + ")");
+    }
     public static void started() { LOGGER.info("Grimholt is running"); }
     public static void stopping() { LOGGER.info("Stopping Grimholt"); }
     public static void stopped() { LOGGER.info("Grimholt stopped"); }
