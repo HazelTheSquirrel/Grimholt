@@ -11,12 +11,14 @@ class PacketFrameDecoderTest {
     @Test void decodesMultipleFramesWithoutCopyingPayloads() throws IOException {
         byte[] input = {2, 0x10, 0x11, 1, 0x22};
         List<Integer> payloads = new ArrayList<>();
+        List<Integer> lengths = new ArrayList<>();
         int consumed = PacketFrameDecoder.decodeAvailable(input, 0, input.length, 16,
                 (buffer, offset, length) -> {
-                    assertEquals(1, length);
+                    lengths.add(length);
                     payloads.add(buffer[offset] & 0xff);
                 });
         assertEquals(input.length, consumed);
+        assertEquals(List.of(2, 1), lengths);
         assertEquals(List.of(0x10, 0x22), payloads);
     }
 
