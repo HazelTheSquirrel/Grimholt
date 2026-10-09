@@ -21,6 +21,37 @@ class VanillaGeneratedDataAuditTest {
         assertFalse(registries.isEmpty(), "Registry report must not be empty");
         assertFalse(packets.isEmpty(), "Packet report must not be empty");
 
+        // Protocol IDs are unique within each registry and packet direction/state.
+        for (var registry : registries.entrySet()) {
+            Map<String, Object> registryDefinition = VanillaJson.object(registry.getValue());
+            Object rawEntries = registryDefinition.get("entries");
+            if (!(rawEntries instanceof Map<?, ?> entries)) continue;
+            Set<Integer> ids = new HashSet<>();
+            for (var entry : entries.entrySet()) {
+                if (!(entry.getValue() instanceof Map<?, ?> metadata)) continue;
+                Object rawId = metadata.get("protocol_id");
+                if (!(rawId instanceof Number number)) continue;
+                int id = number.intValue();
+                assertTrue(id >= 0, "Negative registry ID in " + registry.getKey());
+                assertTrue(ids.add(id), "Duplicate registry ID " + id + " in " + registry.getKey());
+            }
+        }
+        for (var state : packets.entrySet()) {
+            Map<String, Object> directions = VanillaJson.object(state.getValue());
+            for (var direction : directions.entrySet()) {
+                Map<String, Object> definitions = VanillaJson.object(direction.getValue());
+                Set<Integer> ids = new HashSet<>();
+                for (var packet : definitions.entrySet()) {
+                    Map<String, Object> definition = VanillaJson.object(packet.getValue());
+                    Object rawId = definition.get("protocol_id");
+                    if (!(rawId instanceof Number number)) continue;
+                    int id = number.intValue();
+                    assertTrue(id >= 0, "Negative packet ID in " + state.getKey() + "/" + direction.getKey());
+                    assertTrue(ids.add(id), "Duplicate packet ID " + id + " in " + state.getKey() + "/" + direction.getKey());
+                }
+            }
+        }
+
         // Detect duplicate state IDs and malformed/missing block identifiers before
         // the generated report can become a runtime palette source.
         Set<Integer> stateIds = new HashSet<>();
