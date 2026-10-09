@@ -1,6 +1,6 @@
 package dev.grimholt.server.network;
 
-import dev.grimholt.server.vanilla.VanillaProtocol26_2;
+import dev.grimholt.server.vanilla.VanillaProtocol;
 import java.io.*;
 import java.net.Socket;
 import java.util.Objects;
@@ -19,12 +19,12 @@ public final class GrimholtPacketTransport implements Closeable {
         this.maxFrameBytes = maxFrameBytes;
     }
 
-    public VanillaProtocol26_2.Frame read() throws IOException {
-        return VanillaProtocol26_2.decodeFrame(input, maxFrameBytes, compressionThreshold);
+    public VanillaProtocol.Frame read() throws IOException {
+        return VanillaProtocol.decodeFrame(input, maxFrameBytes, compressionThreshold);
     }
 
-    public synchronized void write(VanillaProtocol26_2.Frame frame) throws IOException {
-        output.write(VanillaProtocol26_2.encodeFrame(frame, compressionThreshold, maxFrameBytes));
+    public synchronized void write(VanillaProtocol.Frame frame) throws IOException {
+        output.write(VanillaProtocol.encodeFrame(frame, compressionThreshold, maxFrameBytes));
         output.flush();
     }
 
