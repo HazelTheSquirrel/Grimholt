@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,40 +17,29 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class VanillaConfigurationSyncTest {
     @Test
-    void registryPacketsPreserveMojangProtocolIdsAndAreComplete() throws Exception {
+    void registryPacketsUsePinnedDataPackEntriesAndStableOrdering() throws Exception {
         VanillaGeneratedData generated = new VanillaGeneratedData();
         VanillaConfigurationSync sync = new VanillaConfigurationSync(generated);
         Map<String, Object> report = VanillaJson.object(
-                VanillaJson.parse(generated.require("reports/registries.json")));
-        List<byte[]> packets;
-        try {
-            packets = sync.registryDataPackets();
-        } catch (IllegalStateException failure) {
-            System.err.println("REGISTRY_SYNC_DIAGNOSTIC: " + failure.getMessage());
-            System.err.println("REGISTRY_REPORT_KEYS: " + report.keySet());
-            throw failure;
-        }
+                VanillaJson.parse(generated.require("reports/registry_entries.json")));
+        List<byte[]> packets = sync.registryDataPackets();
 
         assertTrue(packets.size() >= 20, "Expected the Snapshot 3 dynamic registry set");
         for (byte[] bytes : packets) {
             ByteArrayInputStream in = new ByteArrayInputStream(bytes);
             String registryId = VanillaProtocolCodec.readIdentifier(in);
             int count = VanillaProtocol.readVarInt(in);
-            Map<?, ?> registry = (Map<?, ?>) report.get(registryId);
-            Map<?, ?> entries = (Map<?, ?>) registry.get("entries");
-            List<Map.Entry<String, Integer>> expected = new ArrayList<>();
-            for (var entry : entries.entrySet()) {
-                if (entry.getKey() instanceof String key && entry.getValue() instanceof Map<?, ?> metadata
-                        && metadata.get("protocol_id") instanceof Number id) {
-                    expected.add(Map.entry(key, id.intValue()));
-                }
-            }
-            expected.sort(Comparator.comparingInt(Map.Entry::getValue));
+            List<?> rawEntries = (List<?>) report.get(registryId);
+            List<String> expected = rawEntries.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .sorted()
+                    .toList();
             assertEquals(expected.size(), count, registryId + " entry count");
 
-            for (Map.Entry<String, Integer> entry : expected) {
-                assertEquals(entry.getKey(), VanillaProtocolCodec.readIdentifier(in),
-                        registryId + " registry entries must follow Mojang protocol_id order");
+            for (String entry : expected) {
+                assertEquals(entry, VanillaProtocolCodec.readIdentifier(in),
+                        registryId + " entries must match the sorted pinned data-pack index");
                 assertFalse(VanillaProtocolCodec.readBoolean(in),
                         "The negotiated core pack owns vanilla registry NBT values");
             }
