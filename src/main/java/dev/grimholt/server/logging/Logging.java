@@ -18,6 +18,10 @@ public final class Logging {
         LOGGER.info(() -> "Minecraft connection closed: remote=" + remoteAddress
                 + ", state=" + state + ", reason=" + reason);
     }
+    public static void connectionProtocol(String remoteAddress, String state, String detail) {
+        LOGGER.info(() -> "Minecraft protocol: remote=" + remoteAddress
+                + ", state=" + state + ", " + detail);
+    }
     public static void connectionFailure(String remoteAddress, String state, Throwable throwable) {
         LOGGER.log(Level.WARNING, "Minecraft connection failed: remote=" + remoteAddress
                 + ", state=" + state + ", reason=" + throwable.getMessage(), throwable);
