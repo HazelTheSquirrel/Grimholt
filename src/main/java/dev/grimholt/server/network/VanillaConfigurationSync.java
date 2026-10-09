@@ -135,8 +135,9 @@ public final class VanillaConfigurationSync {
                 Map<String,Integer> ids = registryIds(registry);
                 Map<String,List<String>> tags = registryEntry.getValue();
                 Map<String,List<String>> expanded = new LinkedHashMap<>();
+                Map<String,List<String>> resolvedCache = new HashMap<>();
                 for (String tagId : tags.keySet()) {
-                    expanded.put(tagId, resolveTag(tagId, tags, new LinkedHashSet<>()));
+                    expanded.put(tagId, resolveTag(tagId, tags, new LinkedHashSet<>(), resolvedCache));
                 }
 
                 VanillaProtocolCodec.writeIdentifier(out, registry);
@@ -160,7 +161,10 @@ public final class VanillaConfigurationSync {
 
     private static List<String> resolveTag(String tagId,
                                             Map<String,List<String>> tags,
-                                            Set<String> visiting) {
+                                            Set<String> visiting,
+                                            Map<String,List<String>> cache) {
+        List<String> cached = cache.get(tagId);
+        if (cached != null) return cached;
         if (!visiting.add(tagId)) {
             throw new IllegalStateException("Cyclic vanilla tag reference: " + visiting + " -> " + tagId);
         }
@@ -169,13 +173,15 @@ public final class VanillaConfigurationSync {
             if (value.startsWith("#")) {
                 String nested = value.substring(1);
                 if (!nested.contains(":")) nested = "minecraft:" + nested;
-                result.addAll(resolveTag(nested, tags, visiting));
+                result.addAll(resolveTag(nested, tags, visiting, cache));
             } else {
                 result.add(value);
             }
         }
         visiting.remove(tagId);
-        return List.copyOf(result);
+        List<String> resolved = List.copyOf(result);
+        cache.put(tagId, resolved);
+        return resolved;
     }
 
     private Map<String,Integer> registryIds(String registry) {
