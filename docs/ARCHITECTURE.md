@@ -4,20 +4,21 @@
 
 ```
 Minecraft client
-  -> Minestom-derived networking / protocol / connection lifecycle (fork-owned source)
-  -> Grimholt session, gameplay and public API extensions
-  -> Minestom-derived world/chunk/entity primitives (fork-owned source)
-  -> Grimholt-owned region/tick scheduling and cross-owner handoff kernel
-  -> Plugins
+  -> Grimholt network and protocol runtime
+  -> session, authentication and packet state machines
+  -> region-parallel Chronos simulation kernel
+  -> world/chunk/entity state with explicit single-writer ownership
+  -> bounded cross-region handoffs and persistence workers
+  -> public API and plugins
 ```
 
-The target is a source-level Minestom fork. Minestom source is compiled inside Grimholt and becomes modifiable Grimholt-owned code; `net.minestom:minestom` must remain absent from the runtime dependency graph. The pinned Mojang server JAR is a reference oracle only. No Bukkit/Spigot/Paper/Folia/Purpur API is allowed. See `UPSTREAM.md` for the upstream commit, license obligations and update policy.
+Grimholt is an independent runtime, not an adapter over another Minecraft server implementation. The pinned Mojang server JAR is a reference oracle only. No Bukkit/Spigot/Paper/Folia/Purpur/NMS implementation is part of the runtime.
 
 ## Current reality
 
-The current branch is a transition baseline, not yet the completed source fork: it still contains native Grimholt-owned components for resource profiling, region/world abstractions, player state, protocol framing/packet codecs, command-tree support, authentication primitives, persistence helpers and selected gameplay models. The next architectural milestone is importing the pinned Minestom source tree into this repository and reconciling overlapping subsystems. The 26.4 handshake parser now validates packet ID, protocol, host, port, next state and trailing bytes.
+The current branch contains native Grimholt-owned components for resource profiling, region/world abstractions, player state, protocol framing/packet codecs, command-tree support, authentication primitives, persistence helpers and selected gameplay models. Chronos now exists as a bounded region-dispatch primitive, but is not yet the production tick engine. Its next milestone is integration with the region lifecycle as the single tick-dispatch path.
 
-These components do **not** establish complete runtime ownership or parity. Many protocol packets and codecs are incomplete; real client interoperability is not yet evidenced; world generation, lighting, item/inventory behavior, redstone/fluids, entity AI, dimensions, datapacks and full Anvil/player/block-entity persistence remain open. See `FORENSIC-PARITY-AUDIT.md`.
+These components do **not** establish complete runtime ownership or parity. Many protocol packets and codecs are incomplete; real client interoperability is not yet evidenced; world generation, lighting, item/inventory behavior, redstone/fluids, entity AI, dimensions, datapacks and full Anvil/player/block-entity persistence remain open. See FORENSIC-PARITY-AUDIT.md and CHRONOS.md.
 
 ## Ownership rules
 
