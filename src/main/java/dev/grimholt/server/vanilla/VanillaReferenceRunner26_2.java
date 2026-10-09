@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Runs the real Mojang 26.2 server supplied by the operator.
+ * Runs the pinned Mojang 26.4-snapshot-3 reference server for differential tests.
  * The jar is never embedded into Grimholt.
  */
 public final class VanillaReferenceRunner26_2 {
