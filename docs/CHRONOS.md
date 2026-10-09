@@ -55,5 +55,6 @@ Do not add a global barrier just for conceptual simplicity: a barrier makes the 
 ## Current status
 
 - Implemented: bounded Chronos dispatch primitive and unit tests for independent-region parallelism, busy-region coalescing, failure isolation, and invalid configuration.
-- Not yet implemented: production integration, causal handoff ordering across regions, dynamic load balancing, deterministic replay, comprehensive parity, or a validated 1,000-player benchmark.
-- Next engineering step: integrate Chronos with VanillaRegionManager as the single region-tick dispatch path and remove redundant scheduling only after existing ownership tests pass.
+- Implemented: production integration through `VanillaServerKernel` and `VanillaRegionManager`; duplicate global tick dispatch is rejected in Chronos mode. Accepted handoffs are retained when worker-queue scheduling is temporarily rejected, with a per-region scheduling-failure counter and regression test.
+- Not yet implemented: causal ordering across regions, dynamic load balancing, deterministic replay, comprehensive parity, or a validated 1,000-player benchmark.
+- Next engineering step: introduce explicit, bounded cross-region intents with stable source epoch/sequence metadata, then test ordering, duplicate suppression, shutdown cancellation, and overload behavior before wiring gameplay mutations through them.
