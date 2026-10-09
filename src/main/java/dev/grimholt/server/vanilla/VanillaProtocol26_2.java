@@ -6,13 +6,13 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Grimholt-owned Minecraft 26.4-snapshot-3 transport primitives.
+ * Grimholt-owned Minecraft 26.4-snapshot-3 transport primitives.\n * @deprecated Historical class name only; this code targets {@link VanillaSnapshot#VERSION}. New code should use neutral protocol abstractions.
  *
  * <p>Packet IDs/codecs remain data-driven from Mojang's generated packet report.
  * This class owns framing, VarInts and the optional zlib packet-compression layer.</p>
  */
 public final class VanillaProtocol26_2 {
-    public static final int PROTOCOL_VERSION = VanillaSnapshot26_2.PROTOCOL;
+    public static final int PROTOCOL_VERSION = VanillaSnapshot.PROTOCOL;
     public static final int MAX_VARINT_BYTES = 5;
 
     public enum State { HANDSHAKE, STATUS, LOGIN, CONFIGURATION, PLAY }
