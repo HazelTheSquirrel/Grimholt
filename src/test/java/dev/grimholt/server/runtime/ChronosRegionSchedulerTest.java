@@ -59,9 +59,14 @@ class ChronosRegionSchedulerTest {
                 region.onFailure(ignored -> failureReported.countDown());
                 scheduler.dispatchEpoch();
                 assertTrue(failureReported.await(2, TimeUnit.SECONDS));
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+                while (scheduler.metrics("faulty-region").inFlight()
+                        && System.nanoTime() < deadline) {
+                    Thread.onSpinWait();
+                }
                 scheduler.dispatchEpoch();
 
-                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+                deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
                 while (scheduler.metrics("faulty-region").completedTicks() < 1
                         && System.nanoTime() < deadline) {
                     Thread.onSpinWait();
