@@ -248,9 +248,20 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             List<byte[]> registryPackets = configuration.registryDataPackets();
             Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
                     "sending " + registryPackets.size() + " registry-data packet(s)");
-            for (byte[] registry : registryPackets) {
-                send(VanillaProtocol.State.CONFIGURATION, "minecraft:registry_data",
-                        out -> out.write(registry));
+            for (int index = 0; index < registryPackets.size(); index++) {
+                byte[] registry = registryPackets.get(index);
+                String registryId = registryPacketId(registry);
+                Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
+                        "sending registry-data " + (index + 1) + "/" + registryPackets.size()
+                                + ": registry=" + registryId + ", payloadBytes=" + registry.length);
+                try {
+                    send(VanillaProtocol.State.CONFIGURATION, "minecraft:registry_data",
+                            out -> out.write(registry));
+                } catch (IOException writeFailure) {
+                    throw new IOException("Client disconnected while sending registry-data "
+                            + (index + 1) + "/" + registryPackets.size() + " for " + registryId,
+                            writeFailure);
+                }
             }
             if (catalog.id(VanillaProtocol.State.CONFIGURATION,
                     VanillaProtocol.Direction.CLIENTBOUND, "minecraft:update_enabled_features").isPresent()) {
@@ -308,6 +319,14 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         }
 
         throw new IOException("Unsupported configuration packet: " + frame.packetId());
+    }
+
+    private static String registryPacketId(byte[] payload) {
+        try {
+            return VanillaProtocolCodec.readIdentifier(new ByteArrayInputStream(payload));
+        } catch (IOException malformed) {
+            return "<malformed-registry-packet>";
+        }
     }
 
     private void enterPlay() throws IOException {
