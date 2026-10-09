@@ -1,6 +1,6 @@
 # Grimholt
 
-Grimholt is an independent Minecraft Java server implementation in active development. The pinned behavior/protocol reference is **Minecraft Java Edition 26.4 Snapshot 3**.
+Grimholt is an independently maintained Minecraft Java server fork in active development, with Minestom's source architecture as its upstream foundation. The pinned behavior/protocol reference is **Minecraft Java Edition 26.4 Snapshot 3**.
 
 - Reference JAR: `reference/minecraft/26.4/server.jar`
 - SHA-1: `2d89c95c030e635387448f332961074ce1adbb4b`
@@ -10,7 +10,7 @@ Grimholt is an independent Minecraft Java server implementation in active develo
 
 ## Honest project status
 
-The repository has a Grimholt-owned Java kernel, public plugin API, command/network abstractions, protocol codecs, resource-budget logic, persistence utilities, generated-reference tooling and CI. The external `net.minestom:minestom` runtime dependency is absent from the Gradle runtime graph.
+The current `test` branch still contains the pre-fork Grimholt implementation and does not yet vendor Minestom's full source tree. The target is a source-level fork: Minestom code will live in Grimholt's repository, be compiled and changed here, and never be used as an external runtime dependency. See [`UPSTREAM.md`](UPSTREAM.md) for the pinned upstream provenance and fork rules.
 
 **Grimholt is not yet a complete or client-verified Minecraft server.** A protocol handshake test, successful compilation, or successful boot of Mojang's reference server does not prove Grimholt client interoperability, gameplay parity, world generation parity, or complete persistence. The outstanding work and release gates are tracked in [the completion work order](docs/MASTER-WORKPLAN.md) and [the forensic audit](docs/FORENSIC-PARITY-AUDIT.md).
 
@@ -42,9 +42,10 @@ The CI pipeline verifies the pinned reference checksum, runs tests, boots the Mo
 
 ## Non-negotiable rules
 
-1. Grimholt must own its runtime and public API; no external Minecraft server implementation is a runtime dependency.
+1. Grimholt must own and build its runtime from source in this repository; Minestom is an upstream source base, never an external runtime dependency.
 2. The Mojang JAR is a pinned reference/test input only and must never be bundled as Grimholt's implementation.
 3. A feature is complete only when runtime wiring and executable tests demonstrate it.
 4. Every concurrency-sensitive system needs an ownership contract, adversarial tests and bounded queues/backpressure.
 5. Do not claim 500–1000-player capacity until repeatable networked workload benchmarks demonstrate it.
 6. Keep the `test` branch as the active implementation line; do not silently change `main`.
+7. Preserve upstream license/NOTICE attribution and mark modified upstream files as required by Apache-2.0.
