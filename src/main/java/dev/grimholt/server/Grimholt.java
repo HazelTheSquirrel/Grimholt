@@ -60,10 +60,31 @@ public final class Grimholt {
             }
         }, "Grimholt-Shutdown"));
         server.start(configPath);
+        // Keep a real console control path in addition to the OS shutdown hook.
+        // This also lets service managers and smoke tests request an orderly stop
+        // without depending on platform-specific signal delivery to the JVM.
+        Thread console = new Thread(() -> {
+            try (var input = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(System.in, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = input.readLine()) != null) {
+                    if ("stop".equalsIgnoreCase(line.trim())) {
+                        try {
+                            server.stop();
+                        } finally {
+                            stopped.countDown();
+                        }
+                        return;
+                    }
+                }
+            } catch (java.io.IOException failure) {
+                Logging.failure(failure);
+            }
+        }, "Grimholt-Console");
+        console.setDaemon(true);
+        console.start();
         // Region workers, the tick clock and the socket acceptor are daemon
-        // threads. Keep the server process alive until an OS shutdown signal
-        // invokes the hook; otherwise main() would return and stop a healthy
-        // standalone server immediately after its ready message.
+        // threads. Keep main alive until the console or OS requests shutdown.
         System.err.println("Grimholt main waiting for shutdown signal");
         try {
             stopped.await();
