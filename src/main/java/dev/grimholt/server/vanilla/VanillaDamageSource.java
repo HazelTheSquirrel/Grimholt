@@ -1,6 +1,0 @@
-package dev.grimholt.server.vanilla;
-
-public enum VanillaDamageSource {
-    GENERIC, PLAYER_ATTACK, MOB_ATTACK, PROJECTILE, FALL, FIRE, LAVA, DROWNING,
-    FREEZE, POWDER_SNOW, SUFFOCATION, VOID, MAGIC, EXPLOSION, STARVATION, CACTUS
-}
