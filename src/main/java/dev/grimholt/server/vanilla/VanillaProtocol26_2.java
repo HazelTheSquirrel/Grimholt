@@ -6,7 +6,8 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Grimholt-owned Minecraft 26.4-snapshot-3 transport primitives.\n * @deprecated Historical class name only; this code targets {@link VanillaSnapshot#VERSION}. New code should use neutral protocol abstractions.
+ * Grimholt-owned Minecraft 26.4-snapshot-3 transport primitives.
+ * The legacy class name is retained temporarily; all version constants come from VanillaSnapshot.
  *
  * <p>Packet IDs/codecs remain data-driven from Mojang's generated packet report.
  * This class owns framing, VarInts and the optional zlib packet-compression layer.</p>
