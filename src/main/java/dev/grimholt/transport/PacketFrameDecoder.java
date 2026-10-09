@@ -1,28 +1,20 @@
 package dev.grimholt.transport;
 
 import dev.grimholt.protocol.VarInt;
-
 import java.io.IOException;
 import java.util.Objects;
 
-/**
- * Decodes length-prefixed packet frames from a caller-owned byte buffer.
- * Payload bytes are borrowed for the duration of the callback; no frame or payload copy is made.
- */
+/** Decodes length-prefixed frames from a caller-owned buffer without copying payloads. */
 public final class PacketFrameDecoder {
     private PacketFrameDecoder() { }
 
     @FunctionalInterface
     public interface FrameConsumer {
-        /** The payload view is valid only while the decoder's input buffer remains unchanged. */
+        /** The payload view is borrowed and must not be retained after this callback. */
         void accept(byte[] buffer, int offset, int length) throws IOException;
     }
 
-    /**
-     * Decodes as many complete frames as possible and returns bytes consumed.
-     * If the final frame is incomplete, its first byte is not consumed so the caller can retain it.
-     * Packet lengths are checked before invoking the consumer.
-     */
+    /** Returns the bytes consumed, leaving any incomplete final frame untouched. */
     public static int decodeAvailable(byte[] buffer, int offset, int available, int maxPacketLength,
                                       FrameConsumer consumer) throws IOException {
         Objects.requireNonNull(buffer, "buffer");
@@ -36,10 +28,11 @@ public final class PacketFrameDecoder {
         int cursor = offset;
         while (cursor < end) {
             int prefixStart = cursor;
+            int prefixLength = tryVarIntLength(buffer, prefixStart, end);
+            if (prefixLength == 0) return prefixStart - offset;
+            // Parse only after the prefix is complete; signed -1 is a valid VarInt value,
+            // so it must not double as the incomplete-input sentinel here.
             int packetLength = VarInt.read(buffer, prefixStart, end);
-            if (packetLength == -1) return prefixStart - offset;
-
-            int prefixLength = varIntLength(buffer, prefixStart, end);
             if (packetLength <= 0) throw new IOException("Packet frame length must be positive");
             if (packetLength > maxPacketLength) {
                 throw new IOException("Packet frame exceeds configured maximum: " + packetLength);
@@ -47,17 +40,23 @@ public final class PacketFrameDecoder {
             int payloadStart = prefixStart + prefixLength;
             // Subtraction avoids overflow from payloadStart + packetLength on hostile input.
             if (packetLength > end - payloadStart) return prefixStart - offset;
-
             consumer.accept(buffer, payloadStart, packetLength);
             cursor = payloadStart + packetLength;
         }
         return cursor - offset;
     }
 
-    private static int varIntLength(byte[] buffer, int offset, int limit) {
-        for (int cursor = offset; cursor < limit && cursor - offset < 5; cursor++) {
-            if ((buffer[cursor] & 0x80) == 0) return cursor - offset + 1;
+    /** Returns zero for a truncated prefix; rejects a fifth continuation byte. */
+    private static int tryVarIntLength(byte[] buffer, int offset, int limit) {
+        for (int index = 0; index < 5; index++) {
+            int cursor = offset + index;
+            if (cursor >= limit) return 0;
+            int current = buffer[cursor] & 0xff;
+            if (index == 4 && (current & 0x80) != 0) {
+                throw new IllegalArgumentException("Frame length VarInt exceeds five bytes");
+            }
+            if ((current & 0x80) == 0) return index + 1;
         }
-        throw new IllegalArgumentException("Incomplete or malformed frame length");
+        throw new IllegalArgumentException("Malformed frame length VarInt");
     }
 }

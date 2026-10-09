@@ -35,10 +35,13 @@ class PacketFrameDecoderTest {
                 (buffer, offset, length) -> { throw new AssertionError("No complete frame expected"); }));
     }
 
-    @Test void rejectsOversizedAndEmptyFramesBeforeDispatch() {
+    @Test void rejectsOversizedEmptyAndNegativeFramesBeforeDispatch() {
         assertThrows(IOException.class, () -> PacketFrameDecoder.decodeAvailable(new byte[]{17, 1}, 0, 2, 16,
                 (buffer, offset, length) -> { throw new AssertionError("Oversized frame dispatched"); }));
         assertThrows(IOException.class, () -> PacketFrameDecoder.decodeAvailable(new byte[]{0}, 0, 1, 16,
                 (buffer, offset, length) -> { throw new AssertionError("Empty frame dispatched"); }));
+        byte[] negativeLength = {(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, 0x0f};
+        assertThrows(IOException.class, () -> PacketFrameDecoder.decodeAvailable(negativeLength, 0, 5, 16,
+                (buffer, offset, length) -> { throw new AssertionError("Negative frame dispatched"); }));
     }
 }
