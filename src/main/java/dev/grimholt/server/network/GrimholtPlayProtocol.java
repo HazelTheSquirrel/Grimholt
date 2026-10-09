@@ -101,7 +101,9 @@ public final class GrimholtPlayProtocol {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             DataOutputStream data = new DataOutputStream(out);
-            data.writeByte(0x01 | 0x04 | 0x08 | 0x10 | 0x40 | 0x80);
+            // ADD_PLAYER, UPDATE_GAME_MODE, UPDATE_LISTED, UPDATE_LATENCY,
+            // UPDATE_DISPLAY_NAME, UPDATE_LIST_ORDER and UPDATE_HAT.
+            data.writeByte(0x01 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80);
             VanillaProtocol26_2.writeVarInt(data, 1);
             VanillaProtocolCodec.writeUuid(data, uuid);
             VanillaProtocolCodec.writeString(data, username, 16);
