@@ -1,5 +1,8 @@
 package dev.grimholt.server.vanilla;
 
+import java.nio.file.Path;
+import java.util.Objects;
+
 /**
  * Single source of truth for the exact Mojang Minecraft Java 26.4-snapshot-3
  * compatibility contract. Keep these values aligned with the pinned server JAR
@@ -18,4 +21,17 @@ public final class VanillaSnapshot {
             "https://piston-data.mojang.com/v1/objects/2d89c95c030e635387448f332961074ce1adbb4b/server.jar";
 
     private VanillaSnapshot() {}
+
+    public static Reference requireReference(Path jar) {
+        return new Reference(Objects.requireNonNull(jar), VERSION, PROTOCOL, WORLD_DATA_VERSION);
+    }
+
+    public record Reference(Path jar, String version, int protocol, int worldDataVersion) {
+        public Reference {
+            Objects.requireNonNull(jar, "jar");
+            if (!VERSION.equals(version) || protocol != PROTOCOL || worldDataVersion != WORLD_DATA_VERSION) {
+                throw new IllegalArgumentException("Reference is not Minecraft 26.4-snapshot-3");
+            }
+        }
+    }
 }
