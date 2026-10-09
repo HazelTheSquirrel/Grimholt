@@ -235,10 +235,17 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     private void handleConfiguration(VanillaProtocol.Frame frame) throws IOException {
         String name = packetName(VanillaProtocol.State.CONFIGURATION,
-                VanillaProtocol.Direction.SERVERBOUND, frame.packetId()).orElse("");
+                VanillaProtocol.Direction.SERVERBOUND, frame.packetId()).orElse("unknown");
+        Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
+                "received " + name + " (id=" + frame.packetId() + ", bytes=" + frame.payload().length + ")");
         if (name.contains("known_packs")) {
-            configuration.readKnownPacks(frame.payload());
-            for (byte[] registry : configuration.registryDataPackets()) {
+            Set<String> knownPacks = configuration.readKnownPacks(frame.payload());
+            Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
+                    "client known-packs response: " + knownPacks.size() + " pack(s)");
+            List<byte[]> registryPackets = configuration.registryDataPackets();
+            Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
+                    "sending " + registryPackets.size() + " registry-data packet(s)");
+            for (byte[] registry : registryPackets) {
                 send(VanillaProtocol.State.CONFIGURATION, "minecraft:registry_data",
                         out -> out.write(registry));
             }
@@ -257,6 +264,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                 }
             }
             send(VanillaProtocol.State.CONFIGURATION, "minecraft:finish_configuration", out -> {});
+            Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
+                    "sent finish_configuration; waiting for client acknowledgement");
             return;
         }
         if (name.equals("minecraft:finish_configuration") || name.contains("acknowledge_finish_configuration")) {
@@ -299,6 +308,8 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     }
 
     private void enterPlay() throws IOException {
+        Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), state.name(),
+                "client acknowledged finish_configuration; entering PLAY");
         state = ConnectionState.PLAY;
         kernel.registerPlayer(overworldId(), uuid).connect(username);
         kernel.updatePlayerPosition(overworldId(), uuid, position.x(), position.y(), position.z(),
@@ -463,6 +474,10 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     private void send(VanillaProtocol.State state, String packet, IOEncoder encoder) throws IOException {
         int id = catalog.requireId(state, VanillaProtocol.Direction.CLIENTBOUND, packet);
+        if (state == VanillaProtocol.State.CONFIGURATION) {
+            Logging.connectionProtocol(String.valueOf(socket.getRemoteSocketAddress()), this.state.name(),
+                    "sending " + packet + " (id=" + id + ")");
+        }
         ByteArrayOutputStream payload = new ByteArrayOutputStream();
         encoder.write(payload);
         transport.write(new VanillaProtocol.Frame(id, payload.toByteArray()));
