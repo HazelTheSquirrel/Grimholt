@@ -47,7 +47,7 @@ public final class VanillaGeneratedData {
             }
             for (String required : List.of("reports/blocks.json",
                     "reports/registries.json", "reports/packets.json", "reports/tag_files.json",
-                    "reports/SHA256SUMS")) {
+                    "reports/registry_entries.json", "reports/SHA256SUMS")) {
                 try (InputStream in = open(required)) {
                     if (in == null || in.read() == -1) return false;
                 }
