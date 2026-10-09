@@ -40,7 +40,9 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private volatile ConnectionState state = ConnectionState.HANDSHAKE;
     private volatile UUID uuid;
     private volatile String username;
-    private volatile Position position = new Position(0, 64, 0, 0, 0);
+    // Bootstrap terrain peaks at y=68; spawn a few blocks above it so the
+    // client can settle onto the generated surface instead of clipping into it.
+    private volatile Position position = new Position(0, 72, 0, 0, 0);
 
     public GrimholtConnection(Socket socket, GrimholtServerImpl server, GrimholtCommandDispatcher commands,
                               VanillaPacketCatalog catalog, VanillaGeneratedData generated,
