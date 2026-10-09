@@ -54,6 +54,7 @@ class VanillaRegionManagerTest {
             assertEquals("minecraft:bedrock",
                     chunk.block(new BlockPos(0, VanillaChunk.MIN_SECTION_Y * 16, 0)).id());
         });
+        queue.remove().run();
 
         manager.close();
     }
