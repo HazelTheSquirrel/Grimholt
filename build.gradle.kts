@@ -257,7 +257,7 @@ val generateVanilla26_4 by tasks.registering {
                 .map { file ->
                     val hash = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file))
                         .joinToString("") { "%02x".format(it) }
-                    "$hash  ${out.relativize(file).toString().replace('\\\\', '/')}"
+                    "$hash  ${out.relativize(file).toString().replace('\\', '/')}"
                 }
                 .toList()
         }
