@@ -71,7 +71,7 @@ public final class GrimholtOnlineAuthentication {
 
     public record AuthenticatedProfile(String username, UUID uuid) {}
 
-    private static String jsonString(String json, String key) {
+    static String jsonString(String json, String key) {
         // JSON whitespace is insignificant; do not assume Mojang returns compact JSON.
         int field = json.indexOf("\"" + key + "\"");
         if (field < 0) return null;
