@@ -28,10 +28,10 @@ public final class VanillaReferenceRunner26_2 {
             byte[] buffer = new byte[8192];
             for (int n; (n = in.read(buffer)) >= 0;) digest.update(buffer, 0, n);
             String actual = java.util.HexFormat.of().formatHex(digest.digest());
-            if (!VanillaSnapshot26_2.SERVER_SHA1.equals(actual)) {
+            if (!VanillaSnapshot.SERVER_SHA1.equals(actual)) {
                 throw new IllegalArgumentException(
                     "Reference jar SHA-1 mismatch: expected " +
-                    VanillaSnapshot26_2.SERVER_SHA1 + ", got " + actual);
+                    VanillaSnapshot.SERVER_SHA1 + ", got " + actual);
             }
         } catch (IOException | java.security.NoSuchAlgorithmException e) {
             throw new IllegalStateException("Cannot verify 26.2 reference jar", e);
