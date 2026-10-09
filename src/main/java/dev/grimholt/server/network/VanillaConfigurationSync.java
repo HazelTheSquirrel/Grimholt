@@ -208,16 +208,26 @@ public final class VanillaConfigurationSync {
      * future data-pack layer.
      */
     public List<byte[]> registryDataPackets() {
-        if (!generated.available()) return List.of();
+        // Never silently send finish_configuration when the generated registry
+        // report is unavailable: that creates a superficially successful login
+        // sequence which the vanilla client cannot complete.
+        generated.requireAvailable();
         Map<String,Object> root = VanillaJson.object(
                 VanillaJson.parse(generated.require("reports/registries.json")));
         List<byte[]> packets = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
 
         for (String registryId : SYNCHRONIZED_REGISTRIES) {
             Object raw = root.get(registryId);
-            if (!(raw instanceof Map<?,?> rawMap)) continue;
+            if (!(raw instanceof Map<?,?> rawMap)) {
+                missing.add(registryId + " (registry absent from report)");
+                continue;
+            }
             Object entriesValue = rawMap.get("entries");
-            if (!(entriesValue instanceof Map<?,?> entries)) continue;
+            if (!(entriesValue instanceof Map<?,?> entries)) {
+                missing.add(registryId + " (entries absent from report)");
+                continue;
+            }
 
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -238,6 +248,17 @@ public final class VanillaConfigurationSync {
             } catch (IOException e) {
                 throw new UncheckedIOException("Cannot encode registry " + registryId, e);
             }
+        }
+
+        if (packets.isEmpty()) {
+            throw new IllegalStateException(
+                    "No 26.4 registry-data packets could be built. Checked "
+                    + SYNCHRONIZED_REGISTRIES.size() + " expected registries; missing/mismatched: "
+                    + String.join(", ", missing)
+                    + ". Check the generated reports/registries.json and the embedded vanilla/26.4 data.");
+        }
+        if (packets.stream().allMatch(packet -> packet.length == 0)) {
+            throw new IllegalStateException("Registry-data encoder produced only empty packets.");
         }
         return List.copyOf(packets);
     }
