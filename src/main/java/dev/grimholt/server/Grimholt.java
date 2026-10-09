@@ -64,6 +64,7 @@ public final class Grimholt {
         // threads. Keep the server process alive until an OS shutdown signal
         // invokes the hook; otherwise main() would return and stop a healthy
         // standalone server immediately after its ready message.
+        System.err.println("Grimholt main waiting for shutdown signal");
         try {
             stopped.await();
         } catch (InterruptedException interrupted) {
