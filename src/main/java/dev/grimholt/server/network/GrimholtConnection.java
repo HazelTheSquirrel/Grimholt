@@ -91,12 +91,14 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
 
     private void handleStatus(VanillaProtocol26_2.Frame frame) throws IOException {
         if (frame.packetId() == 0) {
+            if (frame.payload().length != 0) throw new IOException("Status request packet must be empty");
             String json = "{\"version\":{\"name\":\"" + VanillaSnapshot26_2.VERSION + "\",\"protocol\":" + VanillaSnapshot26_2.PROTOCOL +
                     "},\"players\":{\"max\":" + server.maxPlayers() + ",\"online\":" + server.players().size() +
                     "},\"description\":{\"text\":\"Grimholt\"}}";
             send(VanillaProtocol26_2.State.STATUS, "minecraft:status_response",
                     out -> VanillaProtocolCodec.writeString(out, json, 32767));
         } else if (frame.packetId() == 1) {
+            if (frame.payload().length != Long.BYTES) throw new IOException("Ping packet must contain exactly 8 bytes");
             long payload = new DataInputStream(new ByteArrayInputStream(frame.payload())).readLong();
             send(VanillaProtocol26_2.State.STATUS, "minecraft:pong",
                     out -> new DataOutputStream(out).writeLong(payload));
@@ -107,7 +109,10 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
         if (frame.packetId() == 0) {
             ByteArrayInputStream in = new ByteArrayInputStream(frame.payload());
             username = VanillaProtocolCodec.readString(in, 16);
-            if (username.isBlank()) throw new IOException("Empty username");
+            if (!username.matches("[A-Za-z0-9_]{1,16}")) throw new IOException("Invalid Minecraft username");
+            if (in.available() != 0 && in.available() != 16) {
+                throw new IOException("Login start contains an invalid trailing UUID payload");
+            }
             if (server.players().size() >= server.maxPlayers()) {
                 closeWithLoginDisconnect("Server is full.");
                 return;
@@ -115,8 +120,9 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             if (onlineMode) {
                 sendEncryptionRequest();
             } else {
-                uuid = in.available() >= 16 ? VanillaProtocolCodec.readUuid(in)
-                        : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+                // Offline-mode identity is server-derived; never trust an optional
+                // client-supplied UUID to impersonate another offline player.
+                uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
                 authenticated = true;
                 enableLoginCompression();
                 sendLoginSuccess();
@@ -132,6 +138,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             return;
         }
         if (name.contains("login_acknowledged")) {
+            if (frame.payload().length != 0) throw new IOException("Login acknowledgement packet must be empty");
             if (!authenticated) throw new IOException("Login acknowledgement before authentication");
             state = ConnectionState.CONFIGURATION;
             sendConfigurationStart();
@@ -154,6 +161,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
             ByteArrayInputStream in = new ByteArrayInputStream(payload);
             byte[] encryptedSecret = VanillaProtocolCodec.readByteArray(in, 512);
             byte[] encryptedToken = VanillaProtocolCodec.readByteArray(in, 512);
+            if (in.available() != 0) throw new IOException("Trailing bytes in encryption response");
             byte[] secret = authentication.decryptRsa(encryptedSecret);
             byte[] token = authentication.decryptRsa(encryptedToken);
             if (!java.util.Arrays.equals(token, authentication.verifyToken()))
