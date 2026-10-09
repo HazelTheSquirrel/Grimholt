@@ -101,6 +101,7 @@ public final class Grimholt {
         }
         Logging.stopping();
         Throwable failure = null;
+        Logging.shutdownStage("begin plugins");
         try { plugins.disableAll(); } catch (Throwable x) { failure = x; }
         Logging.shutdownStage("plugins");
         try { regionTicks.close(); } catch (Throwable x) { if (failure == null) failure = x; else failure.addSuppressed(x); }
