@@ -4,20 +4,18 @@
 
 ```
 Minecraft client
-  -> Grimholt network / protocol / authentication
-  -> Grimholt connection and session state
-  -> Grimholt world, chunk, player and entity models
-  -> Grimholt-owned region/tick and cross-owner handoff kernel
-  -> Grimholt gameplay systems and data registries
-  -> Grimholt public plugin API
+  -> Minestom-derived networking / protocol / connection lifecycle (fork-owned source)
+  -> Grimholt session, gameplay and public API extensions
+  -> Minestom-derived world/chunk/entity primitives (fork-owned source)
+  -> Grimholt-owned region/tick scheduling and cross-owner handoff kernel
   -> Plugins
 ```
 
-The pinned Mojang server JAR is a reference oracle and test input, not a runtime dependency or implementation shortcut. The Gradle runtime no longer includes `net.minestom:minestom`; no Bukkit/Spigot/Paper/Folia server API is allowed.
+The target is a source-level Minestom fork. Minestom source is compiled inside Grimholt and becomes modifiable Grimholt-owned code; `net.minestom:minestom` must remain absent from the runtime dependency graph. The pinned Mojang server JAR is a reference oracle only. No Bukkit/Spigot/Paper/Folia/Purpur API is allowed. See `UPSTREAM.md` for the upstream commit, license obligations and update policy.
 
 ## Current reality
 
-The repository has native Grimholt-owned components for resource profiling, region/world abstractions, player state, protocol framing/packet codecs, command-tree support, authentication primitives, persistence helpers and selected gameplay models. The 26.4 handshake parser now validates packet ID, protocol, host, port, next state and trailing bytes.
+The current branch is a transition baseline, not yet the completed source fork: it still contains native Grimholt-owned components for resource profiling, region/world abstractions, player state, protocol framing/packet codecs, command-tree support, authentication primitives, persistence helpers and selected gameplay models. The next architectural milestone is importing the pinned Minestom source tree into this repository and reconciling overlapping subsystems. The 26.4 handshake parser now validates packet ID, protocol, host, port, next state and trailing bytes.
 
 These components do **not** establish complete runtime ownership or parity. Many protocol packets and codecs are incomplete; real client interoperability is not yet evidenced; world generation, lighting, item/inventory behavior, redstone/fluids, entity AI, dimensions, datapacks and full Anvil/player/block-entity persistence remain open. See `FORENSIC-PARITY-AUDIT.md`.
 
@@ -31,6 +29,15 @@ These components do **not** establish complete runtime ownership or parity. Many
 - Startup and shutdown are explicit state transitions. All owned executors, sockets, tasks and file handles are closed.
 - Global systems (registries, time, weather, scoreboards) must have ownership and synchronization rules distinct from region-local state.
 - Plugin APIs document thread/region affinity and cannot expose implementation types.
+
+## Fork integration order
+
+1. Import the pinned upstream source tree and build it from this repository without a published Minestom runtime artifact.
+2. Preserve upstream notices and record every local patch; keep upstream package provenance visible.
+3. Prove a clean standalone build of the imported upstream baseline before merging Grimholt-specific code.
+4. Rebase Grimholt's protocol, gameplay and plugin work onto the fork; remove duplicate competing implementations only after equivalent tests pass.
+5. Add CPU-topology-aware worker sizing and per-subsystem metrics; never assume more threads automatically improve throughput.
+6. Add deterministic multi-player load tests and compare baseline versus each optimization.
 
 ## Runtime layers and completion order
 
