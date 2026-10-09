@@ -19,7 +19,7 @@
 5. After each change run targeted tests, then `gradle --no-daemon clean test`, `dependencyAudit`, `vanillaReferenceSmoke26_4` and `assemble` as applicable. CI must pass before declaring the task done.
 6. No “complete” claim from compilation alone, a reference-server boot, a unit codec test, or a microbenchmark.
 7. Use Mojang's exact pinned JAR as a reference/test oracle only; never ship it as Grimholt's implementation.
-8. No runtime dependency on Minestom, Bukkit, Spigot, Paper, Folia, Purpur or Velocity.
+8. Minestom must be forked as checked-in source and compiled in-repository; forbid the published Minestom runtime artifact and all Bukkit, Spigot, Paper, Folia, Purpur or Velocity APIs.
 9. Never claim 500–1000 player capacity without reproducible networked benchmark evidence.
 10. All mutable gameplay state has one explicit owner; cross-owner mutation uses bounded handoffs.
 
@@ -61,7 +61,19 @@
 - [x] Review project Markdown and target metadata; 26.2-named source/test classes are legacy-labelled, not the active target.
 - **Exit gate:** CI green, artifact launches, checksum/dependency gates pass, inventory reviewed.
 
-## 4. Phase B — Protocol and real-client connectivity
+## 4. Phase B — Source-fork bootstrap
+
+**Goal:** make Minestom source a first-party, auditable part of Grimholt without a published Minestom runtime dependency.
+
+- [ ] Import all required upstream source/resources/build metadata at the exact revision in `UPSTREAM.md`.
+- [ ] Preserve Apache-2.0 license, copyright notices and upstream `NOTICE` content where present; add prominent modification notices to changed upstream files.
+- [ ] Reconcile Gradle/toolchain settings with Java 25 and the repository's supported target.
+- [ ] Compile upstream code from this repository and run upstream tests that are compatible with Grimholt CI.
+- [ ] Build and inspect a standalone artifact proving no external Minestom server artifact is packaged or required.
+- [ ] Record upstream import commit, file counts, test results and known deviations.
+- **Exit gate:** clean CI build of the checked-in source fork, licensing metadata retained, no external Minestom runtime dependency.
+
+## 5. Phase B — Protocol and real-client connectivity
 
 **Goal:** one vanilla 26.4 Snapshot 3 client can connect reliably and enter Play.
 
