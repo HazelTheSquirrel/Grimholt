@@ -17,7 +17,7 @@ A global tick loop is a poor unit of parallelism. A world is a graph of mutable 
 
 Naively running the whole world tick in parallel creates data races and makes outcomes depend on thread timing. Naively putting every tick in a worker queue creates stale work faster than it can be consumed. Chronos instead separates ownership from execution and makes backpressure part of the runtime contract.
 
-The first implementation, ChronosRegionScheduler, is a bounded dispatch kernel: fixed CPU worker count, a bounded shared queue, one in-flight tick per region, no catch-up bursts, and per-region/global counters. It is an early component, **not yet the production tick engine**. It must not be described as delivering world-wide parallel simulation until it is connected to VanillaRegionManager and verified with integration tests.
+The initial implementation, ChronosRegionScheduler, is a bounded dispatch kernel: fixed CPU worker count, a bounded shared queue, one in-flight tick per region, no catch-up bursts, and per-region/global counters. It is now wired into the production Grimholt lifecycle through VanillaServerKernel and VanillaRegionManager. This proves the dispatch path is connected; it does **not** yet prove complete parallel gameplay semantics or a 1,000-player capacity.
 
 ## Intended runtime model
 
