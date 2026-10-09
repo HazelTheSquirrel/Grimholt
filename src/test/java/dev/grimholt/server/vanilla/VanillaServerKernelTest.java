@@ -7,6 +7,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import dev.grimholt.server.runtime.ChronosRegionScheduler;
+import java.util.concurrent.TimeUnit;
 
 class VanillaServerKernelTest {
     @Test
@@ -83,4 +85,26 @@ class VanillaServerKernelTest {
             assertEquals(0, kernel.worldCount());
         }
     }
+    @Test
+    void productionKernelTicksRegionsThroughChronos() throws Exception {
+        try (ChronosRegionScheduler chronos = new ChronosRegionScheduler(2, 16, 10);
+             VanillaServerKernel kernel = new VanillaServerKernel(16, chronos, ignored -> fail("unexpected region failure"))) {
+            kernel.start();
+            UUID world = UUID.randomUUID();
+            kernel.registerWorld(world);
+            VanillaRegionRuntime region = kernel.region(world, 0, 0);
+
+            kernel.startRegionTicks();
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            while (region.game().tickCount() == 0 && System.nanoTime() < deadline) {
+                Thread.sleep(5);
+            }
+
+            assertTrue(region.game().tickCount() > 0,
+                    "production kernel should tick registered regions via Chronos");
+            assertThrows(IllegalStateException.class, kernel::tick,
+                    "Chronos mode must not allow the old global tickAll path");
+        }
+    }
+
 }
