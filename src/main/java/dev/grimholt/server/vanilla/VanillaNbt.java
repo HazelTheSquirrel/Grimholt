@@ -64,7 +64,13 @@ public final class VanillaNbt {
     public static Tag integer(int value) { return new Tag(INT, value); }
     public static Tag longValue(long value) { return new Tag(LONG, value); }
     public static Tag list(byte elementType, List<Tag> values) {
-        if (elementType == END) throw new IllegalArgumentException("NBT lists cannot use TAG_End");
+        requireNonNull(values, "values");
+        if (elementType == END && !values.isEmpty()) {
+            throw new IllegalArgumentException("TAG_End lists must be empty");
+        }
+        if (elementType != END && (elementType < BYTE || elementType > LONG_ARRAY)) {
+            throw new IllegalArgumentException("Unsupported NBT list element type " + elementType);
+        }
         for (Tag value : values) if (value.type() != elementType) {
             throw new IllegalArgumentException("NBT list element type mismatch");
         }
