@@ -63,6 +63,7 @@ class VanillaNbtTest {
         for (int i = 0; i < 70; i++) {
             nested = VanillaNbt.compound(Map.of("nested", nested));
         }
-        assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(VanillaNbt.write(nested)));
+        VanillaNbt.Tag excessivelyNested = nested;
+        assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(VanillaNbt.write(excessivelyNested)));
     }
 }
