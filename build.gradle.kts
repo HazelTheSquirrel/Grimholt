@@ -205,7 +205,7 @@ val generateVanilla26_4 by tasks.registering {
         Files.createDirectories(out)
         generatedDir.toFile().copyRecursively(out.toFile(), overwrite = true)
         out.resolve("manifest.properties").toFile().writeText(
-            "version=$version\n" +
+            "version=26.4-snapshot-3\n" +
             "protocol=1073742165\n" +
             "worldDataVersion=5122\n" +
             "dataPackVersion=123.0\n" +
