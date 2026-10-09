@@ -202,6 +202,20 @@ public final class VanillaConfigurationSync {
     }
 
     /**
+     * Registry entry payloads may omit their vanilla NBT only when the client
+     * explicitly confirms the exact core pack advertised by this server.
+     */
+    public void requireCompatibleKnownPacks(Set<String> knownPacks) throws IOException {
+        Objects.requireNonNull(knownPacks, "knownPacks");
+        String expected = "minecraft:core@" + VanillaSnapshot.VERSION;
+        if (!knownPacks.contains(expected)) {
+            throw new IOException("Client did not acknowledge required vanilla pack " + expected
+                    + "; refusing to send registry entries without their canonical NBT values. "
+                    + "Client acknowledged: " + knownPacks);
+        }
+    }
+
+    /**
      * Builds Registry Data payloads. For vanilla's core known pack the client
      * already owns the canonical entry values, so the Grimholt wire contract
      * may send entries with the optional NBT bit cleared. This keeps the
