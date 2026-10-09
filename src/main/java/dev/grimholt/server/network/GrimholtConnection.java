@@ -28,6 +28,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private final GrimholtCommandTreeWire commandTreeWire = new GrimholtCommandTreeWire();
     private final GrimholtPlayerInventory inventory = new GrimholtPlayerInventory();
     private final Consumer<GrimholtConnection> closed;
+    private final GrimholtPacketRateLimiter inboundRateLimiter = GrimholtPacketRateLimiter.defaults();
     private final boolean onlineMode;
     private final GrimholtOnlineAuthentication authentication;
     private volatile boolean authenticated;
@@ -64,7 +65,11 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
                 // Unauthenticated or configuring clients must not hold a socket
                 // forever. Once in PLAY, vanilla keepalive handling owns liveness.
                 socket.setSoTimeout(state == ConnectionState.PLAY ? 0 : PRE_PLAY_IDLE_TIMEOUT_MILLIS);
-                handle(transport.read());
+                VanillaProtocol.Frame frame = transport.read();
+                if (!inboundRateLimiter.tryAcquire(frame.payload().length)) {
+                    throw new IOException("Inbound packet rate limit exceeded");
+                }
+                handle(frame);
             }
         } catch (EOFException ignored) {
         } catch (IOException | RuntimeException ignored) {
@@ -92,7 +97,7 @@ public final class GrimholtConnection implements CommandSender, AutoCloseable {
     private void handleStatus(VanillaProtocol.Frame frame) throws IOException {
         if (frame.packetId() == 0) {
             if (frame.payload().length != 0) throw new IOException("Status request packet must be empty");
-            String json = "{\"version\":{\"name\":\"" + VanillaSnapshot26_2.VERSION + "\",\"protocol\":" + VanillaSnapshot26_2.PROTOCOL +
+            String json = "{\"version\":{\"name\":\"" + VanillaSnapshot.VERSION + "\",\"protocol\":" + VanillaSnapshot.PROTOCOL +
                     "},\"players\":{\"max\":" + server.maxPlayers() + ",\"online\":" + server.players().size() +
                     "},\"description\":{\"text\":\"Grimholt\"}}";
             send(VanillaProtocol.State.STATUS, "minecraft:status_response",
