@@ -39,6 +39,8 @@ jobs:
         run: gradle --no-daemon --no-configuration-cache vanillaReferenceSmoke26_4
       - name: Assemble
         run: gradle --no-daemon --no-configuration-cache assemble
+      - name: Smoke-test the actual Grimholt standalone JAR
+        run: gradle --no-daemon --no-configuration-cache standaloneSmoke
       - name: Audit fork independence and standalone artifact
         run: gradle --no-daemon --no-configuration-cache forkIntegrityAudit
       - name: Upload standalone server JAR
