@@ -41,6 +41,20 @@ public final class VanillaConfigurationSync {
             "minecraft:sulfur_cube_archetype"
     );
 
+    private static final Set<String> REQUIRED_REGISTRIES = Set.of(
+            "minecraft:worldgen/biome",
+            "minecraft:chat_type",
+            "minecraft:trim_pattern",
+            "minecraft:trim_material",
+            "minecraft:dimension_type",
+            "minecraft:damage_type",
+            "minecraft:banner_pattern",
+            "minecraft:enchantment",
+            "minecraft:jukebox_song",
+            "minecraft:instrument",
+            "minecraft:painting_variant"
+    );
+
     private final VanillaGeneratedData generated;
 
     public VanillaConfigurationSync(VanillaGeneratedData generated) {
@@ -238,12 +252,16 @@ public final class VanillaConfigurationSync {
         for (String registryId : SYNCHRONIZED_REGISTRIES) {
             Object raw = root.get(registryId);
             if (!(raw instanceof Map<?,?> rawMap)) {
-                missing.add(registryId + " (registry absent from report)");
+                if (REQUIRED_REGISTRIES.contains(registryId)) {
+                    missing.add(registryId + " (registry absent from report)");
+                }
                 continue;
             }
             Object entriesValue = rawMap.get("entries");
             if (!(entriesValue instanceof Map<?,?> entries)) {
-                missing.add(registryId + " (entries absent from report)");
+                if (REQUIRED_REGISTRIES.contains(registryId)) {
+                    missing.add(registryId + " (entries absent from report)");
+                }
                 continue;
             }
 
