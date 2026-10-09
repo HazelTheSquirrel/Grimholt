@@ -39,6 +39,9 @@ public final class VanillaProtocol26_2 {
         for (int i = 0; i < MAX_VARINT_BYTES; i++) {
             int b = in.read();
             if (b < 0) throw new EOFException("Unexpected EOF in VarInt");
+            if (i == MAX_VARINT_BYTES - 1 && (b & 0xf0) != 0) {
+                throw new IOException("VarInt overflows 32 bits");
+            }
             result |= (b & 0x7f) << shift;
             if ((b & 0x80) == 0) return result;
             shift += 7;
@@ -122,6 +125,7 @@ public final class VanillaProtocol26_2 {
 
         ByteArrayInputStream packet = new ByteArrayInputStream(packetBytes);
         int id = readVarInt(packet);
+        if (id < 0) throw new IOException("Negative packet ID: " + id);
         return new Frame(id, packet.readAllBytes());
     }
 
