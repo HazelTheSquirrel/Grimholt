@@ -67,8 +67,8 @@
 
 - [x] Add a bounded region-dispatch primitive with one in-flight tick per region.
 - [x] Add tests for independent-region parallelism, busy-region coalescing, failure isolation and invalid configuration.
-- [ ] Integrate Chronos with the real region lifecycle as the only region-tick dispatch path.
-- [ ] Remove duplicate scheduling paths only after ownership and shutdown tests pass.
+- [x] Integrate Chronos with the real region lifecycle as the only region-tick dispatch path.
+- [x] Remove the duplicate global tick queue from the production path; keep the legacy clock only for compatibility callers.
 - [ ] Define causal, ordered, bounded cross-region intents for entity migration, block updates, combat and player movement.
 - [ ] Add deterministic replay/state-fingerprint tests for cross-region interactions and shutdown races.
 - [ ] Benchmark 1, 100, 500 and 1,000 players with p50/p95/p99 tick time, missed deadlines, queue depth, allocation, GC and CPU utilization.
