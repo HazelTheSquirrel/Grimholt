@@ -64,16 +64,21 @@ public final class GrimholtNetworkServer implements AutoCloseable {
             throw new IllegalStateException("Cannot initialize the pinned Minecraft 26.4 packet/data catalog", failure);
         }
 
-        final ServerSocket candidate = new ServerSocket();
+        final ServerSocket candidate;
         try {
-            candidate.setReuseAddress(true);
-            candidate.bind(config.socketAddress());
-        } catch (IOException failure) {
+            candidate = new ServerSocket();
             try {
-                candidate.close();
-            } catch (IOException closeFailure) {
-                failure.addSuppressed(closeFailure);
+                candidate.setReuseAddress(true);
+                candidate.bind(config.socketAddress());
+            } catch (IOException failure) {
+                try {
+                    candidate.close();
+                } catch (IOException closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+                throw failure;
             }
+        } catch (IOException failure) {
             throw new IllegalStateException("Cannot bind Grimholt network socket", failure);
         }
 
