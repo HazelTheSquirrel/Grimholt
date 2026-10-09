@@ -2,6 +2,9 @@ package dev.grimholt.server.vanilla;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.util.Map;
 import java.util.UUID;
 
@@ -14,7 +17,15 @@ public final class VanillaProtocolCodec {
         if (length < 0 || length > maxBytes) throw new IOException("Invalid string length: " + length);
         byte[] bytes = in.readNBytes(length);
         if (bytes.length != length) throw new EOFException("Truncated string");
-        String value = new String(bytes, StandardCharsets.UTF_8);
+        final String value;
+        try {
+            value = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes)).toString();
+        } catch (CharacterCodingException malformed) {
+            throw new IOException("Malformed UTF-8 string", malformed);
+        }
         if (value.length() > maxBytes) throw new IOException("String exceeds character limit");
         return value;
     }
@@ -56,6 +67,7 @@ public final class VanillaProtocolCodec {
         for (int i = 0; i < 10; i++) {
             int b = in.read();
             if (b < 0) throw new EOFException("Unexpected EOF in VarLong");
+            if (i == 9 && (b & 0xfe) != 0) throw new IOException("VarLong overflows 64 bits");
             result |= (long) (b & 0x7f) << shift;
             if ((b & 0x80) == 0) return result;
             shift += 7;
