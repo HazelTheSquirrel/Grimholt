@@ -1,23 +1,23 @@
-# Grimholt Minestom
+# Grimholt
 
-Grimholt is being rebuilt on Minestom with Java 25. The repository starts from a deliberately small, testable foundation rather than carrying forward the previous server implementation.
+Grimholt is an independent Minecraft server implementation in progress, targeting Java 25. The current runnable bootstrap still uses Minestom as a temporary behavior/reference harness; it is not the intended product core. New core packages must remain independent of Minestom, and the long-term runtime will replace the bootstrap rather than grow into a Minestom-based product.
 
 ## Requirements
 
 - JDK 25
 - Maven 3.9+
-- A Minecraft client compatible with the Minestom release selected in `pom.xml`
+- A Minecraft client compatible with the temporary Minestom bootstrap, until the independent protocol implementation is ready
 
-## Build and run
+## Build and run the current reference bootstrap
 
 ```bash
 mvn clean verify
 java -jar target/grimholt-minestom-0.1.0-SNAPSHOT.jar
 ```
 
-The distributable JAR includes runtime dependencies. The default listener is `0.0.0.0:25565`.
+The current distributable JAR includes runtime dependencies. The default listener is `0.0.0.0:25565`.
 
-Configure the listener with system properties or environment variables:
+Configure the temporary bootstrap listener with system properties or environment variables:
 
 | Setting | System property | Environment variable | Default |
 |---|---|---|---|
@@ -30,16 +30,17 @@ Example:
 java -Dgrimholt.host=127.0.0.1 -Dgrimholt.port=25566 -jar target/grimholt-minestom-0.1.0-SNAPSHOT.jar
 ```
 
-## Architecture principles
+## Independent core principles
 
-- **Minestom owns game networking, ticking, instances, and entity scheduling.** Do not create a competing main tick loop.
-- **CPU and heap detection is advisory capacity planning** for Grimholt-owned background work; it does not override Minestom's internal pools.
-- **Background work is bounded.** Queue saturation rejects work explicitly instead of running expensive work on a caller thread or silently growing memory usage.
-- **Hot-path optimization is evidence-driven.** Profile allocations and tick cost before introducing pooling or custom data layouts.
-- **Lifecycle is explicit.** Initialize registries and the world before binding the listening socket; shut Minestom down cleanly.
+- **First principles, independent implementation.** Minestom is a temporary reference for observable behavior only. Do not copy, mechanically rewrite, or ship Minestom implementation code.
+- **Core isolation.** New `dev.grimholt.core` code must not import Minestom. Pure core primitives and their tests should remain deterministic and dependency-light.
+- **Single-writer simulation ownership.** World state will be owned by a region/actor at a time; cross-region work is messaged explicitly rather than guarded by a global world lock.
+- **Bounded concurrency.** Network, persistence and generation work must have explicit queue and overload policies. Saturation must never run expensive work on a caller/simulation thread or silently grow memory.
+- **Evidence-driven performance.** Track allocation rate, queue wait, p50/p95/p99 simulation latency, throughput and memory. Pooling and custom layouts require benchmark evidence.
+- **Lifecycle and observability are core features.** Admission, shutdown, persistence and worker termination need explicit contracts and measurable behavior.
 - **No Bukkit, Spigot, Paper, Purpur, or NMS dependencies.**
 
-The current world is intentionally a small flat bootstrap world. Persistent world storage, gameplay systems, observability, load tests, and production hardening are subsequent implementation stages; the bootstrap is not a claim that those systems are already complete.
+The architecture and implementation sequence are recorded in [the independent-core foundation plan](docs/INDEPENDENT_CORE_FOUNDATION.md). The flat-world bootstrap is only a behavior reference; persistent storage, full gameplay, a native protocol stack, repeatable load tests and production hardening are not yet implemented.
 
 ## CI and downloadable JAR
 
