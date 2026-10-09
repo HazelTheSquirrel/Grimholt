@@ -109,8 +109,13 @@ public final class VanillaConfigurationSync {
             byRegistry.computeIfAbsent(registry, ignored -> new LinkedHashMap<>()).put(tagId, ids);
         }
 
-        List<byte[]> packets = new ArrayList<>();
+        if (byRegistry.isEmpty()) return List.of();
+
+        // Snapshot 3 has one Update Tags packet containing a map of registries.
+        // Sending one packet per registry misaligns the client's packet decoder.
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
+            VanillaProtocol26_2.writeVarInt(out, byRegistry.size());
             for (var registryEntry : byRegistry.entrySet()) {
                 String registry = registryEntry.getKey();
                 Map<String,Integer> ids = registryIds(registry);
@@ -120,7 +125,6 @@ public final class VanillaConfigurationSync {
                     expanded.put(tagId, resolveTag(tagId, tags, new LinkedHashSet<>()));
                 }
 
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
                 VanillaProtocolCodec.writeIdentifier(out, registry);
                 VanillaProtocol26_2.writeVarInt(out, expanded.size());
                 for (var tag : expanded.entrySet()) {
@@ -133,12 +137,11 @@ public final class VanillaConfigurationSync {
                     VanillaProtocol26_2.writeVarInt(out, resolved.size());
                     for (int id : resolved) VanillaProtocol26_2.writeVarInt(out, id);
                 }
-                packets.add(out.toByteArray());
             }
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot encode 26.4 Update Tags", e);
         }
-        return List.copyOf(packets);
+        return List.of(out.toByteArray());
     }
 
     private static List<String> resolveTag(String tagId,
