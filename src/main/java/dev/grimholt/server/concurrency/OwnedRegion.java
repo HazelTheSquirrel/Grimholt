@@ -138,9 +138,12 @@ public final class OwnedRegion implements AutoCloseable {
 
     @Override
     public void close() {
-        if (closed.compareAndSet(false, true)) {
-            synchronized (handoffs) { handoffs.clear(); }
-            drainScheduled.set(false);
+        // Shutdown must not unload mutable region state concurrently with a tick.
+        synchronized (executionLock) {
+            if (closed.compareAndSet(false, true)) {
+                synchronized (handoffs) { handoffs.clear(); }
+                drainScheduled.set(false);
+            }
         }
     }
 }
