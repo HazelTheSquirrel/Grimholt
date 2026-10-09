@@ -7,10 +7,18 @@ import dev.grimholt.server.vanilla.*;
 import dev.grimholt.server.logging.Logging;
 import java.io.IOException;
 import java.net.*;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.RejectedExecutionException;
 
+/**
+ * Owns the network ingress for Grimholt.
+ *
+ * <p>Startup is deliberately staged: the kernel and world must already be
+ * ready, protocol metadata is loaded, and only then is the listening socket
+ * bound and the accept loop started. This prevents a reachable endpoint from
+ * advertising readiness while gameplay dependencies are still unavailable.</p>
+ */
 public final class GrimholtNetworkServer implements AutoCloseable {
     private static final int MAX_PENDING_CONNECTIONS = 64;
     private final GrimholtServerImpl server;
@@ -28,33 +36,52 @@ public final class GrimholtNetworkServer implements AutoCloseable {
     }
 
     public GrimholtNetworkServer(GrimholtServerImpl server, GrimholtCommandDispatcher commands, VanillaServerKernel kernel, boolean onlineMode) {
-        this.server = server;
-        this.commands = commands;
-        this.kernel = kernel;
+        this.server = Objects.requireNonNull(server, "server");
+        this.commands = Objects.requireNonNull(commands, "commands");
+        this.kernel = Objects.requireNonNull(kernel, "kernel");
         this.onlineMode = onlineMode;
     }
 
-    public void start(GrimholtConfig config) {
-        if (running) throw new IllegalStateException("Network server already running");
-        try {
-            socket = new ServerSocket();
-            socket.setReuseAddress(true);
-            socket.bind(config.socketAddress());
-        } catch (IOException e) {
-            throw new IllegalStateException("Cannot bind Grimholt network socket", e);
+    public synchronized void start(GrimholtConfig config) {
+        Objects.requireNonNull(config, "config");
+        if (running || socket != null) throw new IllegalStateException("Network server already running");
+
+        // Fail before opening a port if the gameplay runtime has not been bootstrapped.
+        if (!kernel.running()) {
+            throw new IllegalStateException("Vanilla kernel must be running before the network server starts");
         }
-        onlineMode = config.onlineMode();
+        if (kernel.worldCount() == 0) {
+            throw new IllegalStateException("At least one world must be registered before the network server starts");
+        }
+
+        final VanillaGeneratedData data;
+        final VanillaPacketCatalog packets;
         try {
-            VanillaGeneratedData data = new VanillaGeneratedData();
+            data = new VanillaGeneratedData();
             data.requireAvailable();
-            VanillaPacketCatalog packets = VanillaPacketCatalog.load(data);
-            generatedData = data;
-            packetCatalog = packets;
+            packets = VanillaPacketCatalog.load(data);
         } catch (RuntimeException failure) {
-            try { socket.close(); } catch (IOException closeFailure) { failure.addSuppressed(closeFailure); }
-            socket = null;
             throw new IllegalStateException("Cannot initialize the pinned Minecraft 26.4 packet/data catalog", failure);
         }
+
+        final ServerSocket candidate = new ServerSocket();
+        try {
+            candidate.setReuseAddress(true);
+            candidate.bind(config.socketAddress());
+        } catch (IOException failure) {
+            try {
+                candidate.close();
+            } catch (IOException closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+            throw new IllegalStateException("Cannot bind Grimholt network socket", failure);
+        }
+
+        // Publish dependencies before making the socket visible to the accept loop.
+        onlineMode = config.onlineMode();
+        generatedData = data;
+        packetCatalog = packets;
+        socket = candidate;
         running = true;
         acceptLoop();
     }
@@ -64,7 +91,9 @@ public final class GrimholtNetworkServer implements AutoCloseable {
             while (running) {
                 final Socket client;
                 try {
-                    client = socket.accept();
+                    ServerSocket listeningSocket = socket;
+                    if (listeningSocket == null) break;
+                    client = listeningSocket.accept();
                 } catch (IOException failure) {
                     if (running) Logging.networkFailure(failure);
                     break;
@@ -105,7 +134,7 @@ public final class GrimholtNetworkServer implements AutoCloseable {
     public int boundPort() { return socket == null ? -1 : socket.getLocalPort(); }
     public int connectionCount() { return connections.size(); }
 
-    @Override public void close() {
+    @Override public synchronized void close() {
         running = false;
         ServerSocket current = socket;
         socket = null;
