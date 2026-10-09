@@ -9,36 +9,39 @@ import java.util.*;
  * generated reports rather than importing another server's packet classes.
  */
 public final class VanillaConfigurationSync {
+    // Preserve the protocol registry sequence used by the vanilla configuration
+    // pipeline (also followed by Minestom 26_3). Registry payloads are stateful
+    // protocol data, so sorting registry *names* here is not a valid substitute.
     private static final List<String> SYNCHRONIZED_REGISTRIES = List.of(
-            "minecraft:worldgen/biome",
             "minecraft:chat_type",
-            "minecraft:trim_pattern",
-            "minecraft:trim_material",
-            "minecraft:wolf_variant",
-            "minecraft:wolf_sound_variant",
-            "minecraft:pig_variant",
-            "minecraft:pig_sound_variant",
-            "minecraft:frog_variant",
-            "minecraft:cat_variant",
-            "minecraft:cat_sound_variant",
-            "minecraft:cow_variant",
-            "minecraft:cow_sound_variant",
-            "minecraft:chicken_variant",
-            "minecraft:chicken_sound_variant",
-            "minecraft:zombie_nautilus_variant",
-            "minecraft:painting_variant",
-            "minecraft:dimension_type",
+            "minecraft:worldgen/biome",
+            "minecraft:dialog",
             "minecraft:damage_type",
+            "minecraft:trim_material",
+            "minecraft:trim_pattern",
             "minecraft:banner_pattern",
             "minecraft:enchantment",
+            "minecraft:painting_variant",
             "minecraft:jukebox_song",
             "minecraft:instrument",
-            "minecraft:test_environment",
-            "minecraft:test_instance",
-            "minecraft:dialog",
+            "minecraft:wolf_variant",
+            "minecraft:wolf_sound_variant",
+            "minecraft:cat_variant",
+            "minecraft:cat_sound_variant",
+            "minecraft:chicken_variant",
+            "minecraft:chicken_sound_variant",
+            "minecraft:cow_variant",
+            "minecraft:cow_sound_variant",
+            "minecraft:frog_variant",
+            "minecraft:pig_variant",
+            "minecraft:pig_sound_variant",
+            "minecraft:zombie_nautilus_variant",
             "minecraft:world_clock",
             "minecraft:timeline",
-            "minecraft:sulfur_cube_archetype"
+            "minecraft:dimension_type",
+            "minecraft:sulfur_cube_archetype",
+            "minecraft:test_environment",
+            "minecraft:test_instance"
     );
 
     private final VanillaGeneratedData generated;
