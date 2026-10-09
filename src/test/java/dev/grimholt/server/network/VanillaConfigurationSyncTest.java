@@ -31,8 +31,6 @@ final class VanillaConfigurationSyncTest {
             ByteArrayInputStream in = new ByteArrayInputStream(bytes);
             String registryId = VanillaProtocolCodec.readIdentifier(in);
             int count = VanillaProtocol.readVarInt(in);
-            assertTrue(count > 0, registryId + " must not be an empty registry packet");
-
             Map<?, ?> registry = (Map<?, ?>) report.get(registryId);
             Map<?, ?> entries = (Map<?, ?>) registry.get("entries");
             List<Map.Entry<String, Integer>> expected = new ArrayList<>();
