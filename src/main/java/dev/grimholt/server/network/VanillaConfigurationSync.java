@@ -126,13 +126,15 @@ public final class VanillaConfigurationSync {
         if (byRegistry.isEmpty()) return List.of();
 
         // Snapshot 3 has one Update Tags packet containing a map of registries.
-        // Sending one packet per registry misaligns the client's packet decoder.
+        // Parse the generated registry report once; it is shared by every tag group.
+        Map<String,Object> registryReport = VanillaJson.object(
+                VanillaJson.parse(generated.require("reports/registries.json")));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             VanillaProtocol26_2.writeVarInt(out, byRegistry.size());
             for (var registryEntry : byRegistry.entrySet()) {
                 String registry = registryEntry.getKey();
-                Map<String,Integer> ids = registryIds(registry);
+                Map<String,Integer> ids = registryIds(registry, registryReport);
                 Map<String,List<String>> tags = registryEntry.getValue();
                 Map<String,List<String>> expanded = new LinkedHashMap<>();
                 Map<String,List<String>> resolvedCache = new HashMap<>();
@@ -184,8 +186,7 @@ public final class VanillaConfigurationSync {
         return resolved;
     }
 
-    private Map<String,Integer> registryIds(String registry) {
-        Map<String,Object> root = VanillaJson.object(VanillaJson.parse(generated.require("reports/registries.json")));
+    private Map<String,Integer> registryIds(String registry, Map<String,Object> root) {
         Object raw = root.get(registry);
         if (!(raw instanceof Map<?,?> map) || !(map.get("entries") instanceof Map<?,?> entries)) return Map.of();
         Map<String,Integer> ids = new HashMap<>();
