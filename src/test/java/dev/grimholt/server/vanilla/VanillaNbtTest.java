@@ -19,7 +19,7 @@ class VanillaNbtTest {
 
     @Test
     void rejectsTruncatedByteArrays() {
-        byte[] truncated = {10, 0, 0, 7, 0, 0, 0, 0, 2, 42, 0};
+        byte[] truncated = {10, 0, 0, 7, 0, 0, 0, 0, 0, 2, 42};
         assertThrows(UncheckedIOException.class, () -> VanillaNbt.read(truncated));
     }
 
