@@ -45,7 +45,7 @@ public final class VanillaGeneratedData {
                     || !"reference/minecraft/26.4/server.jar".equals(manifest.getProperty("serverPath"))) {
                 return false;
             }
-            for (String required : List.of("reports/blocks.json", "reports/items.json",
+            for (String required : List.of("reports/blocks.json",
                     "reports/registries.json", "reports/packets.json", "reports/tag_files.json",
                     "reports/SHA256SUMS")) {
                 try (InputStream in = open(required)) {
