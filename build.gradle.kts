@@ -429,6 +429,10 @@ val standaloneSmoke by tasks.registering {
             reader.join(2000)
             error("Grimholt standalone JAR did not reach ready state. Output:\n$output")
         }
+        // The readiness line is emitted at the end of start(); allow main() to
+        // return before requesting JVM shutdown, avoiding a race with its
+        // synchronized startup lifecycle method.
+        Thread.sleep(500)
         process.destroy()
         if (!process.waitFor(15, TimeUnit.SECONDS)) {
             process.destroyForcibly()
