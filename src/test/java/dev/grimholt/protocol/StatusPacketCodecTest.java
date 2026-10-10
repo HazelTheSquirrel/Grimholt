@@ -46,7 +46,7 @@ class StatusPacketCodecTest {
         byte[] framedPong = new byte[12];
         int written = StatusPacketCodec.encodePong(token, framedPong, 2);
         assertEquals(9, VarInt.read(framedPong, 2, 2 + written));
-        assertEquals(1, VarInt.read(framedPong, 3, 3 + written));
+        assertEquals(1, VarInt.read(framedPong, 3, 2 + written));
         assertEquals(token, StatusPacketCodec.readPingPayload(framedPong, 3, written - 1));
     }
 
