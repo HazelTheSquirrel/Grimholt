@@ -12,24 +12,28 @@
 
 ## Packet processing path
 
-1. A transport layer reads bytes into a connection-owned receive buffer.
-2. `PacketFrameDecoder` extracts complete length-prefixed frames without copying payloads.
-3. The protocol layer parses the packet identifier and fields from the borrowed frame slice.
-4. A connection state machine validates that the packet is legal for the current state.
-5. Accepted work is handed to the appropriate bounded executor or region mailbox.
-
-An incomplete frame remains in the receive buffer for the next read. Empty, negative, malformed, and oversized frames are rejected before dispatch.
+1. The selector accepts a socket and assigns connection-owned receive/send buffers.
+2. PacketFrameDecoder extracts complete length-prefixed frames without copying payloads.
+3. HandshakePacket validates the first packet and selects STATUS or LOGIN.
+4. StatusSession permits only legal STATUS request and ping packets; LOGIN is rejected until implemented.
+5. Responses are appended to the connection-owned output buffer; partial writes remain queued until the socket accepts them.
+6. Connection limits, frame limits, fixed buffers, and idle expiry bound resource consumption.
 
 ## Implemented protocol pieces
 
 - Signed 32-bit VarInt encode/decode primitives.
 - Length-prefixed packet frame decoder with maximum-size enforcement.
-- Client handshake parser for packet ID `0x00`, protocol version, UTF-8 server address, unsigned port, and STATUS/LOGIN next state.
+- Strict handshake parser for packet ID 0x00, protocol version, UTF-8 server address, unsigned port, and STATUS/LOGIN next state.
 - JSON status response serialization with protocol/version and player counts.
-- STATUS ping payload validation and framed pong serialization, preserving the client's 64-bit token.
+- STATUS request and ping/pong processing, preserving the client's 64-bit token.
+- Non-blocking TCP listener with a selector-based event loop and bounded connection resources.
 
-Status response JSON is generated on request, not in the tick path. Packet codecs write framed packets into caller-owned output buffers so the eventual connection layer can reuse buffers and avoid allocating an additional packet array.
+Status JSON is generated on request, not in a tick loop. Packet codecs write framed packets into caller-owned output buffers. This is a development milestone only: login, encryption, compression, chunk streaming, simulation, and persistence are not enabled.
 
-## Current limitation
+## Next milestones
 
-The executable entry point is still diagnostic. A live TCP accept loop, integration of these codecs into network sessions, encryption/compression negotiation, login authentication, chunk streaming, and gameplay are not enabled. Each stage should be added behind tests before the executable starts advertising itself as a playable server.
+1. Integration tests against real Minecraft client status requests, including fragmented/coalesced TCP reads.
+2. Versioned login state machine and encryption/compression negotiation.
+3. Player lifecycle and bounded packet dispatch.
+4. World/chunk representation, region ownership, and asynchronous persistence.
+5. Load testing on documented hardware, measuring memory, queue wait, throughput, and p50/p95/p99 latency before making capacity claims.

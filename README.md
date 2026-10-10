@@ -1,51 +1,39 @@
 # Grimholt Server
 
-Grimholt is an independent Minecraft server implementation in Java 25. The repository is being rebuilt around its own runtime, protocol, session, world, simulation, and storage boundaries. It does not embed or wrap another Minecraft server implementation.
+Grimholt is an independent Minecraft server implementation in Java 25. It is being rebuilt around its own runtime, protocol, session, world, simulation, and storage boundaries.
 
-## Status
+## Current status
 
-This commit establishes the first independent core primitives and concurrency rules. **It is not yet a playable Minecraft server**: the Minecraft wire protocol, login/session flow, chunk streaming, gameplay simulation, and persistence are not implemented in this foundation stage. The bootstrap reports the detected runtime profile and exits; it does not open a game listener.
+The executable opens a non-blocking TCP listener and answers Minecraft STATUS handshakes, status requests, and ping/pong exchanges. LOGIN and gameplay are not enabled yet. This is a protocol milestone, not a playable game server.
 
-## Requirements
+## Requirements and run
 
 - JDK 25
 - Maven 3.9+
 
-## Build and run
-
     mvn --batch-mode clean verify
     java -jar target/grimholt-server-0.1.0-SNAPSHOT.jar
+    java -jar target/grimholt-server-0.1.0-SNAPSHOT.jar --host=127.0.0.1 --port=25566
 
-The packaged JAR is a runnable foundation diagnostic, not yet a production game server.
+The default listener binds to port 25565 on all interfaces. Open the firewall only if you intend to expose the status listener publicly.
 
-## Architecture
+## Implemented
 
-- **Transport:** socket lifecycle, packet framing, compression/encryption, and backpressure. This is a future module; no game listener is enabled yet.
-- **Protocol:** version-specific codecs and explicit protocol-state transitions.
-- **Session:** identity, login lifecycle, connection ownership, and ordered outbound delivery.
-- **World:** primitive coordinate keys, chunk/block storage contracts, chunk lifecycle, and persistence boundaries.
-- **Simulation:** authoritative game rules, driven by region ownership rather than shared mutable world state.
-- **Runtime:** lifecycle, hardware-aware capacity defaults, bounded work queues, scheduling, and observability.
-- **Storage:** asynchronous persistence and recovery.
-- **Observability:** queue saturation, queue wait, allocation rate, and p50/p95/p99 simulation latency.
+- Java 25 bootstrap and runtime capacity detection.
+- Bounded background executor and region mailbox primitives.
+- Primitive chunk/block coordinate helpers.
+- VarInt codecs, bounded frame decoder, and strict handshake parser.
+- JSON status serialization and status/ping/pong packet codecs.
+- Per-connection STATUS state machine and non-blocking selector TCP listener.
+- Bounded to 512 connections, 16 KiB frames, fixed receive/send buffers, and a 30-second idle timeout.
+- CI verification and runnable JAR artifact upload.
 
-### Concurrency rules
+## Not implemented
 
-1. Network workers will do bounded I/O and decoding only; gameplay work is routed to a bounded owner queue.
-2. A mutable world region has one writer at a time. Cross-region changes are explicit messages.
-3. Queue saturation is a visible result. Expensive work is never run on the submitting thread as a fallback.
-4. Background work must have bounded concurrency and bounded queued work.
-5. Allocation pooling is introduced only when profiling demonstrates a benefit.
-6. Shutdown closes admission first, then drains or rejects queued work according to each subsystem's contract.
+LOGIN authentication, encryption/compression negotiation, player sessions, chunk streaming, authoritative simulation, world persistence, and gameplay are not enabled. Protocol version 767 is a development default and must be updated when targeting another Minecraft release.
 
-## Performance target
+## Performance and architecture
 
-The design target is 500+ concurrent players in one world, but no capacity claim is made until repeatable load tests measure throughput, memory, queue wait, and p50/p95/p99 simulation latency on documented hardware.
+Network I/O and packet framing run on the selector thread; gameplay work must not be added there. Packet payloads are borrowed views into connection-owned buffers. Connection count, frame length, buffer sizes, and idle lifetime are bounded. Mutable world regions will have a single writer, with cross-region changes represented as explicit messages. Pooling is not introduced without profiling evidence.
 
-## Build artifacts
-
-A successful CI verification uploads the runnable foundation JAR as grimholt-server-<commit-sha> for 30 days. Open https://github.com/HazelTheSquirrel/Grimholt/actions, choose a successful CI run, and download its artifact ZIP.
-
-## Independent implementation and dependencies
-
-Core packages must not depend on third-party server runtimes. Dependencies and licenses are tracked explicitly; protocol behavior is implemented from documented wire specifications and independent tests rather than copied server source.
+The goal of 500+ concurrent players is a design target, not a performance claim. Load tests are required before asserting capacity.
