@@ -49,6 +49,10 @@ public final class StatusServer implements AutoCloseable {
         }
     }
 
+    public InetSocketAddress localAddress() throws IOException {
+        return (InetSocketAddress) listener.getLocalAddress();
+    }
+
     public void run() throws IOException {
         System.out.println("Grimholt STATUS listener active on " + listener.getLocalAddress());
         try {
