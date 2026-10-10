@@ -25,9 +25,11 @@ An incomplete frame remains in the receive buffer for the next read. Empty, nega
 - Signed 32-bit VarInt encode/decode primitives.
 - Length-prefixed packet frame decoder with maximum-size enforcement.
 - Client handshake parser for packet ID `0x00`, protocol version, UTF-8 server address, unsigned port, and STATUS/LOGIN next state.
+- JSON status response serialization with protocol/version and player counts.
+- STATUS ping payload validation and framed pong serialization, preserving the client's 64-bit token.
 
-The handshake parser is a protocol primitive, not yet a live network listener or a complete login implementation.
+Status response JSON is generated on request, not in the tick path. Packet codecs write framed packets into caller-owned output buffers so the eventual connection layer can reuse buffers and avoid allocating an additional packet array.
 
 ## Current limitation
 
-The executable entry point is still diagnostic. A live TCP accept loop, status response/ping handling, encryption/compression negotiation, login authentication, chunk streaming, and gameplay are not enabled. Each stage should be added behind tests before the executable starts advertising itself as a playable server.
+The executable entry point is still diagnostic. A live TCP accept loop, integration of these codecs into network sessions, encryption/compression negotiation, login authentication, chunk streaming, and gameplay are not enabled. Each stage should be added behind tests before the executable starts advertising itself as a playable server.
